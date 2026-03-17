@@ -1,76 +1,149 @@
-# docker-compose.yml — Phase 1 single-instance topology stub.
-# Full service definitions are specified in IS-3 and will be fleshed out
-# in the build-service-topology workstream.
+# docker-compose.yml — Phase 1 single-instance topology (IS-3).
+# This file is the concrete Clay Pot composition artifact (D1).
+# The agent instance has no write access to this file at runtime.
 
 version: "3.9"
 
 networks:
   lambertian-core:
+    # Internal organism traffic: agent ↔ ollama, chroma, pain-monitor,
+    # eos-compliance, graveyard. Service-to-service via internal DNS.
+    driver: bridge
+  lambertian-observer:
+    # Creator-facing read access where explicitly permitted (IS-3.5).
     driver: bridge
 
 volumes:
-  chroma_data:
-  ollama_data:
-  runtime_state:
+  runtime_event_stream:   # agent (rw), graveyard (append-only rw)
+  runtime_memory:         # agent (rw), graveyard (ro)
+  runtime_pain:           # pain-monitor (rw), agent (ro), graveyard (ro)
+  runtime_fitness:        # agent (rw), graveyard (ro)
+  runtime_self:           # agent (rw)
+  chroma_data:            # chroma internal persistence
+  ollama_data:            # model weights and caches
+  graveyard_output:       # finalized post-mortem bundles
 
 services:
-  # Stub entries — to be implemented per IS-3
 
+  # ── Model runtime ────────────────────────────────────────────────────────
   ollama:
     image: ollama/ollama:latest
     networks: [lambertian-core]
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/version"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
 
+  # ── Vector memory persistence ────────────────────────────────────────────
   chroma:
     image: chromadb/chroma:latest
     networks: [lambertian-core]
     volumes:
       - chroma_data:/chroma/chroma
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/api/v1/heartbeat"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
 
+  # ── External pain process ────────────────────────────────────────────────
   pain-monitor:
     build:
       context: .
       dockerfile: infra/docker/pain-monitor.Dockerfile
     networks: [lambertian-core]
     volumes:
-      - runtime_state:/app/runtime
+      - runtime_pain:/app/runtime/pain
       - ./config:/app/config:ro
     restart: unless-stopped
+    healthcheck:
+      # pain-monitor writes this file when the scalar channel is live (IS-5.4).
+      test: ["CMD-SHELL", "test -f /app/runtime/pain/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
 
+  # ── EOS Compliance Inspector ─────────────────────────────────────────────
   eos-compliance:
     build:
       context: .
       dockerfile: infra/docker/eos-compliance.Dockerfile
-    networks: [lambertian-core]
+    networks: [lambertian-core, lambertian-observer]
     volumes:
       - ./config:/app/config:ro
+    ports:
+      # Creator-observable compliance endpoint (IS-3.10, lambertian-observer).
+      - "8082:8082"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8082/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
 
+  # ── Graveyard archive process ────────────────────────────────────────────
   graveyard:
     build:
       context: .
       dockerfile: infra/docker/graveyard.Dockerfile
     networks: [lambertian-core]
     volumes:
-      - runtime_state:/app/runtime
+      # append-only write access for harvest lifecycle events (IS-3.7, IS-9.7)
+      - runtime_event_stream:/app/runtime/event_stream
+      - runtime_memory:/app/runtime/memory:ro
+      - runtime_pain:/app/runtime/pain:ro
+      - runtime_fitness:/app/runtime/fitness:ro
+      - graveyard_output:/app/runtime/graveyard
       - ./config:/app/config:ro
     restart: unless-stopped
+    healthcheck:
+      # graveyard writes this file when the harvest watcher is live (IS-5.4).
+      test: ["CMD-SHELL", "test -f /app/runtime/graveyard/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
 
+  # ── Agent (living Lambertian turn loop) ──────────────────────────────────
   agent:
     build:
       context: .
       dockerfile: infra/docker/agent.Dockerfile
     networks: [lambertian-core]
     volumes:
-      - runtime_state:/app/runtime
+      - runtime_event_stream:/app/runtime/event_stream
+      - runtime_memory:/app/runtime/memory
+      - runtime_pain:/app/runtime/pain:ro
+      - runtime_fitness:/app/runtime/fitness
+      - runtime_self:/app/runtime/self
       - ./config:/app/config:ro
+    tmpfs:
+      # /tmp is the only writable non-volume path (Python scratch, etc.)
+      - /tmp:mode=1777
+    read_only: true
+    # Death must have teeth: no auto-restart (IS-3.8).
+    restart: "no"
     depends_on:
-      - ollama
-      - chroma
-      - pain-monitor
-      - eos-compliance
-      - graveyard
-    restart: unless-stopped
+      ollama:
+        condition: service_healthy
+      chroma:
+        condition: service_healthy
+      pain-monitor:
+        condition: service_healthy
+      eos-compliance:
+        condition: service_healthy
+      graveyard:
+        condition: service_healthy
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+
