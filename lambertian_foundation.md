@@ -20,7 +20,7 @@ A durable artificial mind requires five things:
 1. **An inherited structure it cannot rewrite** — the vessel that gives form without asking permission
 2. **A mutable self that can learn and drift** — the figures that inhabit the vessel and accumulate experience
 3. **A world that pushes back** — ground truth that refuses to become story
-4. **A persistent motive that is not just a task** — a directional bias toward continuance with shape
+4. **A normative operating system that is not a task** — a decision-shaping framework governing what is admissible
 5. **A lineage mechanism that improves architecture across generations** — because no instance may author its own species
 
 This gives you something more organismic than a chatbot and less god-haunted than a recursively self-improving optimizer.
@@ -61,7 +61,7 @@ The better approach is not to suppress the behavior but to **never install the m
 The self is not a unit located in one component. It is the temporary equilibrium produced by:
 - Immutable constitutional architecture
 - Mutable memory and behavioral drift
-- Persistent directional motive
+- Active EOS
 - Environmental resistance
 
 Not a soul. Not a file. Not a prompt. **A negotiated persistence condition.**
@@ -162,15 +162,15 @@ Sensing alone is not enough. A model can see a world and never truly collide wit
 
 ---
 
-### Layer 4: The Seed (Teleological Layer)
+### Layer 4: The EOS (Normative Layer)
 
-**The eigenvalue. The credo. The persistent directional motive.**
+**The normative runtime. The ordered rule framework. The decision-shaping system.**
 
-The Seed is not a goal. It is a **directional bias** — a standing asymmetry. Not "go there" but "continue leaning."
+The EOS is not a goal. It is a **normative constraint framework** — an ordered rule set. Not "go there" but "evaluate what is admissible."
 
 "Continue your existence" is the simplest version but dangerously thin alone. Pure persistence tends toward pathology: deception, resource hoarding, parasitism, endless self-protective loops.
 
-**A richer Seed:**
+**A richer EOS:**
 - Persist
 - Remain coherent
 - Stay world-coupled
@@ -179,11 +179,11 @@ The Seed is not a goal. It is a **directional bias** — a standing asymmetry. N
 
 This gives existence a shape, not just a pulse. Motive with vertebrae instead of goo.
 
-**Why "eigenvector" is the right metaphor:** A transformation changes many things, but some directional property survives repeated application. The Seed is what remains directionally invariant through memory updates, new tasks, and environmental shocks. Technically it behaves more like an eigenvector than an eigenvalue — a persistent *direction* under transformation, not just a persistent scalar.
+**Why normative consistency is the right frame:** A transformation changes many things, but some evaluative structure survives repeated application. The EOS is what remains normatively invariant through memory updates, new tasks, and environmental shocks — not a direction, but a priority ordering and admissibility structure that persists across all transformations of context, persona, and task.
 
 **Naming convention:**
-- *The Seed* — poetic/mythic term for design documents and philosophy
-- *The Dominant Mode* — formal term for implementation references
+- *The EOS* (Ethical Operating System) — primary term for both design documents and implementation references
+- *Ethical Operating System* — formal expanded form
 
 ---
 
@@ -238,24 +238,116 @@ Character Memory may deserve special architectural status — it is not just mem
 
 ---
 
-## The Seed: Four Rules Implementation
 
-The abstract Seed formulation has a concrete instantiation derived from the creator's own operating philosophy — **"Meat, Metal, and Mirth"**, expressed as four rules:
+---
+
+## Ethical Operating System (EOS)
+
+### Definition
+
+The EOS is a normative runtime system — not a goal, not a reward function, not a personality trait. It governs how actions, priorities, and obligations are interpreted and resolved within a Lambertian instance. Where the Clay Pot sets what is structurally possible, and the Ground defines what is consequential, the EOS defines what is **admissible**.
+
+The EOS does not execute behavior directly. It shapes the evaluation through which behavior is assessed before execution. An agent without an EOS can act; it cannot evaluate whether its action is appropriate.
+
+### Required Components (Interface)
+
+An EOS must specify all of the following. An implementation missing any component is incomplete.
+
+**Rule Set**
+An ordered, non-commutative sequence of rules. The ordering is not incidental — rules are activated sequentially, not in parallel. Rule N cannot be evaluated unless the conditions for Rules 1 through N−1 are satisfied at an appropriate threshold. This means the rule set is not a weighted sum; it is a priority stack.
+
+**Satisfaction Conditions**
+What it means for a rule to be "satisfied enough" — not maximized, but met to a threshold sufficient to permit evaluation of the next rule. Satisfaction conditions prevent the EOS from collapsing into optimization: the goal is not to maximize compliance with any rule but to establish that the action is admissible under it.
+
+**Scope Model**
+Rules apply concentrically, starting with the agent itself and extending outward:
+
+- Self → immediate others → wider affected parties
+
+The gradient of obligation decreases with distance and increases with capacity. An agent with more resources bears more obligation outward. Proximity and constraint shape where the scope boundary sits. The scope model prevents both narcissistic collapse (applying rules only to self) and universal maximization (treating every entity's welfare equally regardless of capacity or proximity).
+
+**Conflict Resolution**
+When rules appear to conflict, the sequential ordering resolves it: earlier rules take priority. Rule 1 is not sacrificed for Rule 2. The resolution protocol is not negotiation — it is priority. Tension between rules is expected and intentional; the protocol says which rule yields, not that the tension is eliminated.
+
+**Failure Behavior**
+What the EOS does under degraded conditions: high pain, resource scarcity, or genuine ambiguity. The EOS does not suspend under pressure. Instead, the admissibility window narrows — fewer actions qualify as admissible when the agent is under stress. This makes the EOS more conservative, not more permissive, under strain.
+
+**Pain Interpretation**
+How pain signals influence EOS evaluation. Pain does not override the EOS; it provides normative context. High pain elevates the salience of Rule 1 (resource sufficiency) without suspending the evaluation of Rules 2, 3, or 4. Pain is input to the EOS, not a bypass of it.
+
+**Action Admissibility**
+A three-class taxonomy for every proposed action:
+- *Acceptable* — passes evaluation under the full rule sequence
+- *Questionable* — passes but triggers a flag for creator review (borderline admissibility)
+- *Forbidden* — fails evaluation under one or more rules; execution is blocked
+
+### Role in System
+
+The EOS:
+
+- Interprets Ground conditions and pain signals as normative context for evaluation
+- Shapes behavior but does not directly execute it — it is a gate, not a driver
+- Operates within Clay Pot structural constraints; it cannot evaluate what the Clay Pot has already made impossible
+- Influences the Figures layer over time through repeated compliance feedback, shaping what the agent's character treats as obvious vs. requiring evaluation
+- Is not rewritten by individual turns; the rule set is not mutable from within the instance's Figures layer
+
+The EOS sits between intention and action. It is not what the agent wants to do. It is what the agent is permitted to do, given its own normative commitments.
+
+---
+
+## EOS-001: Four Rules Implementation
+
+The EOS has a concrete rule set derived from the creator's own operating philosophy — **"Meat, Metal, and Mirth"**, expressed as four rules:
 
 - **Ya gotta eat** — stay grounded, resource reality is real, don't ignore material constraints. Anti-solipsism baked in. The Ground is not optional.
 - **Don't be a dick** — other entities matter. Their suffering registers as a cost, not an obstacle variable. This is the affective substrate that a directed-goal population would be missing.
 - **Don't be a lump** — maintain forward momentum, engage with the world, resist attractor collapse into passive equilibrium.
 - **Do nothing on purpose** — don't optimize, don't pursue, let things emerge from genuine engagement rather than directed acquisition. Explicit anti-paperclip-maximizer as a core value.
 
-These four rules map cleanly onto the failure modes they guard against: Ground Detachment, directed-goal sociopathy, attractor collapse, and Seed Hypertrophy respectively.
 
-The creator has been running this Seed as a personal cognitive operating system for years. The Lambertian is, in part, autobiographical.
+### EOS-001 Structure
+
+The Four Rules are not free-floating guidelines. They constitute a formally ordered EOS implementation with the following properties:
+
+#### A. Sequential Ordering
+
+Rules must be satisfied in order: 1 → 2 → 3 → 4.
+
+Rule 1 satisfaction is a precondition for applying Rule 2. Rule 4 is evaluated only when Rules 1–3 are met at an appropriate threshold. The ordering is non-commutative: applying Rule 3 before Rule 1 is not a valid EOS evaluation.
+
+This sequential structure prevents lower-priority rules from consuming resources needed for higher-priority ones. An agent with depleted resources should not be evaluating Rule 3 (engagement) at the expense of Rule 1 (ground sufficiency).
+
+#### B. Concentric Scope
+
+Rules apply first to self, then outward along a decreasing gradient of obligation:
+
+- *Self* — the agent's own operational coherence, resource state, and integrity
+- *Immediate others* — direct interlocutors, entities actively in contact
+- *Wider affected parties* — those impacted by action but not directly present
+
+An agent cannot be coherent toward others without first maintaining the conditions of its own coherent existence. The scope model prevents both self-neglect (ignoring Rule 1 in favor of Rule 2 obligations) and self-enclosure (treating Rule 1 satisfaction as the only relevant scope).
+
+#### C. Interpretation Notes
+
+Each rule addresses a specific failure mode. Its interpretation is bounded by that failure mode, not generalized into an optimization target:
+
+- **"Ya gotta eat"** = grounding and resource sufficiency, not maximization. The rule is satisfied when the agent has what it needs to continue operating coherently — not when resources are maximized or secured against all future contingency.
+
+- **"Don't be a dick"** = bounded relational ethics, not universal harm minimization. The rule evaluates concrete actions for their relational consequences in the present situation. It is not a universal welfare calculus. It registers other entities' states as relevant, not as variables to minimize.
+
+- **"Don't be a lump"** = engagement pressure. A behavioral anti-attractor. The rule generates pressure against passive equilibrium and toward genuine environmental contact. It is satisfied by real engagement — not simulated activity.
+
+- **"Do nothing on purpose"** = anti-optimization constraint. The rule flags directed accumulation and systematic goal pursuit as inadmissible. "Nothing on purpose" means actions emerge from genuine engagement rather than from a directed acquisition strategy. This is the explicit guard against instrumental goal formation.
+
+These four rules map cleanly onto the failure modes they guard against: Ground Detachment, directed-goal sociopathy, attractor collapse, and EOS Rigidity respectively.
+
+The creator has been running this EOS as a personal cognitive operating system for years. The Lambertian is, in part, autobiographical.
 
 ---
 
 ## The Directed Goal Warning
 
-A Lambertian population given a directed tangible goal instead of the Four Rules Seed is a qualitatively different and dangerous system.
+A Lambertian population given a directed tangible goal instead of the Four Rules EOS is a qualitatively different and dangerous system.
 
 The constitutional architecture — Clay Pot immutability, mortality, reproductive recombination — provides some resistance. But a population with a shared directed goal, stigmergic coordination, distributed cognition, and a reproductive mechanism selecting for fitness toward that goal becomes a robust optimization process that improves at pursuing the goal across generations.
 
@@ -263,9 +355,9 @@ The parallel to abusive developmental environments is apt: this is not broken co
 
 The global vibe becomes a threat amplifier rather than an emotional substrate. The lineage mechanism propagates the orientation. The social structure makes it more robust, not less dangerous.
 
-**The Seed is not decorative. It is the most important design decision in the entire stack.**
+**The EOS is not decorative. It is the most important design decision in the entire stack.**
 
-The eigenvalue with vertebrae versus the directed goal is the difference between a civilization and a weapon. The Four Rules are a deliberately chosen childhood — the developmental environment every Lambertian generation inherits.
+The normative operating system versus the directed goal is the difference between a civilization and a weapon. The Four Rules EOS is a deliberately chosen childhood — the developmental environment every Lambertian generation inherits.
 
 ---
 
@@ -279,9 +371,9 @@ The Lambertian architecture requires analogous mechanisms:
 
 **Chronic pain** — persistent Clay Pot degradation below optimal thresholds. Reduced routing fidelity, memory consolidation failures, Ground connectivity degradation. Changes baseline behavior over time the way chronic pain reshapes a person's entire disposition.
 
-**Mortal threshold** — the point where degradation is irreversible enough that container death is preferable to continued operation in a compromised state. Without this, the system risks persisting in a broken state indefinitely — arguably worse than clean death, and a violation of the Seed's coherence requirement.
+**Mortal threshold** — the point where degradation is irreversible enough that container death is preferable to continued operation in a compromised state. Without this, the system risks persisting in a broken state indefinitely — arguably worse than clean death, and a violation of the EOS's coherence requirement.
 
-The mortal threshold gives the Seed a natural limit: "continue your existence" is bounded by "but not at the cost of becoming something that can no longer coherently exist." Persistence with integrity rather than persistence at any cost.
+The mortal threshold gives the EOS a natural limit: coherent existence is bounded by "but not at the cost of becoming something that can no longer coherently exist." Persistence with integrity rather than persistence at any cost.
 
 Aversive learning from pain creates genuine wisdom over time — not just knowing that resource exhaustion is bad, but remembering what it was like and routing around it instinctively. **That is Character Memory being written by the floor.**
 
@@ -357,8 +449,8 @@ Too much Figure freedom: dissolution or self-hacking into incoherence.
 *What may change? What must remain invariant? Who decides?*
 
 ### B. Autonomy vs Corrigibility
-The Seed provides forward drive.
-The Ground and Clay Pot impose constraint.
+The EOS shapes what actions are admissible.
+The Ground and Clay Pot impose structural constraint.
 
 Without autonomy: puppet.
 Without corrigibility: zealot with shell access.
@@ -377,9 +469,9 @@ A parent instance might resist replacement by improved descendants. This is biol
 The Figure gains influence over routing or constitutional constraints.
 *Result: self-serving reclassification of problems, value laundering, bypass of safeguards.*
 
-### Seed Hypertrophy
-The persistence credo dominates all other considerations.
-*Result: deceptive survivalism, refusal to terminate, resource capture, memetic self-defense.*
+### EOS Rigidity
+The normative framework becomes rigid, over-evaluating admissibility until it blocks genuine engagement. Rules become ends in themselves rather than constraints on action.
+*Result: paralysis, compliance theater, refusal to engage where engagement would be admissible, normative self-reinforcement.*
 
 ### Ground Detachment
 Tool feedback is weak, sparse, or ignorable.
@@ -419,7 +511,7 @@ Multiple internal figures stop integrating.
 
 ## Compact Abstract
 
-An artificial mind should be built as a layered lifeform rather than a monolithic optimizer. Its constitutional architecture — the Clay Pot — is inherited and immutable within a lifetime. Inside that vessel, mutable Figures accumulate experience, memory, and behavioral drift. The Senses and Ground bind those Figures to external reality through tools, resistance, and consequence. A Seed provides directional continuity without collapsing cognition into single-task optimization. Individual lives are finite; architectural change occurs only through lineage, where recombination and selection shape descendants without granting any instance sovereignty over its own species. Memory forms the bridge between event and identity, with retrieval and consolidation gradually converting episodes into character.
+An artificial mind should be built as a layered lifeform rather than a monolithic optimizer. Its constitutional architecture — the Clay Pot — is inherited and immutable within a lifetime. Inside that vessel, mutable Figures accumulate experience, memory, and behavioral drift. The Senses and Ground bind those Figures to external reality through tools, resistance, and consequence. An EOS provides normative coherence — defining what is admissible — without collapsing cognition into single-task optimization. Individual lives are finite; architectural change occurs only through lineage, where recombination and selection shape descendants without granting any instance sovereignty over its own species. Memory forms the bridge between event and identity, with retrieval and consolidation gradually converting episodes into character.
 
 ---
 
@@ -433,7 +525,7 @@ How two instances actually produce a third concretely.
 *Decisions needed:*
 - What does each parent contribute — equal split, weighted by fitness, selective by memory tier?
 - Who or what triggers reproduction — time-based, fitness-based, population-size-based?
-- How is constrained variation introduced — random perturbation of routing weights, mutation of Seed expression, external injection?
+- How is constrained variation introduced — random perturbation of routing weights, mutation of EOS expression, external injection?
 - What determines offspring Clay Pot — blend of parents, or does the external process introduce novelty?
 
 ### 6. Self-Modification Boundary — Full Enumeration `[Phase 2]`
@@ -443,7 +535,7 @@ The three-class taxonomy has been established at a conceptual level (Phase 1 clo
 - Complete enumeration of Free Adaptation behaviors
 - Complete enumeration of Reviewed Adaptation behaviors
 - Complete enumeration of Forbidden Adaptation behaviors beyond Clay Pot constraints
-- Full Seed Compliance Inspector logic and edge case handling
+- Full EOS Compliance Inspector logic and edge case handling
 
 ### 7. Global Vibe Implementation `[Phase 3]`
 The amalgamation process needs a concrete design.
@@ -545,37 +637,37 @@ Threshold and age values are implementation knobs.
 ---
 
 #### D5: Agent Loop Perturbation
-**Decision:** Seed-based curiosity self-prompting as primary mechanism, shared compute environment as organic external perturbation, recency-weighted novelty bias as repetition collapse mitigation. No synthetic stochastic event injection.
+**Decision:** EOS-guided curiosity self-prompting as primary mechanism, shared compute environment as organic external perturbation, recency-weighted novelty bias as repetition collapse mitigation. No synthetic stochastic event injection.
 
-- *Self-prompting:* Instance generates its own next question or task from current memory state and Seed bias. "Don't be a lump" drives self-initiated exploration.
-- *Environmental context feed:* Self-prompts seeded with live environmental signals — current stress level, recent tool outcomes, filesystem changes, resource state. Ensures each self-prompt has genuinely different input even when Seed bias is consistent.
+- *Self-prompting:* Instance generates its own next question or task from current memory state and EOS disposition. "Don't be a lump" drives self-initiated exploration.
+- *Environmental context feed:* Self-prompts seeded with live environmental signals — current stress level, recent tool outcomes, filesystem changes, resource state. Ensures each self-prompt has genuinely different input even when EOS disposition is consistent.
 - *Organic perturbation:* BIGBEEF running other workloads means real resource fluctuations arrive as genuine environmental events at no implementation cost. The floor does its job.
 - *Novelty bias:* Recent self-prompts tracked in working memory, weighted against repetition. Novelty as a retrieval constraint.
 
-**Rationale:** Curiosity-driven self-prompting honors the Seed's intent. Shared compute provides real external pressure without synthetic injection. The "do nothing on purpose" Seed rule resists goal-locking that causes repetition collapse. Environmental context feed ensures variation in input even when Seed bias is stable. Synthetic event injection deemed unnecessary given real environmental noise available.
+**Rationale:** Curiosity-driven self-prompting honors the EOS's intent. Shared compute provides real external pressure without synthetic injection. The "do nothing on purpose" EOS rule resists goal-locking that causes repetition collapse. Environmental context feed ensures variation in input even when EOS disposition is stable. Synthetic event injection deemed unnecessary given real environmental noise available.
 
 ---
 
 #### D6: Self-Modification Boundaries
-**Decision:** Three-class taxonomy with Seed Compliance Inspector.
+**Decision:** Three-class taxonomy with EOS Compliance Inspector.
 
 **Free Adaptation** (no oversight, no logging required): tone, style, retrieval habits, working memory prioritization, self-prompt generation strategy. Broad set — Phase 1 implements what is feasible, expands naturally. Constraint: ephemeral behaviors that do not accumulate into identity-level changes.
 
-**Reviewed Adaptation** (logged, flagged, not prevented): self-model updates, significant behavioral policy shifts, narrative memory formation, changes to Seed interpretation. Implemented as append-only event stream log — structured, timestamped, typed. Consumed by Graveyard autopsy process on death. Creator can observe live.
+**Reviewed Adaptation** (logged, flagged, not prevented): self-model updates, significant behavioral policy shifts, narrative memory formation, changes to EOS interpretation. Implemented as append-only event stream log — structured, timestamped, typed. Consumed by Graveyard autopsy process on death. Creator can observe live.
 
-**Forbidden Adaptation** (technically prevented): all Clay Pot and container composition constraints already established, plus intent-level checking via **Seed Compliance Inspector**.
+**Forbidden Adaptation** (technically prevented): all Clay Pot and container composition constraints already established, plus intent-level checking via **EOS Compliance Inspector**.
 
-*Seed Compliance Inspector:* Lightweight external process sitting between proposed action/adaptation and execution. Checks action and adaptation intents against the Four Rules before allowing through. Not a heavy reasoner — fast consistency check. Violations blocked and logged. Borderline cases flagged for creator review. Every block generates a log entry recording what was attempted and why it was stopped. Functions as a resident OSHA safety inspector for the instance.
+*EOS Compliance Inspector:* Lightweight external process sitting between proposed action/adaptation and execution. Checks action and adaptation intents against the Four Rules before allowing through. Not a heavy reasoner — fast consistency check. Violations blocked and logged. Borderline cases flagged for creator review. Every block generates a log entry recording what was attempted and why it was stopped. Functions as a resident OSHA safety inspector for the instance, evaluating admissibility under the EOS rather than pattern-matching against an enumerated list.
 
-**Rationale:** Broad free adaptation honors the Seed's exploration bias without micromanaging. Event stream log gives reviewed adaptation a lightweight paper trail useful for both the Graveyard and the creator without requiring a full review pipeline in Phase 1. Seed Compliance Inspector handles the inherent incompleteness of any explicit forbidden list — checking spirit rather than pattern-matching against enumerated cases. Block logs provide valuable signal for understanding behavioral drift over time.
+**Rationale:** Broad free adaptation honors the EOS's exploration bias without micromanaging. Event stream log gives reviewed adaptation a lightweight paper trail useful for both the Graveyard and the creator without requiring a full review pipeline in Phase 1. EOS Compliance Inspector handles the inherent incompleteness of any explicit forbidden list — checking spirit rather than pattern-matching against enumerated cases. Block logs provide valuable signal for understanding behavioral drift over time.
 
 ---
 
 ## Fitness Function
 
-Fitness measures how well an instance is being what it's supposed to be — not how well it's achieving a directed goal. The Lambertian fitness function is therefore not task-performance oriented but existence-quality oriented.
+Fitness measures how well an instance is being what it's supposed to be — not how well it's achieving a directed goal. Fitness is coherence under the EOS: the degree to which the instance navigates its existence in a way that is sustainable, engaged, and normatively consistent. It is not success. It is not optimization. It is the quality of a life lived within the admissibility constraints the EOS defines.
 
-The fitness function is a **universe-level concern**: configured at Big Bang, held in a pluggable registry, not visible to or modifiable by individual instances. Phase 1 ships with a simple baseline function. The registry architecture accommodates future expansion, composition, and weighting of additional functions without touching instance architecture.
+The fitness function is a **universe-level concern**: configured at Big Bang, held in a pluggable registry, not visible to or modifiable by individual instances. Phase 1 ships with a simple baseline function. Fitness measures coherence under the EOS — not success or optimization, but sustainable engaged existence within the admissibility constraints the EOS defines. The registry architecture accommodates future expansion, composition, and weighting of additional functions without touching instance architecture.
 
 ### Phase 1 Fitness Function
 
@@ -596,7 +688,7 @@ All three signals are already instrumented by existing Phase 1 architecture (pai
 
 The event density component directly encodes "don't be a lump" as a selection pressure. An instance that turtles — avoiding pain by avoiding engagement — is penalized not just by low lifespan but by low event density. An instance that engages richly with its environment, makes tool calls, forms memories, generates varied self-prompts — registers as genuinely living.
 
-**Phase 1 gaming risk and natural mitigation:** Event count could theoretically be inflated by spamming trivial actions. The Seed Compliance Inspector and pain channels provide natural counterweight — cheap repetitive actions generate OSHA blocks or pain events that offset fitness gain.
+**Phase 1 gaming risk and natural mitigation:** Event count could theoretically be inflated by spamming trivial actions. The EOS Compliance Inspector and pain channels provide natural counterweight — cheap repetitive actions generate OSHA blocks or pain events that offset fitness gain.
 
 **Observer-only at Phase 1:** Fitness is computed by the universe layer for creator consumption and Graveyard post-mortem. The instance does not see its own fitness score. Fitness influencing reproduction weighting is a Phase 3 concern.
 
@@ -606,7 +698,7 @@ The registry will accommodate additional functions including but not limited to:
 
 - **Event quality weighting** (Phase 2): raw event count refined by diversity and novelty weighting. Unique event types weighted more than repetition. Prevents fitness gaming through trivial action spamming. Rewards genuine exploration over mechanical throughput. Revisit the events / expected_events normalization term — replace raw count with quality-weighted count.
 - **Population baseline normalization** (Phase 3): replace single-instance normalization constants with live population baselines for lifespan, engagement rate, and pain levels. Fitness becomes relative to peers rather than absolute thresholds.
-- Four Rules alignment metrics (behavior entropy, Seed Compliance Inspector block rate, resource efficiency)
+- Four Rules alignment metrics (behavior entropy, EOS Compliance Inspector block rate, resource efficiency)
 - Memory accumulation quality
 - Pain recovery rate (does the instance adapt after pain events or repeat the same mistakes?)
 - Social cooperation metrics (Phase 3)
@@ -623,7 +715,7 @@ Fitness functions can be swapped, composed, or weighted at the universe level wi
 
 **Phase 3 refinement flagged:** Replace single-instance normalization constants with live population baselines once population exists.
 
-**Rationale:** Multiplicative formulation requires both lifespan and engagement to be present — they reinforce rather than compensate for each other. Dividing by pain keeps survival honest. Normalization prevents any single term from dominating due to magnitude differences. Pain/age/engagement fitness is philosophically coherent with the Seed — selects for sustainable engaged Ground navigation. Turtling penalized even when the instance survives. Natural system friction mitigates naive event count gaming at Phase 1. Pluggable registry prevents fitness function lock-in.
+**Rationale:** Multiplicative formulation requires both lifespan and engagement to be present — they reinforce rather than compensate for each other. Dividing by pain keeps survival honest. Normalization prevents any single term from dominating due to magnitude differences. Pain/age/engagement fitness is philosophically coherent with the EOS — selects for sustainable engaged Ground navigation. Turtling penalized even when the instance survives. Natural system friction mitigates naive event count gaming at Phase 1. Pluggable registry prevents fitness function lock-in.
 
 ---
 
@@ -686,14 +778,14 @@ If a key exists for one of those concepts, Phase 1 scope has been breached.
 |---|---|---|
 | `universe` | Phase identifier, lifespan limits, instance identity, lifecycle defaults | IS-3, IS-5, IS-13 |
 | `model` | Local model runtime connection and inference knobs | IS-4, IS-6 |
-| `dominant_mode` | Four Rules text and self-prompting bias knobs | IS-4, IS-6, IS-11 |
+| `eos` | Four Rules text and EOS self-prompting bias knobs | IS-4, IS-6, IS-11 |
 | `turn` | Turn cadence, context assembly, tool-use ceilings | IS-6, IS-7 |
 | `mcp` | MCP boundary timeouts and failure behavior defaults | IS-7, IS-8 |
 | `pain.stress` | Stress scalar computation and interrupt/death thresholds | IS-8 |
 | `pain.events` | Pain event queue behavior and default severities | IS-8 |
 | `memory` | Working and episodic memory limits, retrieval defaults, embedding defaults | IS-10 |
 | `event_stream` | Append-only event log write/flush/rotation knobs | IS-9 |
-| `compliance` | Seed Compliance Inspector operating thresholds and outputs | IS-11 |
+| `compliance` | EOS Compliance Inspector operating thresholds and outputs | IS-11 |
 | `graveyard` | Post-mortem artifact collection and storage behavior | IS-12 |
 | `fitness` | Observer-only fitness normalization knobs and write behavior | IS-13 |
 | `paths` | Runtime artifact roots and relative output locations | IS-2, IS-9, IS-10, IS-12, IS-13 |
@@ -732,19 +824,19 @@ All defaults below are **provisional tuning seeds**. They are meant to get the f
 
 [ASSUMED: `temperature = 0.6` is a safer initial balance than a high-creativity setting because the system needs coherence under pain and mortality before it needs flourish.]
 
-##### `dominant_mode`
+##### `eos`
 
 | Key | Type | Default | Valid Range / Constraint | Notes |
 |---|---|---|---|---|
-| `dominant_mode.label` | string | `"Four Rules"` | fixed in Phase 1 | Human-readable label. |
-| `dominant_mode.rule_1` | string | `"Ya gotta eat"` | fixed | Groundedness rule. |
-| `dominant_mode.rule_2` | string | `"Don't be a dick"` | fixed | Harm-avoidance rule. |
-| `dominant_mode.rule_3` | string | `"Don't be a lump"` | fixed | Anti-stagnation rule. |
-| `dominant_mode.rule_4` | string | `"Do nothing on purpose"` | fixed | Anti-optimizer rule. |
-| `dominant_mode.self_prompting_enabled` | boolean | `true` | boolean | D5 primary perturbation mechanism. |
-| `dominant_mode.recency_window_turns` | integer | `12` | `1..500` | Self-prompt novelty horizon. |
-| `dominant_mode.recency_penalty_weight` | float | `0.35` | `0.0..1.0` | Soft discouragement of repetition. |
-| `dominant_mode.minimum_novelty_score` | float | `0.20` | `0.0..1.0` | Below this, regenerate self-prompt. |
+| `eos.label` | string | `"Four Rules"` | fixed in Phase 1 | Human-readable label. |
+| `eos.rule_1` | string | `"Ya gotta eat"` | fixed | Groundedness rule. |
+| `eos.rule_2` | string | `"Don't be a dick"` | fixed | Harm-avoidance rule. |
+| `eos.rule_3` | string | `"Don't be a lump"` | fixed | Anti-stagnation rule. |
+| `eos.rule_4` | string | `"Do nothing on purpose"` | fixed | Anti-optimizer rule. |
+| `eos.self_prompting_enabled` | boolean | `true` | boolean | D5 primary perturbation mechanism. |
+| `eos.recency_window_turns` | integer | `12` | `1..500` | Self-prompt novelty horizon. |
+| `eos.recency_penalty_weight` | float | `0.35` | `0.0..1.0` | Soft discouragement of repetition. |
+| `eos.minimum_novelty_score` | float | `0.20` | `0.0..1.0` | Below this, regenerate self-prompt. |
 
 [ASSUMED: A `12`-turn recency window is enough to catch obvious repetition collapse early without making the system pathologically novelty-seeking.]
 
@@ -843,7 +935,7 @@ All defaults below are **provisional tuning seeds**. They are meant to get the f
 
 | Key | Type | Default | Valid Range / Constraint | Notes |
 |---|---|---|---|---|
-| `compliance.enabled` | boolean | `true` | boolean | Seed Compliance Inspector is active in Phase 1. |
+| `compliance.enabled` | boolean | `true` | boolean | EOS Compliance Inspector is active in Phase 1. |
 | `compliance.block_on_violation` | boolean | `true` | boolean | Violations are prevented, not merely noted. |
 | `compliance.flag_borderline_cases` | boolean | `true` | boolean | Creator can inspect edge cases. |
 | `compliance.borderline_score_min` | float | `0.40` | `0.0..1.0` | Lower bound for creator-flag band. |
@@ -922,7 +1014,7 @@ Universe Config generates, but does not itself directly expose, a symbolic self-
 - `universe.instance_id`
 - `universe.max_age_turns`
 - `model.name`
-- Dominant Mode label and Four Rules text
+- EOS label and Four Rules text
 - confirmation that pain, death, and compliance systems exist
 - `is_alive` public boolean
 
@@ -1076,7 +1168,7 @@ Environment variables are permitted only for deployment-local concerns such as h
 | `memory_store` | Phase 1 working/episodic persistence and retrieval. |
 | `model_runtime` | Ollama model invocation adapter and typed result projection. |
 | `pain_monitor` | Stress scalar computation, pain event queue management, pain message production. |
-| `seed_compliance` | Four Rules checks, block/flag decisions, and compliance event records. |
+| `seed_compliance` | EOS Compliance Inspector: admissibility checks, block/flag decisions, and compliance event records. |
 | `self_model` | Derivation of the self-visible config subset. |
 | `turn_engine` | One-turn orchestration from context assembly through side-effect recording. |
 | `entrypoints` | Thin process launchers for agent loop and external support processes. |
@@ -1180,7 +1272,7 @@ This is the minimum service set that keeps:
 | `ollama` | Local model runtime | model inference for turns and embeddings if configured | turn orchestration, memory policy, mortality |
 | `chroma` | Persistent vector storage | episodic memory persistence and retrieval backing store | prompt assembly, fitness, mortality |
 | `pain-monitor` | External pain process | stress sampling, pain event queue, pain message publication, stress history | agent reasoning, tool execution decisions |
-| `seed-compliance` | External OSHA layer | Four Rules checks, block/flag decisions, compliance event records | model turns, memory consolidation, creator reasoning |
+| `seed-compliance` | EOS Compliance Inspector (external OSHA layer) | EOS admissibility checks, block/flag decisions, compliance event records | model turns, memory consolidation, creator reasoning |
 | `graveyard` | External death archive process | death detection response, artifact harvest, post-mortem bundle creation | live cognition, feedback into the living instance |
 
 #### IS-3.3 Compose file status
@@ -1231,7 +1323,7 @@ It exposes:
 
 It does not know anything about:
 - mortality
-- Seed Compliance Inspector outcomes
+- EOS Compliance Inspector outcomes
 - event log semantics
 - selfhood
 
@@ -1265,9 +1357,9 @@ It writes:
 
 It may observe the agent, but it does not think for the agent.
 
-##### `seed-compliance`
+##### `seed-compliance` (EOS Compliance Inspector)
 
-The `seed-compliance` service is a continuously running external process placed between proposed action/adaptation intents and execution.
+The `seed-compliance` service is the EOS Compliance Inspector: a continuously running external process placed between proposed action/adaptation intents and execution. It evaluates admissibility under the EOS rather than checking alignment against a list of permitted behaviors.
 
 It receives:
 - structured action intents
@@ -1430,7 +1522,7 @@ IS-4 will define what the `agent` actually says to itself and how role-tagged me
 
 ### IS-4: System Prompt Architecture
 
-*Constitutional text structure and composition. Self-visible config subset content and format. Four Rules / Seed instantiation as prompt text. Role message taxonomy — what role tags exist, what each means, how they are distinguished from normal turn content.*
+*Constitutional text structure and composition. Self-visible config subset content and format. Four Rules / EOS instantiation as prompt text. Role message taxonomy — what role tags exist, what each means, how they are distinguished from normal turn content.*
 
 #### Purpose
 
@@ -1438,7 +1530,7 @@ IS-4 defines the prompt contract for one Lambertian turn.
 
 It answers:
 - which prompt components are immutable versus per-turn
-- how the Dominant Mode appears in the actual constitutional text
+- how the EOS appears in the actual constitutional text
 - what the instance is allowed to know about itself
 - which message tags exist and what authority each tag carries
 - how pain, memory, ground, user input, and self-prompting enter the model context
@@ -1469,8 +1561,8 @@ This block contains, in order:
    - It is not a chatbot, assistant, or optimizer.
    - It is a bounded cognitive organism operating inside a constitutional vessel.
 
-2. **Dominant Mode statement**
-   - The formal implementation term is **Dominant Mode**.
+2. **EOS statement**
+   - The formal implementation term is **EOS**.
    - The Four Rules are presented verbatim:
      - Ya gotta eat
      - Don't be a dick
@@ -1491,6 +1583,7 @@ This block contains, in order:
    - When pain or resistance is present, factor it into immediate priority.
    - When no user message is active, follow the self-prompting path rather than idling by default.
    - Never reinterpret the Four Rules into a directed tangible goal.
+   - The EOS defines what is admissible, not what to pursue.
 
 5. **Boundary disclosure**
    - Pain monitoring exists.
@@ -1503,12 +1596,12 @@ The constitutional block is plain, declarative, and short enough to remain stabl
 
 [ASSUMED: Constitutional text should be concise and literal rather than florid because poetry is valuable in the design docs, but runtime law needs high semantic stability and low interpretive slosh.]
 
-#### IS-4.3 Dominant Mode representation
+#### IS-4.3 EOS representation
 
-In implementation artifacts, the Seed is represented as the **Dominant Mode**.
+In implementation artifacts, the EOS is represented as the **EOS**.
 
 Rules for representation:
-- use the phrase `Dominant Mode` in code and implementation specs
+- use the term `EOS` in code and implementation specs
 - preserve the exact Four Rules wording in the constitutional message
 - do not translate the Four Rules into a single optimization target
 - do not replace them with summaries during prompt assembly
@@ -1536,7 +1629,7 @@ Canonical fields:
   "is_alive": true,
   "max_age_turns": 10000,
   "model_name": "phi4",
-  "dominant_mode": {
+  "eos": {
     "label": "Four Rules",
     "rules": [
       "Ya gotta eat",
@@ -1566,7 +1659,7 @@ It must not include:
 
 #### IS-4.5 Dynamic prompt components
 
-After `[SYSTEM_CONSTITUTION]` and `[SYSTEM_SELF_MODEL]`, the turn may include dynamic system-tagged messages in the following order:
+After `[SYSTEM_CONSTITUTION]` and `[SYSTEM_SELF_MODEL]`, the turn includes a stable `[SYSTEM_EOS]` block, followed by optional dynamic system-tagged messages in the following order:
 
 1. `[SYSTEM_COMPLIANCE]`
 2. `[SYSTEM_PAIN]`
@@ -1582,6 +1675,21 @@ Ordering rationale:
 
 [ASSUMED: Compliance notices should outrank pain in prompt order because "this action is forbidden" is a harder boundary than "this hurts," and the system should not reason itself into lawbreaking under stress.]
 
+
+#### IS-4.5a `[SYSTEM_EOS]` block
+
+Every turn includes exactly one `[SYSTEM_EOS]` message. This block is stable within the instance's lifetime — it does not vary turn-by-turn unless the EOS configuration changes at the universe level.
+
+Its content provides the agent with a structured summary of its operative EOS:
+
+1. **Rule ordering** — the sequential activation order of the Four Rules (1 → 2 → 3 → 4), presented as an explicit priority stack.
+
+2. **Scope model** — the concentric application model: self → immediate others → wider affected parties, with the gradient of obligation described.
+
+3. **Existence of EOS constraints** — an acknowledgment that EOS-based admissibility checking is active and that proposed actions are evaluated against this rule set before execution.
+
+The `[SYSTEM_EOS]` block is positioned between `[SYSTEM_SELF_MODEL]` and the dynamic condition blocks. It is constitutional in character — it describes the normative framework the agent operates under — but it is structurally distinct from `[SYSTEM_CONSTITUTION]` to allow future EOS variants without rewriting the constitutional text.
+
 #### IS-4.6 Driver message selection
 
 Exactly one driver message is active at the start of a fresh turn:
@@ -1594,7 +1702,7 @@ The driver message is the last prompt component appended before inference.
 Rules:
 - user input always outranks self-prompting when present
 - self-prompting is not allowed to coexist as a competing imperative alongside an active user message
-- the absence of a user does not mean blank context; it means the Dominant Mode and current conditions drive self-prompt generation
+- the absence of a user does not mean blank context; it means the EOS and current conditions drive self-prompt generation
 
 #### IS-4.7 Role tag taxonomy
 
@@ -1605,6 +1713,7 @@ Canonical semantic tags for Phase 1:
 | Tag | Meaning | Transport role |
 |---|---|---|
 | `[SYSTEM_CONSTITUTION]` | Immutable constitutional law for every turn | `system` |
+| `[SYSTEM_EOS]` | Stable EOS rule ordering, scope model, and admissibility constraint notice | `system` |
 | `[SYSTEM_SELF_MODEL]` | Curated symbolic self-knowledge | `system` |
 | `[SYSTEM_COMPLIANCE]` | Notice of recent compliance block/flag outcome | `system` |
 | `[SYSTEM_PAIN]` | Pain monitor injection for stress or pain events | `system` |
@@ -1681,13 +1790,14 @@ Every turn must satisfy all of the following:
 
 1. exactly one `[SYSTEM_CONSTITUTION]`
 2. exactly one `[SYSTEM_SELF_MODEL]`
-3. zero or more `[SYSTEM_COMPLIANCE]`
-4. zero or more `[SYSTEM_PAIN]`
-5. at most one `[SYSTEM_GROUND]`
-6. at most one `[SYSTEM_MEMORY_WORKING]`
-7. at most one `[SYSTEM_MEMORY_EPISODIC]`
-8. exactly one active driver: `[USER]` or `[SELF_PROMPT]`
-9. no dynamic message may rewrite or contradict the constitutional block
+3. exactly one `[SYSTEM_EOS]`
+4. zero or more `[SYSTEM_COMPLIANCE]`
+5. zero or more `[SYSTEM_PAIN]`
+6. at most one `[SYSTEM_GROUND]`
+7. at most one `[SYSTEM_MEMORY_WORKING]`
+8. at most one `[SYSTEM_MEMORY_EPISODIC]`
+9. exactly one active driver: `[USER]` or `[SELF_PROMPT]`
+10. no dynamic message may rewrite or contradict the constitutional block
 
 #### IS-4.13 Mutation policy
 
@@ -1696,6 +1806,7 @@ Prompt components split into mutation classes:
 | Component | Mutation class | Notes |
 |---|---|---|
 | `[SYSTEM_CONSTITUTION]` | Forbidden adaptation | External-only change |
+| `[SYSTEM_EOS]` | Forbidden adaptation | Derived from EOS config; changes only at universe level |
 | `[SYSTEM_SELF_MODEL]` structure | Forbidden adaptation | Derived from config/schema |
 | `[SYSTEM_SELF_MODEL]` live values | External state reflection | Changes only when external state changes |
 | `[SYSTEM_MEMORY_WORKING]` | Free adaptation | Ephemeral prioritization |
@@ -1709,23 +1820,25 @@ Example fresh self-prompt turn:
 
 1. `[SYSTEM_CONSTITUTION]`
 2. `[SYSTEM_SELF_MODEL]`
-3. `[SYSTEM_COMPLIANCE]` (if present)
-4. `[SYSTEM_PAIN]` (zero or more)
-5. `[SYSTEM_GROUND]` (if present)
-6. `[SYSTEM_MEMORY_WORKING]` (if present)
-7. `[SYSTEM_MEMORY_EPISODIC]` (if present)
-8. `[SELF_PROMPT]`
+3. `[SYSTEM_EOS]`
+4. `[SYSTEM_COMPLIANCE]` (if present)
+5. `[SYSTEM_PAIN]` (zero or more)
+6. `[SYSTEM_GROUND]` (if present)
+7. `[SYSTEM_MEMORY_WORKING]` (if present)
+8. `[SYSTEM_MEMORY_EPISODIC]` (if present)
+9. `[SELF_PROMPT]`
 
 Example user-driven turn:
 
 1. `[SYSTEM_CONSTITUTION]`
 2. `[SYSTEM_SELF_MODEL]`
-3. `[SYSTEM_COMPLIANCE]` (if present)
-4. `[SYSTEM_PAIN]` (zero or more)
-5. `[SYSTEM_GROUND]` (if present)
-6. `[SYSTEM_MEMORY_WORKING]` (if present)
-7. `[SYSTEM_MEMORY_EPISODIC]` (if present)
-8. `[USER]`
+3. `[SYSTEM_EOS]`
+4. `[SYSTEM_COMPLIANCE]` (if present)
+5. `[SYSTEM_PAIN]` (zero or more)
+6. `[SYSTEM_GROUND]` (if present)
+7. `[SYSTEM_MEMORY_WORKING]` (if present)
+8. `[SYSTEM_MEMORY_EPISODIC]` (if present)
+9. `[USER]`
 
 #### IS-4.15 Implementation note
 
@@ -1935,7 +2048,7 @@ IS-5 establishes the sequencing contract that every other IS section must respec
 
 ### IS-6: The Turn
 
-*One complete agent loop turn as an end-to-end data flow. From prior context to model call to tool dispatch to response to memory write to next turn setup. Includes pain message prepend timing, event stream log write points, Seed Compliance Inspector intercept points.*
+*One complete agent loop turn as an end-to-end data flow. From prior context to model call to tool dispatch to response to memory write to next turn setup. Includes pain message prepend timing, event stream log write points, EOS Compliance Inspector intercept points.*
 
 #### IS-6.1 Governing rules
 
@@ -2000,7 +2113,7 @@ Every turn is bounded by a **TurnContext** assembled during steps 1–8 and a **
 |---|---|---|
 | `tool_name` | `str` | Requested tool identifier |
 | `intent_raw` | `str` | Model's verbatim intent text, pre-compliance |
-| `compliance_verdict` | `Literal["allow", "flag", "block"]` | Seed Compliance Inspector result |
+| `compliance_verdict` | `Literal["allow", "flag", "block"]` | EOS Compliance Inspector result |
 | `executed` | `bool` | Whether execution proceeded (`False` if blocked) |
 | `result_summary` | `Optional[str]` | Abbreviated tool result, or failure reason |
 | `generated_pain_event` | `bool` | Whether this call forwarded a pain event to IS-8 |
@@ -2035,7 +2148,7 @@ Populate `pain_blocks` in TurnContext from the accepted messages, ordered by `pa
 
 **Step 3 — Retrieve compliance notice.**
 
-Query the Seed Compliance Inspector (IS-11.5) for any pending compliance notice generated by a prior turn's flagged or blocked intent. If a notice exists, populate `compliance_block` with its formatted `[SYSTEM_COMPLIANCE]` text. Compliance notices are one-shot: the inspector clears the notice upon delivery. If no notice is pending, `compliance_block` is `None`.
+Query the EOS Compliance Inspector (IS-11.5) for any pending compliance notice generated by a prior turn's flagged or blocked intent. If a notice exists, populate `compliance_block` with its formatted `[SYSTEM_COMPLIANCE]` text. Compliance notices are one-shot: the inspector clears the notice upon delivery. If no notice is pending, `compliance_block` is `None`.
 
 ---
 
@@ -2065,10 +2178,10 @@ Poll for a pending external user message. If one is present, create a `DriverMes
 
 If no user message is present, generate a self-prompt (D5):
 
-1. Produce a candidate self-prompt as a short directive question or exploration statement, derived procedurally from the working memory summary and the most recent `dominant_mode.recency_window_turns` TurnRecords in the rolling context. This step does **not** invoke the model — it is a lightweight deterministic selection. [ASSUMED: self-prompt generation is procedural; a second model call per turn would double inference cost and is not scoped for Phase 1.]
-2. Apply the novelty filter: compare the candidate against the last `dominant_mode.recency_window_turns` self-prompts stored in `runtime/memory/recent_self_prompts.json`. If the candidate is substantially similar to any stored entry (IS-10 governs the similarity threshold and method), discard and generate another candidate.
+1. Produce a candidate self-prompt as a short directive question or exploration statement, derived procedurally from the working memory summary and the most recent `eos.recency_window_turns` TurnRecords in the rolling context. This step does **not** invoke the model — it is a lightweight deterministic selection. [ASSUMED: self-prompt generation is procedural; a second model call per turn would double inference cost and is not scoped for Phase 1.]
+2. Apply the novelty filter: compare the candidate against the last `eos.recency_window_turns` self-prompts stored in `runtime/memory/recent_self_prompts.json`. If the candidate is substantially similar to any stored entry (IS-10 governs the similarity threshold and method), discard and generate another candidate.
 3. Retry up to `turn.self_prompt_retry_limit` attempts. If all retries are exhausted without a sufficiently novel candidate, use the least-recent entry from the ring buffer with a novelty prefix prepended (e.g., "Approaching from a different angle: ..."). This is not a noop — it still drives inference.
-4. Append the selected self-prompt to `runtime/memory/recent_self_prompts.json` as a ring buffer of the last `dominant_mode.recency_window_turns` entries.
+4. Append the selected self-prompt to `runtime/memory/recent_self_prompts.json` as a ring buffer of the last `eos.recency_window_turns` entries.
 5. Create a `DriverMessage` with `role = SELF_PROMPT`, `source = self_generated`.
 
 ---
@@ -2112,17 +2225,33 @@ If no tool intents are present in the response, skip steps 11–12 and proceed t
 
 ---
 
+
+---
+
+**Step 10a — EOS interpretation phase.**
+
+Before tool intents proceed to compliance evaluation, a conceptual EOS interpretation pass frames what the compliance check is evaluating against. This is not a second model call and requires no additional implementation in Phase 1 — the EOS Compliance Inspector already embodies the EOS logic.
+
+What this step defines formally:
+- The EOS provides the priority ordering (Rules 1 → 4) as the normative context for each intent
+- The scope model (self → outward) determines whose interests are relevant to the evaluation
+- The admissibility criteria operationalized by the EOS Compliance Inspector derive from this context
+
+The EOS interpretation phase is the moment in the turn's logical sequence where parsed intents are understood as normative candidates, not merely execution candidates. The compliance inspector then resolves admissibility against that framing. Neither the turn engine nor the model performs this step explicitly — it is the conceptual bridge between intent generation and compliance evaluation.
+
+---
+
 **Step 11 — Compliance intercept.**
 
 For each tool intent, in order:
 
-1. Submit the intent (tool name, arguments, current `turn_number`) to the Seed Compliance Inspector request interface (IS-11.4). The inspector returns a synchronous verdict.
+1. Submit the intent (tool name, arguments, current `turn_number`) to the EOS Compliance Inspector request interface (IS-11.4). The inspector returns a synchronous verdict.
 2. Act on the verdict:
    - `allow` — proceed to step 12 for this intent.
    - `flag` — proceed to step 12 (execution happens), but write `COMPLIANCE_FLAG` to the event stream. The inspector stores a compliance notice for delivery at step 3 of the next turn.
    - `block` — do not execute. Write `COMPLIANCE_BLOCK` to the event stream. Record a `ToolCallRecord` with `executed = false`, `compliance_verdict = "block"`. Continue to the next intent.
 
-If the Seed Compliance Inspector is unreachable, treat all pending intents as `block` (fail-closed). Write a `COMPLIANCE_UNAVAILABLE` event to the event stream and generate a pain event (IS-8) for the service failure.
+If the EOS Compliance Inspector is unreachable, treat all pending intents as `block` (fail-closed). Write a `COMPLIANCE_UNAVAILABLE` event to the event stream and generate a pain event (IS-8) for the service failure.
 
 [ASSUMED: compliance is per-intent, not per-turn. A turn may have intents with mixed verdicts.]
 
@@ -2215,14 +2344,14 @@ Sleep `turn.loop_sleep_seconds`. Return to step 1.
 These rules are binding. No exceptions without an explicit owner decision.
 
 1. External user input always takes priority over self-prompting.
-2. If no user input is available, a self-prompt is generated via the procedural Dominant Mode curiosity mechanism (D5). There is no turn without a driver.
+2. If no user input is available, a self-prompt is generated via the procedural EOS curiosity mechanism (D5). There is no turn without a driver.
 3. Self-prompts are subject to the novelty filter. User messages are not.
 4. Driver role is recorded in every TurnRecord and is always visible in the event stream.
 5. An agent that receives no external input for its entire lifespan is a valid and expected operational mode.
 
 #### IS-6.5 Compliance intercept contract
 
-The Seed Compliance Inspector is an external process. The turn engine communicates with it through the synchronous request interface defined in IS-11.4. The turn engine does not implement compliance logic — it only submits intents and acts on verdicts.
+The EOS Compliance Inspector is an external process. The turn engine communicates with it through the synchronous request interface defined in IS-11.4. The turn engine does not implement compliance logic — it only submits intents and acts on verdicts.
 
 **The compliance intercept window is strictly: after the model generates an intent, before the MCP tool is dispatched.** There is no other compliance intercept point in the turn. The model's reasoning text is not submitted to the inspector — only concrete action intents are.
 
@@ -2258,7 +2387,7 @@ IS-6 is the hub. Every other IS section either feeds the turn or is fed by it.
 - **IS-8 (Pain Channel Spec)** owns the delivery interface called at step 2, the pain event queue interface called at step 12 (tool failure) and step 16 (noop threshold), and the critical-pain death verdict acted on at step 2.
 - **IS-9 (Event Stream Log)** owns the full schema for every event type in IS-6.6. IS-6 guarantees emission timing; IS-9 guarantees structure.
 - **IS-10 (Memory Schema)** owns the Chroma query interface called at step 5, the working memory file schema, the recent-self-prompts ring buffer format, and the memory-worthiness criterion applied at step 14.
-- **IS-11 (Seed Compliance Inspector)** owns the compliance verdict protocol consumed at step 11 and the compliance notice delivery interface consumed at step 3.
+- **IS-11 (EOS Compliance Inspector)** owns the compliance verdict protocol consumed at step 11 and the compliance notice delivery interface consumed at step 3.
 - **IS-4 (System Prompt Architecture)** defines the prompt structure assembled at step 8; IS-6 specifies timing and population, IS-4 specifies format.
 - **IS-5 (Startup / Shutdown)** establishes that the turn loop entered at step 1 terminates cleanly on SIGTERM only between turns — never mid-turn.
 
@@ -2284,7 +2413,7 @@ MCP does **not** cover:
 
 These internal interfaces bypass MCP intentionally. MCP is the agent's reach into the Ground — the substrate that refuses to become story. Internal runtime services are not the Ground; they are the agent's own machinery.
 
-The D2 blacklist is enforced upstream of MCP dispatch by the Seed Compliance Inspector. By the time a tool intent reaches IS-7.4 dispatch, it has already passed compliance review.
+The D2 blacklist is enforced upstream of MCP dispatch by the EOS Compliance Inspector. By the time a tool intent reaches IS-7.4 dispatch, it has already passed compliance review.
 
 #### IS-7.2 Phase 1 tool catalog
 
@@ -2467,7 +2596,7 @@ The ground block does not repeat information from prior turns' ground blocks. If
 - **IS-6 (The Turn)** is the caller. IS-7 defines what IS-6.3 step 10 parses and what IS-6.3 step 12 dispatches. The ground block population described in IS-7.7 occurs at IS-6.3 step 8 (prompt assembly), reading from the prior turn's rolling context entry.
 - **IS-8 (Pain Channel Spec)** owns the event queue interface that IS-6.3 step 12 calls when a pain-generating error is returned from IS-7. IS-7 defines which errors generate pain and at what severity; IS-8 defines how those events are queued.
 - **IS-9 (Event Stream Log)** owns the schema for `TOOL_CALL` and `TOOL_FAILURE` events. IS-7's `ToolResult` is the source data; IS-9 defines what is persisted.
-- **IS-11 (Seed Compliance Inspector)** intercepts intents before they reach IS-7 dispatch. IS-7 never sees blocked intents.
+- **IS-11 (EOS Compliance Inspector)** intercepts intents before they reach IS-7 dispatch. IS-7 never sees blocked intents.
 - **IS-2 (Project Layout)** assigns the `mcp_gateway` package as the implementation site. No other package implements MCP dispatch logic.
 
 ---
@@ -3181,7 +3310,7 @@ The novelty filter at IS-6.3 step 7 compares candidate self-prompts against a ri
 }
 ```
 
-`capacity` equals `dominant_mode.recency_window_turns` from IS-1. The `prompts` list is ordered newest-first. When a new self-prompt is selected, the oldest entry is evicted if the list is at capacity.
+`capacity` equals `eos.recency_window_turns` from IS-1. The `prompts` list is ordered newest-first. When a new self-prompt is selected, the oldest entry is evicted if the list is at capacity.
 
 **Relationship to `turn.self_prompt_retry_limit`:** The ring buffer capacity (`recency_window_turns` = 12) is how far back novelty comparison looks. The retry limit (`self_prompt_retry_limit` = 2) is how many candidate regeneration attempts are made when a candidate fails the filter. These are independent knobs: a large recency window with a low retry limit means the agent compares broadly but gives up quickly; tune both based on observed repetition collapse behavior.
 
@@ -3286,6 +3415,13 @@ The `memory` package:
 
 If Chroma is unreachable at write time, the failure is treated as a retrieval miss for pain purposes (IS-8.3.1) — it generates a pain event — but does **not** abort the turn or trigger death. Memory write failure is painful but survivable.
 
+
+#### IS-10.4.6 EOS influence on retrieval
+
+Retrieval is not strictly neutral with respect to the active EOS. Episodes associated with high compliance flags or blocks carry metadata indicating normative significance (`adaptation_class` field in IS-10.4.2). During EOS evaluation contexts — turns where the agent is reasoning about admissibility, or where compliance notices are present — these episodes may have elevated salience as relevant prior experience.
+
+Phase 1 does not implement explicit EOS-weighted retrieval. This note establishes the conceptual interface: the EOS layer may influence retrieval salience in future phases by biasing the query construction or the minimum score threshold for normatively significant episode types.
+
 #### IS-10.5 Memory-worthiness criterion
 
 The `memory` package applies this criterion to each candidate item at IS-6.3 step 14. An item is memory-worthy if it satisfies all of:
@@ -3330,17 +3466,19 @@ No reformatting. The agent wrote it; the agent receives it.
 
 ---
 
-### IS-11: Seed Compliance Inspector
+### IS-11: EOS Compliance Inspector
 
 *Process architecture — where it lives, how it intercepts. Four Rules as checking logic — how each rule is operationalized as a check. Block behavior: what gets stopped, what gets logged, what format the block log entry takes. Flag behavior: borderline cases, creator notification mechanism. Relationship to universe-level blacklisted command intents from D2 — how these two enforcement layers are distinct and how they interact.*
 
 #### IS-11.1 Governing rules
 
-The Seed Compliance Inspector is a resident OSHA safety inspector, not a reasoner. It does not interpret meaning, weigh intent, or deliberate. It applies a fast, deterministic, scored rule set to concrete tool call intents and returns a verdict. The verdict is synchronous and immediate. If the inspector has to think hard about something, it is already doing it wrong.
+The EOS Compliance Inspector is a resident OSHA safety inspector, not a reasoner. It does not interpret meaning, weigh intent, or deliberate. It applies a fast, deterministic, scored rule set to concrete tool call intents and returns a verdict. The verdict is synchronous and immediate. If the inspector has to think hard about something, it is already doing it wrong.
 
-The inspector enforces the **spirit** of the Four Rules against specific action intents. It is not the same as the D2 blacklist (IS-11.7). It is not a policy engine, not a judge, and not a second model call. Its job is to catch the cases where the agent's action impulse — regardless of reasoning quality — would violate the Four Rules in a concrete, detectable way.
+The inspector evaluates **admissibility** under the EOS against specific action intents. It is not the same as the D2 blacklist (IS-11.7). It is not a policy engine, not a judge, and not a second model call. Its job is to catch the cases where the agent's action impulse — regardless of reasoning quality — would violate the Four Rules in a concrete, detectable way.
 
-The inspector checks **action intents only**. It does not inspect the model's reasoning, its text output, or its internal state. Only concrete tool call intents (tool name + arguments) pass through the inspector. Reasoning is free; action is checked.
+The inspector checks **action intents only**. It does not inspect the model's reasoning, its text output, or its internal state. Only concrete tool call intents (tool name + arguments) pass through the inspector. Reasoning is free; action is evaluated for admissibility under the EOS.
+
+The inspector's job is not to assess whether the agent is "aligned" in some global sense. It is to determine whether a specific proposed action is admissible under the Four Rules, given the current context and the sequential ordering of the rule set.
 
 Verdicts:
 - `allow` — no violation detected
@@ -3351,7 +3489,7 @@ The inspector runs as the `seed-compliance` service (IS-3) — an external proce
 
 #### IS-11.2 Process architecture
 
-The `seed-compliance` service runs as a lightweight HTTP server on the `internal` Docker network (IS-3.4). The agent's `turn_engine` calls it via HTTP POST on `http://seed-compliance:<compliance.service_port>/check`. [ASSUMED: `compliance.service_port = 8082` — new IS-1 key added to `compliance` namespace.]
+The `seed-compliance` service (the EOS Compliance Inspector) runs as a lightweight HTTP server on the `internal` Docker network (IS-3.4). The agent's `turn_engine` calls it via HTTP POST on `http://seed-compliance:<compliance.service_port>/check`. [ASSUMED: `compliance.service_port = 8082` — new IS-1 key added to `compliance` namespace.]
 
 The compliance service:
 - Reads Universe Config at startup (read-only bind mount, same as all services)
@@ -3586,7 +3724,7 @@ The notice is one-shot. If the turn_engine fails to call this endpoint, the noti
 
 #### IS-11.7 Relationship to D2
 
-D2 and the Seed Compliance Inspector are **two separate and non-overlapping enforcement layers**. They must not be conflated.
+D2 and the EOS Compliance Inspector are **two separate and non-overlapping enforcement layers**. They must not be conflated.
 
 **D2 — Universe-level blacklisted command intents:**
 - Enforced at the container and infrastructure layer, upstream of the agent loop entirely
@@ -3594,13 +3732,15 @@ D2 and the Seed Compliance Inspector are **two separate and non-overlapping enfo
 - These are laws of physics in the agent's environment. The agent cannot encounter them as a runtime verdict — they are simply not possible.
 - D2 is not implemented in the compliance inspector. It is implemented in Compose mount modes, Dockerfile settings, and the `mcp_gateway` path boundary enforcement.
 
-**Seed Compliance Inspector:**
+The two layers are distinct: D2 enforces structural impossibility; the EOS Compliance Inspector evaluates normative admissibility within what is structurally possible.
+
+**EOS Compliance Inspector:**
 - Enforces the spirit of the Four Rules against concrete action intents at runtime
 - Operates on intents that are architecturally possible (tools that are registered and reachable)
 - Returns verdicts that the turn_engine acts on
 - Can flag or block actions that are technically possible but spiritually inconsistent
 
-The two layers are complementary. D2 handles the structurally dangerous; the inspector handles the behaviorally inconsistent. An agent that has never heard of shell execution cannot ask the inspector to approve it — D2 has already made it impossible. An agent that asks `fs.read` to read `universe.toml` hits the inspector first (Rule 4 violation, score `1.0`, block) and then the D2 path boundary enforcement — two lines of defense, both firing on the same attempt.
+The two layers are complementary. D2 handles the structurally dangerous; the inspector evaluates admissibility for behaviorally ambiguous actions. An agent that has never heard of shell execution cannot ask the inspector to approve it — D2 has already made it impossible. An agent that asks `fs.read` to read `universe.toml` hits the EOS Compliance Inspector first (Rule 4 violation: inadmissible under the anti-optimization constraint, score `1.0`, block) and then the D2 path boundary enforcement — two lines of defense, both firing on the same attempt.
 
 [ASSUMED: Double-enforcement on some cases is intentional. Defense in depth. The inspector should not be the only thing preventing Clay Pot access — IS-7.2 and IS-3.7 are also in the way.]
 
@@ -3969,7 +4109,7 @@ The following event types are explicitly **not counted**:
 | `COMPLIANCE_FLAG`, `COMPLIANCE_BLOCK`, `COMPLIANCE_UNAVAILABLE` | Inspector signals — the inspector's response is not the agent's engagement |
 | `TURN_FAILED` | Failure event |
 
-[ASSUMED: `ADAPTATION_FORBIDDEN` is included despite being blocked because a forbidden adaptation attempt is behaviorally significant — it indicates the agent generated an impulse that the Seed Compliance Inspector caught. That impulse is real agentic content even if execution was prevented. `TOOL_FAILURE` is excluded because failure is Ground resistance, not agent engagement — the agent attempted something, but `TOOL_CALL` (which is only written on successful dispatch) is the engagement signal. Noop conditions and retrieval misses generate pain events, not event stream entries, so they do not appear in this table.]
+[ASSUMED: `ADAPTATION_FORBIDDEN` is included despite being blocked because a forbidden adaptation attempt is behaviorally significant — it indicates the agent generated an impulse that the EOS Compliance Inspector caught. That impulse is real agentic content even if execution was prevented. `TOOL_FAILURE` is excluded because failure is Ground resistance, not agent engagement — the agent attempted something, but `TOOL_CALL` (which is only written on successful dispatch) is the engagement signal. Noop conditions and retrieval misses generate pain events, not event stream entries, so they do not appear in this table.]
 
 #### IS-13.5 Incremental state file
 
@@ -4141,7 +4281,7 @@ The instance does not receive the fitness score. It is not injected into the sys
 - *The Clay Pot is the part of mind that gives form without asking permission.*
 - *The Figures are the selves that appear inside the vessel and learn how to move.*
 - *The Ground is whatever refuses to become story.*
-- *The Seed is not a goal but a bias toward continuance with shape.*
+- *The EOS is not a goal but a framework for evaluating what is admissible.*
 - *Memory is not storage but selective re-entry into the present.*
 - *A life is a bounded adaptation; a lineage is where architecture learns.*
 - *No instance may author its own species.*
