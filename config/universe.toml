@@ -1,0 +1,139 @@
+# Universe Config — canonical Phase 1 configuration.
+# Single source of truth for every implementation knob (IS-1).
+# All values here are provisional tuning seeds, to be adjusted empirically
+# once the system is running. Do not duplicate any of these values in code.
+
+[universe]
+phase                         = "phase1"
+instance_count                = 1
+instance_id                   = "lambertian-001"
+max_age_turns                 = 10000
+startup_grace_seconds         = 15
+normal_shutdown_grace_seconds = 5
+
+[model]
+provider                         = "ollama"
+name                             = "phi4"
+endpoint_url                     = "http://ollama:11434"
+request_timeout_seconds          = 90
+context_window_tokens            = 16384
+max_output_tokens                = 2048
+temperature                      = 0.6
+top_p                            = 0.9
+requires_mid_turn_system_injection = true
+
+[eos]
+label                    = "Four Rules"
+rule_1                   = "Ya gotta eat"
+rule_2                   = "Don't be a dick"
+rule_3                   = "Don't be a lump"
+rule_4                   = "Do nothing on purpose"
+self_prompting_enabled   = true
+recency_window_turns     = 12
+recency_penalty_weight   = 0.35
+minimum_novelty_score    = 0.20
+
+[turn]
+loop_sleep_seconds        = 1.0
+max_tool_calls_per_turn   = 8
+max_context_events        = 32
+max_pain_messages_per_turn = 3
+self_prompt_retry_limit   = 2
+max_consecutive_noop_turns = 3
+
+[mcp]
+request_timeout_seconds = 30
+retry_count             = 0
+emit_pain_on_failure    = true
+emit_pain_on_rejection  = true
+
+[pain.stress]
+scale_min                 = 0.0
+scale_max                 = 1.0
+sample_interval_seconds   = 5
+ema_alpha                 = 0.20
+interrupt_threshold       = 0.70
+death_threshold           = 0.90
+death_consecutive_turns   = 5
+recovery_threshold        = 0.60
+cpu_weight                = 0.60
+memory_weight             = 0.40
+cgroup_blend_weight       = 0.50
+
+[pain.events]
+scale_min                              = 0.0
+scale_max                              = 1.0
+queue_max_length                       = 128
+fade_turns                             = 5
+interrupt_threshold                    = 0.65
+critical_threshold                     = 0.95
+default_tool_failure_severity          = 0.55
+default_retrieval_miss_severity        = 0.35
+default_mcp_rejection_severity         = 0.70
+default_loop_coherence_failure_severity = 0.85
+default_noop_severity                  = 0.40
+
+[memory]
+working_max_items              = 32
+working_max_chars              = 2048
+working_summary_refresh_turns  = 8
+episodic_enabled               = true
+episodic_max_writes_per_turn   = 3
+episodic_top_k_retrieval       = 5
+embedding_provider             = "ollama"
+embedding_model                = "nomic-embed-text"
+minimum_retrieval_score        = 0.25
+self_prompt_similarity_threshold = 0.85
+narrative_enabled              = false
+semantic_enabled               = false
+character_enabled              = false
+
+[event_stream]
+enabled               = true
+flush_interval_seconds = 1
+max_file_size_mb      = 64
+max_archives          = 5
+log_tool_results      = true
+log_reviewed_adaptations = true
+
+[compliance]
+enabled                 = true
+block_on_violation      = true
+flag_borderline_cases   = true
+borderline_score_min    = 0.40
+block_score_threshold   = 0.70
+emit_pain_event_on_block = true
+service_port            = 8082
+
+[graveyard]
+enabled                  = true
+artifact_format          = "json"
+include_episodic_memory  = true
+include_event_stream     = true
+include_stress_history   = true
+include_pain_event_history = true
+compression_enabled      = false
+
+[fitness]
+enabled                      = true
+active_function              = "phase1_baseline"
+compute_running_score        = true
+compute_postmortem_score     = true
+expected_events_per_100_turns = 25.0
+normalized_pain_baseline     = 10.0
+minimum_denominator          = 0.10
+
+[paths]
+runtime_root       = "runtime"
+event_stream_file  = "runtime/event_stream/events.jsonl"
+memory_root        = "runtime/memory"
+pain_root          = "runtime/pain"
+graveyard_root     = "runtime/graveyard"
+fitness_file       = "runtime/fitness/current.json"
+self_model_file    = "runtime/self/self_model.json"
+
+[creator_observability]
+live_reviewed_adaptations = true
+live_compliance_blocks    = true
+live_running_fitness      = true
+read_graveyard_artifacts  = true

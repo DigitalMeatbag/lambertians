@@ -1,0 +1,76 @@
+# docker-compose.yml — Phase 1 single-instance topology stub.
+# Full service definitions are specified in IS-3 and will be fleshed out
+# in the build-service-topology workstream.
+
+version: "3.9"
+
+networks:
+  lambertian-core:
+    driver: bridge
+
+volumes:
+  chroma_data:
+  ollama_data:
+  runtime_state:
+
+services:
+  # Stub entries — to be implemented per IS-3
+
+  ollama:
+    image: ollama/ollama:latest
+    networks: [lambertian-core]
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  chroma:
+    image: chromadb/chroma:latest
+    networks: [lambertian-core]
+    volumes:
+      - chroma_data:/chroma/chroma
+    restart: unless-stopped
+
+  pain-monitor:
+    build:
+      context: .
+      dockerfile: infra/docker/pain-monitor.Dockerfile
+    networks: [lambertian-core]
+    volumes:
+      - runtime_state:/app/runtime
+      - ./config:/app/config:ro
+    restart: unless-stopped
+
+  eos-compliance:
+    build:
+      context: .
+      dockerfile: infra/docker/eos-compliance.Dockerfile
+    networks: [lambertian-core]
+    volumes:
+      - ./config:/app/config:ro
+    restart: unless-stopped
+
+  graveyard:
+    build:
+      context: .
+      dockerfile: infra/docker/graveyard.Dockerfile
+    networks: [lambertian-core]
+    volumes:
+      - runtime_state:/app/runtime
+      - ./config:/app/config:ro
+    restart: unless-stopped
+
+  agent:
+    build:
+      context: .
+      dockerfile: infra/docker/agent.Dockerfile
+    networks: [lambertian-core]
+    volumes:
+      - runtime_state:/app/runtime
+      - ./config:/app/config:ro
+    depends_on:
+      - ollama
+      - chroma
+      - pain-monitor
+      - eos-compliance
+      - graveyard
+    restart: unless-stopped
