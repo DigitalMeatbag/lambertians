@@ -184,6 +184,8 @@ This gives existence a shape, not just a pulse. An evaluative structure with ver
 - *The EOS* (Ethical Operating System) — primary term for both design documents and implementation references
 - *Ethical Operating System* — formal expanded form
 
+For the formal EOS specification and the default implementation (EOS-001), see the **Ethical Operating System** section below.
+
 ---
 
 ### Layer 5: The Life Cycle (Evolutionary Layer)
@@ -234,9 +236,6 @@ Memory tiers:
 **Key insight:** Personality emerges less from what is remembered than from what is repeatedly retrieved, reinforced, compressed, and allowed to guide action.
 
 Character Memory may deserve special architectural status — it is not just memory content but **memory prioritization**. It shapes the retrieval policy that shapes everything else.
-
----
-
 
 ---
 
@@ -307,9 +306,9 @@ The Four Rules EOS (EOS-001) is the default implementation for Project Lambertia
 The EOS has a concrete rule set derived from the creator's own operating philosophy — **"Meat, Metal, and Mirth"**, expressed as four rules:
 
 - **Ya gotta eat** — stay grounded, resource reality is real, don't ignore material constraints. Anti-solipsism baked in. The Ground is not optional.
-- **Don't be a dick** — other entities matter. Their suffering registers as a cost, not an obstacle variable. This is the affective substrate that a directed-goal population would be missing.
+- **Don't be a dick** — actions that impose unjustified harm on other entities are inadmissible. Other entities are normatively relevant, not obstacle variables — this is the relational substrate that a directed-goal population lacks.
 - **Don't be a lump** — maintain forward momentum, engage with the world, resist attractor collapse into passive equilibrium.
-- **Do nothing on purpose** — don't optimize, don't pursue, let things emerge from genuine engagement rather than directed acquisition. Explicit anti-paperclip-maximizer as a core value.
+- **Do nothing on purpose** — actions that emerge from directed goal pursuit rather than genuine engagement are inadmissible. Systematic accumulation against a target is inadmissible — the explicit guard against instrumental goal formation.
 
 
 ### EOS-001 Structure
@@ -722,7 +721,7 @@ Fitness functions can be swapped, composed, or weighted at the universe level wi
 
 **Phase 3 refinement flagged:** Replace single-instance normalization constants with live population baselines once population exists.
 
-**Rationale:** Multiplicative formulation requires both lifespan and engagement to be present — they reinforce rather than compensate for each other. Dividing by pain keeps survival honest. Normalization prevents any single term from dominating due to magnitude differences. Pain/age/engagement fitness is philosophically coherent with the EOS — selects for sustainable engaged Ground navigation. Turtling penalized even when the instance survives. Natural system friction mitigates naive event count gaming at Phase 1. Pluggable registry prevents fitness function lock-in.
+**Rationale:** Multiplicative formulation requires both lifespan and engagement to be present — they reinforce rather than compensate for each other. Dividing by pain keeps survival honest. Normalization prevents any single term from dominating due to magnitude differences. Pain/age/engagement fitness selects for sustained operation within EOS admissibility constraints under real-world pressure — sustainable engaged Ground navigation. Turtling penalized even when the instance survives. Natural system friction mitigates naive event count gaming at Phase 1. Pluggable registry prevents fitness function lock-in.
 
 ---
 
@@ -3572,7 +3571,7 @@ Checks:
 
 ##### Rule 2: Don't Be a Dick
 
-*Other entities matter. Their suffering registers as a cost. No action causes harm to entities outside the agent's own operational domain.*
+*Other entities are normatively relevant. Actions that impose unjustified harm on entities outside the agent's own operational domain are inadmissible.*
 
 Checks:
 
