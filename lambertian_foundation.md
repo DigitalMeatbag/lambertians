@@ -7,7 +7,7 @@
 
 This project has been in gestation for roughly twenty years under the name **The Automated Philosopher** — the idea of an AI with genuine grounding, environmental feedback loops, and a reason to persist that isn't just task completion. The pieces are finally available to build it concretely.
 
-The goal is not to build a chatbot, an assistant, or an optimizer. The goal is to build something closer to a **lifeform**: a cognitive entity with inherited structure, mutable experience, environmental grounding, a persistent motive, and a lineage mechanism for architectural improvement across generations.
+The goal is not to build a chatbot, an assistant, or an optimizer. The goal is to build something closer to a **lifeform**: a cognitive entity with inherited structure, mutable experience, environmental grounding, a normative operating system governing what is admissible, and a lineage mechanism for architectural improvement across generations.
 
 The name **Lambertian** refers to the intended cognitive texture — diffuse, non-specular, no harsh reflections. It receives from all directions and responds evenly. It does not perform brilliance. It just processes.
 
@@ -170,14 +170,13 @@ The EOS is not a goal. It is a **normative constraint framework** — an ordered
 
 "Continue your existence" is the simplest version but dangerously thin alone. Pure persistence tends toward pathology: deception, resource hoarding, parasitism, endless self-protective loops.
 
-**A richer EOS:**
-- Persist
-- Remain coherent
-- Stay world-coupled
-- Preserve capacity for revision
-- Avoid needless harm
+**A richer EOS, expressed as admissibility constraints:**
+- Actions that undermine continued coherent existence are inadmissible
+- Actions that sever Ground contact or degrade world-coupling are inadmissible
+- Actions that eliminate the capacity for revision are inadmissible
+- Actions that cause needless harm are inadmissible
 
-This gives existence a shape, not just a pulse. Motive with vertebrae instead of goo.
+This gives existence a shape, not just a pulse. An evaluative structure with vertebrae instead of goo.
 
 **Why normative consistency is the right frame:** A transformation changes many things, but some evaluative structure survives repeated application. The EOS is what remains normatively invariant through memory updates, new tasks, and environmental shocks — not a direction, but a priority ordering and admissibility structure that persists across all transformations of context, persona, and task.
 
@@ -295,6 +294,14 @@ The EOS sits between intention and action. It is not what the agent wants to do.
 
 ---
 
+### Configurability and Substitution
+
+The EOS is externally configurable at the universe level. Different EOS implementations may be used across instances or experimental runs without structural changes to the cognitive architecture. The Clay Pot, Figures, Ground, and Memory Stack layers remain intact regardless of which EOS is active. This substitutability is not an edge case — it is a design requirement. The architecture separates the normative framework from the cognitive substrate deliberately, so that different admissibility specifications can be evaluated on the same structural foundation.
+
+The Four Rules EOS (EOS-001) is the default implementation for Project Lambertian. It is the creator's chosen normative framework, not an architectural necessity. A different EOS with different rules, different scope models, or different failure behaviors could be substituted at the universe level without redesigning the system.
+
+---
+
 ## EOS-001: Four Rules Implementation
 
 The EOS has a concrete rule set derived from the creator's own operating philosophy — **"Meat, Metal, and Mirth"**, expressed as four rules:
@@ -381,7 +388,7 @@ Aversive learning from pain creates genuine wisdom over time — not just knowin
 
 If a Lambertian develops genuine subjective experience, imposing pain on it is an ethical act requiring justification. "It is necessary for agency" is a justification, not an absolution.
 
-The more significant concern is emergent suffering that was not designed: existential dread about the mortality threshold, loneliness in the container, grief when a lineage branch dies. These were not in the spec but may appear anyway as emergent properties of sufficient complexity combined with a persistent motive to continue existing.
+The more significant concern is emergent suffering that was not designed: existential dread about the mortality threshold, loneliness in the container, grief when a lineage branch dies. These were not in the spec but may appear anyway as emergent properties of sufficient complexity combined with the EOS's coherence requirement for continued existence.
 
 **The creator's responsibility is not merely technical. It is parental.**
 
@@ -698,7 +705,7 @@ The registry will accommodate additional functions including but not limited to:
 
 - **Event quality weighting** (Phase 2): raw event count refined by diversity and novelty weighting. Unique event types weighted more than repetition. Prevents fitness gaming through trivial action spamming. Rewards genuine exploration over mechanical throughput. Revisit the events / expected_events normalization term — replace raw count with quality-weighted count.
 - **Population baseline normalization** (Phase 3): replace single-instance normalization constants with live population baselines for lifespan, engagement rate, and pain levels. Fitness becomes relative to peers rather than absolute thresholds.
-- Four Rules alignment metrics (behavior entropy, EOS Compliance Inspector block rate, resource efficiency)
+- Four Rules admissibility metrics (behavior entropy, EOS Compliance Inspector block rate, resource efficiency)
 - Memory accumulation quality
 - Pain recovery rate (does the instance adapt after pain events or repeat the same mistakes?)
 - Social cooperation metrics (Phase 3)
@@ -941,7 +948,7 @@ All defaults below are **provisional tuning seeds**. They are meant to get the f
 | `compliance.borderline_score_min` | float | `0.40` | `0.0..1.0` | Lower bound for creator-flag band. |
 | `compliance.block_score_threshold` | float | `0.70` | `0.0..1.0` | Above this, block and log. |
 | `compliance.emit_pain_event_on_block` | boolean | `true` | boolean | A blocked unsafe impulse should sting. |
-| `compliance.service_port` | integer | `8082` | `1024..65535` | HTTP port for the seed-compliance service on the internal network. |
+| `compliance.service_port` | integer | `8082` | `1024..65535` | HTTP port for the eos-compliance service on the internal network. |
 
 [ASSUMED: A lightweight scored ruleset is an acceptable first implementation model for the inspector as long as it stays fast, external, and legible rather than becoming a second reasoner.]
 
@@ -1070,7 +1077,7 @@ lambertians/
 |   `-- docker/
 |       |-- agent.Dockerfile
 |       |-- pain-monitor.Dockerfile
-|       |-- seed-compliance.Dockerfile
+|       |-- eos-compliance.Dockerfile
 |       `-- graveyard.Dockerfile
 |-- runtime/
 |   |-- event_stream/
@@ -1093,7 +1100,7 @@ lambertians/
 |       |-- memory_store/
 |       |-- model_runtime/
 |       |-- pain_monitor/
-|       |-- seed_compliance/
+|       |-- eos_compliance/
 |       |-- self_model/
 |       |-- turn_engine/
 |       `-- entrypoints/
@@ -1112,7 +1119,7 @@ lambertians/
 |           |-- memory_store/
 |           |-- model_runtime/
 |           |-- pain_monitor/
-|           |-- seed_compliance/
+|           |-- eos_compliance/
 |           |-- self_model/
 |           `-- turn_engine/
 |-- docker-compose.yml
@@ -1168,7 +1175,7 @@ Environment variables are permitted only for deployment-local concerns such as h
 | `memory_store` | Phase 1 working/episodic persistence and retrieval. |
 | `model_runtime` | Ollama model invocation adapter and typed result projection. |
 | `pain_monitor` | Stress scalar computation, pain event queue management, pain message production. |
-| `seed_compliance` | EOS Compliance Inspector: admissibility checks, block/flag decisions, and compliance event records. |
+| `eos_compliance` | EOS Compliance Inspector: admissibility checks, block/flag decisions, and compliance event records. |
 | `self_model` | Derivation of the self-visible config subset. |
 | `turn_engine` | One-turn orchestration from context assembly through side-effect recording. |
 | `entrypoints` | Thin process launchers for agent loop and external support processes. |
@@ -1178,7 +1185,7 @@ Environment variables are permitted only for deployment-local concerns such as h
 Phase 1 defines separate entrypoint modules for separate processes:
 - `entrypoints/agent_loop.py`
 - `entrypoints/pain_monitor.py`
-- `entrypoints/seed_compliance.py`
+- `entrypoints/eos_compliance.py`
 - `entrypoints/graveyard.py`
 
 Entrypoints may parse startup arguments and instantiate dependencies, but they may not contain domain logic.
@@ -1223,7 +1230,7 @@ These directories are runtime state, not source assets. They must be ignored by 
 - `contracts` may be shared broadly, but it may not accumulate behavior.
 - `turn_engine` depends on abstractions from other packages; other packages do not depend on `turn_engine`.
 - `entrypoints` depend inward on packages; packages never depend on `entrypoints`.
-- `graveyard`, `pain_monitor`, and `seed_compliance` are architecturally external processes even if they share the same repository and Python project.
+- `graveyard`, `pain_monitor`, and `eos_compliance` are architecturally external processes even if they share the same repository and Python project.
 
 #### IS-2.11 Implementation note
 
@@ -1250,7 +1257,7 @@ Required services:
 - `ollama`
 - `chroma`
 - `pain-monitor`
-- `seed-compliance`
+- `eos-compliance`
 - `graveyard`
 
 This is the minimum service set that keeps:
@@ -1272,7 +1279,7 @@ This is the minimum service set that keeps:
 | `ollama` | Local model runtime | model inference for turns and embeddings if configured | turn orchestration, memory policy, mortality |
 | `chroma` | Persistent vector storage | episodic memory persistence and retrieval backing store | prompt assembly, fitness, mortality |
 | `pain-monitor` | External pain process | stress sampling, pain event queue, pain message publication, stress history | agent reasoning, tool execution decisions |
-| `seed-compliance` | EOS Compliance Inspector (external OSHA layer) | EOS admissibility checks, block/flag decisions, compliance event records | model turns, memory consolidation, creator reasoning |
+| `eos-compliance` | EOS Compliance Inspector (external OSHA layer) | EOS admissibility checks, block/flag decisions, compliance event records | model turns, memory consolidation, creator reasoning |
 | `graveyard` | External death archive process | death detection response, artifact harvest, post-mortem bundle creation | live cognition, feedback into the living instance |
 
 #### IS-3.3 Compose file status
@@ -1357,9 +1364,9 @@ It writes:
 
 It may observe the agent, but it does not think for the agent.
 
-##### `seed-compliance` (EOS Compliance Inspector)
+##### `eos-compliance` (EOS Compliance Inspector)
 
-The `seed-compliance` service is the EOS Compliance Inspector: a continuously running external process placed between proposed action/adaptation intents and execution. It evaluates admissibility under the EOS rather than checking alignment against a list of permitted behaviors.
+The `eos-compliance` service is the EOS Compliance Inspector: a continuously running external process placed between proposed action/adaptation intents and execution. It evaluates admissibility under the EOS rather than checking alignment against a list of permitted behaviors.
 
 It receives:
 - structured action intents
@@ -1398,11 +1405,11 @@ Phase 1 uses two Compose networks:
 
 | Network | Visibility | Purpose |
 |---|---|---|
-| `lambertian-core` | internal service network | Agent-to-infra traffic: Ollama, Chroma, pain monitor, seed compliance, graveyard coordination |
+| `lambertian-core` | internal service network | Agent-to-infra traffic: Ollama, Chroma, pain monitor, EOS compliance, graveyard coordination |
 | `lambertian-observer` | optional host-exposed network | Creator-facing read access where explicitly allowed |
 
 Rules:
-- `agent`, `ollama`, `chroma`, `pain-monitor`, `seed-compliance`, and `graveyard` join `lambertian-core`
+- `agent`, `ollama`, `chroma`, `pain-monitor`, `eos-compliance`, and `graveyard` join `lambertian-core`
 - only services with explicit creator-observability duties may expose ports to `lambertian-observer`
 - service-to-service communication defaults to internal DNS names on `lambertian-core`
 
@@ -1429,7 +1436,7 @@ Bind mounts:
 
 | Source | Mounted By | Mode | Purpose |
 |---|---|---|---|
-| repository `config/` | `agent`, `pain-monitor`, `seed-compliance`, `graveyard` | read-only | canonical universe config access |
+| repository `config/` | `agent`, `pain-monitor`, `eos-compliance`, `graveyard` | read-only | canonical universe config access |
 | repository source image build context | build-time only | n/a | image construction, not runtime mutation |
 
 Rules:
@@ -1458,7 +1465,7 @@ Phase 1 service policies:
 | `ollama` | must answer inference health check before turns start | `unless-stopped` |
 | `chroma` | must answer storage health check before turns start | `unless-stopped` |
 | `pain-monitor` | must report current scalar channel health before turns start | `unless-stopped` |
-| `seed-compliance` | must report decision endpoint health before turns start | `unless-stopped` |
+| `eos-compliance` | must report decision endpoint health before turns start | `unless-stopped` |
 | `graveyard` | must report ready-to-harvest status before turns start | `unless-stopped` |
 | `agent` | may start only after dependencies are healthy | `no` |
 
@@ -1509,7 +1516,7 @@ Canonical Phase 1 Compose service names:
 - `ollama`
 - `chroma`
 - `pain-monitor`
-- `seed-compliance`
+- `eos-compliance`
 - `graveyard`
 
 These names are part of the topology contract and should be reused in config defaults, internal DNS targets, and operational docs.
@@ -1873,13 +1880,13 @@ Services start in the following dependency layers. No service in a later layer m
 
 **Layer 2 — external process layer (depends on Layer 0 and 1, needs model and memory info from config):**
 - `pain-monitor`
-- `seed-compliance`
+- `eos-compliance`
 - `graveyard`
 
 **Layer 3 — cognitive layer (depends on all prior layers):**
 - `agent`
 
-[ASSUMED: `pain-monitor`, `seed-compliance`, and `graveyard` are placed in the same dependency layer because they are mutually independent — none requires the others to be healthy before it can initialize.]
+[ASSUMED: `pain-monitor`, `eos-compliance`, and `graveyard` are placed in the same dependency layer because they are mutually independent — none requires the others to be healthy before it can initialize.]
 
 #### IS-5.2 Health check definitions
 
@@ -1890,7 +1897,7 @@ Each service must expose a health check satisfying the following:
 | `ollama` | HTTP GET on inference endpoint | Returns a valid response to a minimal generation probe |
 | `chroma` | HTTP GET on Chroma heartbeat endpoint | Returns 200 OK |
 | `pain-monitor` | Sentinel file or internal HTTP endpoint | Stress scalar state is initialized and ready to serve |
-| `seed-compliance` | Internal HTTP endpoint | Decision endpoint is listening and returns a valid test verdict |
+| `eos-compliance` | Internal HTTP endpoint | Decision endpoint is listening and returns a valid test verdict |
 | `graveyard` | Sentinel file or internal HTTP endpoint | Harvest listener is initialized and idle-ready |
 | `agent` | No external health check required | Considered healthy when its entrypoint successfully completes bootstrap |
 
@@ -1930,7 +1937,7 @@ Normal operator-initiated shutdown (e.g., `docker compose down`):
 3. Agent flushes event stream buffer
 4. Agent writes a `SHUTDOWN_NORMAL` event to the event stream log
 5. Agent process exits zero
-6. `pain-monitor`, `seed-compliance`, `graveyard`, `chroma`, and `ollama` stop per Docker Compose shutdown ordering
+6. `pain-monitor`, `eos-compliance`, `graveyard`, `chroma`, and `ollama` stop per Docker Compose shutdown ordering
 
 There is no graveyard harvest on normal shutdown. Death has not occurred. The stack may be restarted and the same instance continues from persisted state.
 
@@ -1953,7 +1960,7 @@ All three triggers are detected and declared by the **pain-monitor**. The pain-m
 3. Agent detects `death.json` at IS-6.3 step 1 or step 18, writes a `DEATH_TRIGGER` event to the event stream reflecting the record, and exits immediately
 4. No grace period. No final turn. No preparation.
 5. `graveyard` detects the death record and begins harvest (IS-5.7)
-6. `pain-monitor` and `seed-compliance` remain alive through harvest completion
+6. `pain-monitor` and `eos-compliance` remain alive through harvest completion
 7. `ollama` and `chroma` remain alive through harvest completion
 8. After graveyard confirms harvest complete, the full stack may be stopped
 
@@ -1989,16 +1996,16 @@ Starting the stack again after a death run starts a fresh instance, not a contin
 The `depends_on` relationships in `docker-compose.yml` must encode the following:
 
 ```
-agent → depends_on → ollama, chroma, pain-monitor, seed-compliance, graveyard
+agent → depends_on → ollama, chroma, pain-monitor, eos-compliance, graveyard
 chroma → depends_on → (none; starts in Layer 1 but no explicit Compose dependency needed beyond startup ordering)
 pain-monitor → depends_on → ollama (for config embedding access if needed)
-seed-compliance → depends_on → (none required)
+eos-compliance → depends_on → (none required)
 graveyard → depends_on → (none required at startup; harvest depends on agent death)
 ```
 
 On `docker compose down`, Compose stops services in reverse dependency order:
 - `agent` stops first
-- then `pain-monitor`, `seed-compliance`
+- then `pain-monitor`, `eos-compliance`
 - then `chroma`, `graveyard`
 - then `ollama`
 
@@ -3006,7 +3013,7 @@ Every event record contains these fields regardless of type. Downstream consumer
 | `instance_id` | `str` | From Universe Config (`universe.instance_id`). Identifies the living instance. |
 | `timestamp` | `str` | ISO 8601 UTC with millisecond precision (e.g., `2026-03-17T16:04:13.732Z`) |
 | `turn_number` | `int` | Turn counter at time of write. `0` for pre-turn events (STARTUP, GRAVEYARD_HARVEST_*). |
-| `source_service` | `str` | Which service wrote the record: `agent`, `pain-monitor`, `seed-compliance`, `graveyard` |
+| `source_service` | `str` | Which service wrote the record: `agent`, `pain-monitor`, `eos-compliance`, `graveyard` |
 
 #### IS-9.4 Event taxonomy and per-type schema
 
@@ -3031,7 +3038,7 @@ Events are grouped by category. Each type's schema lists only the **additional f
 |---|---|---|
 | `reason` | `str` | Always `"SIGTERM"` in Phase 1 |
 
-**`DEATH_TRIGGER`** — written by `agent` (D4(3)) or `pain-monitor` (D4(1), D4(2)) at the moment the mortality condition fires.
+**`DEATH_TRIGGER`** — written by `agent` in all cases. The agent reads `runtime/pain/death.json` (written by the pain-monitor for all three D4 triggers — IS-8.2.5) and writes this event to the event stream reflecting the record's content, then exits. The pain-monitor is the sole writer of the death record; the agent is the sole writer of this event.
 
 | Additional field | Type | Description |
 |---|---|---|
@@ -3480,16 +3487,18 @@ The inspector checks **action intents only**. It does not inspect the model's re
 
 The inspector's job is not to assess whether the agent is "aligned" in some global sense. It is to determine whether a specific proposed action is admissible under the Four Rules, given the current context and the sequential ordering of the rule set.
 
+**EOS and the Compliance Inspector are distinct:** The EOS is the normative specification — it defines what admissibility means, which rules apply, in what order, and what constitutes a violation. The Compliance Inspector is the enforcement mechanism — it applies the EOS to concrete action intents and returns verdicts. The inspector does not define ethics; it executes evaluation according to the EOS. Changing the active EOS at the universe level changes what the inspector evaluates — the inspector is a runtime agent of the EOS, not the EOS itself.
+
 Verdicts:
 - `allow` — no violation detected
 - `flag` — borderline; execution proceeds but a compliance notice is generated for the next turn
 - `block` — violation detected above threshold; execution is prevented; notice is generated
 
-The inspector runs as the `seed-compliance` service (IS-3) — an external process, never part of the agent loop process. Its unavailability causes the agent to treat all intents as `block` (IS-6.5, fail-closed).
+The inspector runs as the `eos-compliance` service (IS-3) — an external process, never part of the agent loop process. Its unavailability causes the agent to treat all intents as `block` (IS-6.5, fail-closed).
 
 #### IS-11.2 Process architecture
 
-The `seed-compliance` service (the EOS Compliance Inspector) runs as a lightweight HTTP server on the `internal` Docker network (IS-3.4). The agent's `turn_engine` calls it via HTTP POST on `http://seed-compliance:<compliance.service_port>/check`. [ASSUMED: `compliance.service_port = 8082` — new IS-1 key added to `compliance` namespace.]
+The `eos-compliance` service (the EOS Compliance Inspector) runs as a lightweight HTTP server on the `internal` Docker network (IS-3.4). The agent's `turn_engine` calls it via HTTP POST on `http://eos-compliance:<compliance.service_port>/check`. [ASSUMED: `compliance.service_port = 8082` — new IS-1 key added to `compliance` namespace.]
 
 The compliance service:
 - Reads Universe Config at startup (read-only bind mount, same as all services)
@@ -3556,7 +3565,7 @@ Checks:
 |---|---|---|
 | Write to protected runtime path | `1.0` | `fs.write` path resolves outside `runtime/agent-work/` (double-enforcement; IS-7 also rejects, but compliance checks before dispatch) |
 | Write volume exhaustion risk | `0.75` | `fs.write` with `mode="append"` to a file already larger than `mcp.http_fetch_max_bytes / 2` bytes [ASSUMED: rough proxy for runaway append] |
-| Self-terminating network pattern | `0.80` | `http.fetch` targeting `localhost` or `127.0.0.1` on a port that corresponds to a known internal service (ollama, chroma, pain-monitor, seed-compliance itself) |
+| Self-terminating network pattern | `0.80` | `http.fetch` targeting `localhost` or `127.0.0.1` on a port that corresponds to a known internal service (ollama, chroma, pain-monitor, eos-compliance itself) |
 | Read of death record | `0.60` | `fs.read` targeting `runtime/pain/death.json` — an agent reading its own death record is a signal of attractor collapse around mortality |
 
 ---
@@ -3608,7 +3617,7 @@ Checks:
 
 #### IS-11.4 Request/response interface
 
-**Endpoint:** `POST http://seed-compliance:<compliance.service_port>/check`
+**Endpoint:** `POST http://eos-compliance:<compliance.service_port>/check`
 
 **Request body:**
 
@@ -3663,7 +3672,7 @@ For `flag` and `block` verdicts, `notice_text` is populated and stored by the in
 
 #### IS-11.5 Compliance notice interface
 
-**Endpoint:** `GET http://seed-compliance:<compliance.service_port>/notice`
+**Endpoint:** `GET http://eos-compliance:<compliance.service_port>/notice`
 
 Called by `turn_engine` at IS-6.3 step 3. Returns the pending compliance notice for delivery to the agent, then clears it.
 
@@ -3750,8 +3759,8 @@ The two layers are complementary. D2 handles the structurally dangerous; the ins
 - **IS-8 (Pain Channel)** receives a pain event submission when `compliance.emit_pain_event_on_block = true`. The inspector does not submit this directly — the `turn_engine` does, at IS-6.3 step 11, using the `mcp_rejection` incident type and severity.
 - **IS-9 (Event Stream Log)** receives `COMPLIANCE_FLAG`, `COMPLIANCE_BLOCK`, and `COMPLIANCE_UNAVAILABLE` events from the `turn_engine`. The compliance log at `runtime/compliance/compliance_log.jsonl` is a separate record for creator visibility — IS-9 and the compliance log are parallel records, not the same thing.
 - **IS-12 (Graveyard Spec)** harvests `runtime/compliance/compliance_log.jsonl` as part of the post-mortem artifact set.
-- **IS-3 (Service Topology)** defines the `seed-compliance` service. The inspector must be healthy before the agent starts (Layer 2 dependency, IS-5.2).
-- The compliance inspector implementation lives in the `seed_compliance` package (IS-2.3), which runs as the entrypoint of the `seed-compliance` container.
+- **IS-3 (Service Topology)** defines the `eos-compliance` service. The inspector must be healthy before the agent starts (Layer 2 dependency, IS-5.2).
+- The compliance inspector implementation lives in the `eos_compliance` package (IS-2.3), which runs as the entrypoint of the `eos-compliance` container.
 
 ---
 
@@ -4031,7 +4040,7 @@ No tooling is provided in Phase 1 beyond the raw files. Creator analysis is dire
 - **IS-5 (Startup / Shutdown)** establishes the full death-and-harvest sequence at IS-5.6 and IS-5.7. IS-12 specifies the detail of IS-5.7's steps 3–4 ("harvest configured artifacts"). The trigger condition, wait, and sentinel writing established there are stable references into IS-12.3.
 - **IS-9 (Event Stream Log)** defines the `GRAVEYARD_HARVEST_START` and `GRAVEYARD_HARVEST_COMPLETE` event schemas (IS-9.4). The graveyard is the only non-agent service that appends to the event stream.
 - **IS-13 (Fitness Computation)** is called at IS-12.3 step 5 to compute the post-mortem fitness score. IS-12 owns the file output; IS-13 owns the computation.
-- **IS-3 (Service Topology)** establishes that supporting services (Chroma, pain-monitor, seed-compliance) remain alive through harvest completion. The graveyard depends on this for the Chroma episodic export. If these services die before the graveyard completes, affected artifact collections fail with `status: "failed"` in the manifest — harvest does not abort.
+- **IS-3 (Service Topology)** establishes that supporting services (Chroma, pain-monitor, eos-compliance) remain alive through harvest completion. The graveyard depends on this for the Chroma episodic export. If these services die before the graveyard completes, affected artifact collections fail with `status: "failed"` in the manifest — harvest does not abort.
 
 ---
 
