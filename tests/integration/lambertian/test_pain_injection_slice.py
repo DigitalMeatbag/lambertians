@@ -20,6 +20,7 @@ from lambertian.fitness.registry import build_default_registry
 from lambertian.fitness.scorer import FitnessScorer
 from lambertian.lifecycle.death_record_reader import DeathRecordReader
 from lambertian.memory_store.querier import NoOpMemoryQuerier
+from lambertian.pain_monitor.death_guard import DeathGuard
 from lambertian.pain_monitor.delivery_queue import DeliveryQueue
 from lambertian.pain_monitor.event_submitter import FilePainEventSubmitter
 from lambertian.self_model.prompt_block_assembler import PromptBlockAssembler
@@ -52,6 +53,7 @@ def _build_engine_with_drain(
     event_log = EventLogWriter(config)
     turn_state = TurnStateStore(memory_dir)
     death_reader = DeathRecordReader(pain_root / "death.json")
+    death_guard = DeathGuard(config, pain_root / "death.json")
     self_prompt_gen = SelfPromptGenerator(config)
     block_assembler = PromptBlockAssembler(config)
 
@@ -89,6 +91,7 @@ def _build_engine_with_drain(
         event_log=event_log,
         pain_drain=drain,
         death_reader=death_reader,
+        death_guard=death_guard,
         model_client=mock_ollama,  # type: ignore[arg-type]
         mcp_gateway=mock_gateway,  # type: ignore[arg-type]
         compliance_client=mock_compliance,  # type: ignore[arg-type]

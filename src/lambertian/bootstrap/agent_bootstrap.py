@@ -20,6 +20,7 @@ from lambertian.mcp_gateway.path_resolver import PathResolver
 from lambertian.memory_store.episodic_store import EpisodicStore
 from lambertian.memory_store.querier import ChromaMemoryQuerier, MemoryQuerier, NoOpMemoryQuerier
 from lambertian.model_runtime.ollama_client import OllamaClient
+from lambertian.pain_monitor.death_guard import DeathGuard
 from lambertian.pain_monitor.delivery_queue import DeliveryQueue
 from lambertian.pain_monitor.event_submitter import FilePainEventSubmitter
 from lambertian.self_model.prompt_block_assembler import PromptBlockAssembler
@@ -51,6 +52,7 @@ class AgentBootstrap:
         self._event_log = EventLogWriter(config)
         self._self_model_writer = SelfModelWriter(config, self_model_dir)
         self._death_reader = DeathRecordReader(pain_root / "death.json")
+        self._death_guard = DeathGuard(config, pain_root / "death.json")
         self._model_client = OllamaClient(config)
         self._mcp_gateway = McpGateway(
             config,
@@ -127,6 +129,7 @@ class AgentBootstrap:
             event_log=self._event_log,
             pain_drain=self._delivery_queue,
             death_reader=self._death_reader,
+            death_guard=self._death_guard,
             model_client=self._model_client,
             mcp_gateway=self._mcp_gateway,
             compliance_client=self._compliance_client,

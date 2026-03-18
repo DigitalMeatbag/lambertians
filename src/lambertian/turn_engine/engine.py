@@ -23,6 +23,7 @@ from lambertian.event_stream.event_log_writer import EventLogWriter
 from lambertian.fitness.scorer import FitnessScorer
 from lambertian.lifecycle.death_record_reader import DeathRecordReader
 from lambertian.mcp_gateway.gateway import McpGateway
+from lambertian.pain_monitor.death_guard import DeathGuard
 from lambertian.memory_store.querier import MemoryQuerier
 from lambertian.model_runtime.ollama_client import OllamaClient, OllamaInferenceError
 from lambertian.self_model.prompt_block_assembler import PromptBlockAssembler
@@ -73,6 +74,7 @@ class TurnEngine:
         event_log: EventLogWriter,
         pain_drain: PainDeliveryDrain,
         death_reader: DeathRecordReader,
+        death_guard: DeathGuard,
         model_client: OllamaClient,
         mcp_gateway: McpGateway,
         compliance_client: ComplianceClient,
@@ -88,6 +90,7 @@ class TurnEngine:
         self._event_log = event_log
         self._pain_drain = pain_drain
         self._death_reader = death_reader
+        self._death_guard = death_guard
         self._model_client = model_client
         self._mcp_gateway = mcp_gateway
         self._compliance_client = compliance_client
@@ -272,6 +275,12 @@ class TurnEngine:
                 turn_number,
                 "agent",
                 {"failure_stage": "model_inference", "failure_reason": str(exc)},
+            )
+            self._death_guard.write_death_record(
+                trigger="turn_failed",
+                trigger_value=0.0,
+                threshold_used=0.0,
+                turn_number=turn_number,
             )
             raise SystemExit(1)
 
