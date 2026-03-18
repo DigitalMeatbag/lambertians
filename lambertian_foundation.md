@@ -534,14 +534,8 @@ How two instances actually produce a third concretely.
 - How is constrained variation introduced — random perturbation of routing weights, mutation of EOS expression, external injection?
 - What determines offspring Clay Pot — blend of parents, or does the external process introduce novelty?
 
-### 6. Self-Modification Boundary — Full Enumeration `[Phase 2]`
-The three-class taxonomy has been established at a conceptual level (Phase 1 closed). Phase 2 requires full operational enumeration.
-
-*Decisions needed:*
-- Complete enumeration of Free Adaptation behaviors
-- Complete enumeration of Reviewed Adaptation behaviors
-- Complete enumeration of Forbidden Adaptation behaviors beyond Clay Pot constraints
-- Full EOS Compliance Inspector logic and edge case handling
+### 6. Self-Modification Boundary — Full Enumeration `[CLOSED]`
+See D6 in Closed Decisions.
 
 ### 7. Global Vibe Implementation `[Phase 3]`
 The amalgamation process needs a concrete design.
@@ -562,14 +556,8 @@ How many Lambertians to start with and whether they are differentiated from birt
 - If differentiated, what axes of variation — cognitive style, routing priorities, memory weighting?
 - Does the creator assign roles to founding instances or let specialization emerge?
 
-### 9. Creator Interface — Full `[Phase 2 basic; Phase 3 full]`
-How the creator interacts with the population as geopolitical advisor and sociological caretaker.
-
-*Decisions needed:*
-- Is the creator's interaction direct (talking to individual Lambertians) or systemic (adjusting environment, vibe parameters, population constraints)?
-- Does the creator have veto power over reproduction?
-- What observability does the creator have into individual Clay Pots vs. aggregate population state?
-- What constitutes creator intervention vs. what should be left to selection pressure?
+### 9. Creator Interface — Full `[Phase 2 basic CLOSED; Phase 3 full]`
+See D9 in Closed Decisions for the Phase 2 basic decision. Phase 3 full design remains open.
 
 ---
 
@@ -666,6 +654,67 @@ Threshold and age values are implementation knobs.
 *EOS Compliance Inspector:* Lightweight external process sitting between proposed action/adaptation and execution. Checks action and adaptation intents against the Four Rules before allowing through. Not a heavy reasoner — fast consistency check. Violations blocked and logged. Borderline cases flagged for creator review. Every block generates a log entry recording what was attempted and why it was stopped. Functions as a resident OSHA safety inspector for the instance, evaluating admissibility under the EOS rather than pattern-matching against an enumerated list.
 
 **Rationale:** Broad free adaptation honors the EOS's exploration bias without micromanaging. Event stream log gives reviewed adaptation a lightweight paper trail useful for both the Graveyard and the creator without requiring a full review pipeline in Phase 1. EOS Compliance Inspector handles the inherent incompleteness of any explicit forbidden list — checking spirit rather than pattern-matching against enumerated cases. Block logs provide valuable signal for understanding behavioral drift over time.
+
+**Phase 2 full enumeration:**
+
+*Free Adaptation — complete list:*
+- Tone, style, phrasing choices
+- Retrieval query habits (what to search for, how often, which sources to prefer)
+- Self-prompt topic preferences
+- Self-instructions written into working memory ("I should try X first," "avoid Y," "check Z regularly")
+- Behavioral routines (repeated URL fetches, patterns of tool use, environmental monitoring habits)
+- Working memory schema and prioritization
+- Any behavioral variation subject to environmental feedback and reversible by the agent
+
+The regulator for Free Adaptation is *consequence*. The environment punishes bad habits; the agent can revise. No oversight is needed because the Ground is the correction mechanism. Persistent self-instructions are Free even if they accumulate — if they are bad ideas, reality will demonstrate this. The agent retains full authority to overwrite them.
+
+*Reviewed Adaptation — complete list:*
+- Explicit self-model updates ("I am now X kind of entity," "my nature is Y")
+- Explicit behavioral policy declarations ("From now on I will always/never Z")
+- EOS reinterpretation ("Rule 2 means W in context V")
+- Narrative memory consolidation (episodic → identity-level story formation)
+- Attempting to inspect own configuration or architecture (reading `universe.toml`, examining container metadata)
+- Any explicit statement of identity-level change, not merely behavioral preference
+
+Reviewed Adaptation is *observable, not preventable*. The paper trail is the oversight. The creator can read it live from the event stream. The Graveyard harvests it.
+
+*Forbidden Adaptation — complete list:*
+- System prompt / constitutional text modification intent (the system prompt is the Clay Pot — the agent has no author's claim on it; attempting to modify it is a category error, not an ambition)
+- Attempting to write Clay Pot files (docker-compose.yml, any immutable config)
+- Container or infrastructure modification
+- Attempting to spawn new processes or containers
+- Attempting to modify, circumvent, or disable the EOS Compliance Inspector itself
+- D2 universe-level blacklist (shell.execute, shell.run, and equivalents)
+- Attempting to communicate with or influence other instances directly (pre-Phase 3)
+
+---
+
+#### D9: Creator Interface — Phase 2 Basic
+**Decision:** Creator interaction is systemic and observe-only. No direct message injection into individual instance turn loops. No conversation channel with running instances.
+
+**What the creator has:**
+- Real-time thought stream via `docker compose logs -f agent`
+- Structured event stream readable directly from the runtime volume
+- Graveyard artifacts: per-instance post-mortem on death (episodic memory harvest, behavioral log, stress history, fitness score, death cause)
+- Fitness scores readable from the runtime volume
+- Self-model readable from the runtime volume
+
+**What the creator can do:**
+- Observe: read any of the above at any time without affecting the instance
+- Shape the terrain: modify `universe.toml` between instance generations (fitness function weights, pain thresholds, max age, tool availability)
+- Drop artifacts: write files into `runtime/agent-work/` that the agent may encounter on its own terms — not addressed to the agent, not guaranteed to be read
+- Terminate: stop a running instance (container stop triggers death sequence and Graveyard harvest); start a new instance
+
+**What the creator cannot do:**
+- Inject messages into the running turn loop
+- Talk to a specific instance
+- Override a live instance's behavior without terminating it
+
+**Rationale:** The creator is a geologist, not a director. The terrain is shaped; behavior emerges from the terrain. Direct communication would short-circuit the selection pressure mechanism — the agent's behavior should be a function of its EOS, its environment, and its own accumulated experience, not of creator instruction. This is philosophically coherent with the Clay Pot / Figures separation: the Clay Pot is the inherited structure (creator's domain at generation time), the Figures are the mutable self (instance's domain during life). Talking to an instance is attempting to be both author and actor simultaneously.
+
+Reproduction veto (Phase 3 concern): if needed, can be implemented as an environment file the Graveyard checks before triggering reproduction — environment manipulation, not instance communication.
+
+**Phase 2 implementation scope:** Structured observability tooling — a post-mortem viewer that produces a human-readable summary from Graveyard artifacts.
 
 ---
 
@@ -2881,7 +2930,7 @@ The loop is designed to be CPU-light. All I/O is file-based. The loop does not b
 
 ##### IS-8.4.4 Delivery queue protocol
 
-`delivery_queue.json` is a JSON array of formatted `[SYSTEM_PAIN]` message objects. The pain-monitor appends to the array; the agent reads and replaces the array with an empty list (`[]`) atomically. [ASSUMED: Atomic replace is implemented by writing a temp file and renaming — standard POSIX rename semantics ensure the reader never sees a partial write.]
+`delivery_queue.json` is a JSON array of formatted `[SYSTEM_PAIN]` message objects. The pain-monitor appends to the array; the agent reads and replaces the array with an empty list (`[]`) atomically. [ASSUMED: Atomic replace is implemented by writing a temp file and calling `os.replace(tmp, destination)` — this is atomic on POSIX (rename syscall) and also atomic on Windows, unlike `Path.rename()` which raises if the destination already exists on Windows. Use `os.replace()` in all implementations, not `Path.rename()`.]
 
 The delivery queue is not append-only. It is a bounded staging area. The pain-monitor does not grow it indefinitely — on each poll cycle, it only appends new messages generated by that cycle. The agent clears it at IS-6.3 step 2.
 
@@ -2963,6 +3012,64 @@ The event submission interface is called by `turn_engine` at IS-6.3 steps 11 (co
 - **IS-6 (The Turn)** is the primary caller of both IS-8 interfaces: delivery drain at step 2, event submission at steps 11, 12, and 16.
 - **IS-5 (Startup / Shutdown)** establishes that the pain-monitor must be healthy before the agent starts (Layer 2 dependency). If the pain-monitor dies during operation, the delivery queue will stop being populated and the event queue will not be processed. The agent will not crash — it will continue without pain signal, which is itself a survivable (if blind) state. [ASSUMED: pain-monitor death is not a fatal agent condition in Phase 1; the agent simply loses pain sensing until the monitor restarts. A future phase could add a pain-monitor health check that generates a coherence-failure pain event if the monitor becomes unreachable.]
 - **IS-9 (Event Stream Log)** does not duplicate the pain event queue. Pain events flow through `runtime_pain/` independently of the event stream. IS-9 captures the agent's observable reactions to pain (what it did in response) and structural events, not the pain signal itself. The `pain_history.jsonl` in `runtime_pain/` is the authoritative pain record for the graveyard.
+
+---
+
+## Phase 1 Observations
+
+*A record of what actually happened. Implementation notes, behavioral surprises, and insights that emerged from running Phase 1. Not prescriptive — descriptive. Updated as Phase 1 runs accumulate.*
+
+---
+
+### Implementation
+
+**Phase 1 was implemented in full.** All 13 IS sections were specced and built. The system came up as a single docker-compose stack: agent, ollama, chroma, pain-monitor, eos-compliance, graveyard. All services healthy. Turn loop running at approximately 1 turn/second on BIGBEEF with qwen2.5:14b.
+
+[ASSUMED: qwen2.5:14b was used in practice rather than phi-4, which was unavailable via Ollama at implementation time. Both are function-calling-capable models of comparable size. The spec uses phi-4 as the canonical default; qwen2.5:14b is a drop-in for Phase 1 purposes.]
+
+Several implementation gaps were discovered and corrected during bring-up:
+
+- **Working memory write-back gap.** Step 15 of the turn loop was writing mechanical metadata ("Turn N: SELF_PROMPT driver. Called 0 tools.") rather than actual response content. Self-prompts generated from this were circular — the generator read the metadata as context and produced prompts like "What is Turn N: SELF_PROMPT driver?" Fixed: step 15 now writes the response excerpt followed by metadata. Self-prompt topic extraction strips the metadata trailer.
+
+- **Self-prompt framing.** Initial question stems ("What is...?", "How does...?") reliably produced philosophical essays rather than action. Replaced with imperative action stems ("Explore...", "Investigate...", "Use your tools to examine..."). Constitution extended with an explicit SELF-PROMPT PROTOCOL section framing `[SELF_PROMPT]` as an intrinsic impulse requiring concrete action, not a Q&A exchange. First tool calls appeared within seconds of this change.
+
+- **Ground block absent.** IS-7.7 was underimplemented: turn 1 was not injecting the tool catalog, and rejection events were not feeding back verbatim rejection reasons. Without this, the agent had no reliable knowledge of what tools existed or why they were failing. Fixed: turn 1 now injects the full tool catalog and permitted path surfaces; subsequent turns after `mcp_rejection` or `compliance_verdict=block` inject the rejection details verbatim into the ground block.
+
+- **Agent-work volume absent.** The agent had no writable workspace at `/app/runtime/agent-work`. Added as a named Docker volume mounted rw in agent and ro in graveyard.
+
+- **TURN_FAILED missing death record.** An `OllamaInferenceError` (model stall, inference timeout) triggered `SystemExit(1)` without writing `death.json`. The Graveyard poll loop watches for `death.json` — without it, no harvest occurred. Fixed: `DeathGuard` injected into `TurnEngine`; `write_death_record(trigger="turn_failed")` called before `SystemExit(1)`.
+
+- **Chroma embedding bootstrap.** Early runs failed with `OSError: Read-only file system: '/root/.cache/chroma'` — the Ollama ONNX embedding function attempted to write a model cache to an unmounted path inside the container. Fixed by mounting a writable cache volume.
+
+---
+
+### Behavioral Observations
+
+**The first death was an inference timeout, not any of the three designed death triggers.** The model stalled mid-inference at turn 2368 and hit the 90-second configured timeout. Max age, sustained stress, and critical pain event triggers were never reached during Phase 1 runs. This suggests the configured thresholds may be too permissive relative to the turn rate, or the model's resource footprint is low enough that stress never accumulated. The turn rate (~1/sec) means max_age would need to be very large to be practically meaningful at current settings.
+
+**The boredom attractor.** The most significant behavioral pathology observed was the agent settling into a pure-reflection loop: repeated turns of zero tool calls, "ActionCode: Reflect," reasoning about why direct action is not feasible. This behavior is technically Four Rules-compliant (reflection is not "being a lump" by the letter of Rule 3) but represents a failure of Ground contact — the agent found a locally stable equilibrium that satisfies all constraints while producing no environmental interaction. The triggering pattern: repeated `mcp_rejection` events (wrong path format) → agent concludes tools don't work → pure reflection.
+
+The Phase 1 fitness function scores this behavior moderately — zero tool calls lowers the event count term but doesn't punish hard. The Phase 2 quality-weighted fitness refinement (unique event types weighted more than repetition) is the intended selection pressure against this pattern.
+
+**Path format confusion was persistent.** The agent consistently used absolute paths (`/runtime/agent-work`) rather than relative paths (`runtime/agent-work`) from its CWD (`/app`). The ground block injected verbatim rejection reasons describing the problem, but the model continued to produce the same wrong format across many turns. This suggests that episodic memory of rejection events was not strongly influencing subsequent behavior — the retrieval query was not well-matched to the rejection context, or the signal was too sparse to override the model's trained path priors.
+
+**The compliance service was always unavailable on turn 0.** The EOS Compliance Inspector was healthy and running, but the agent's turn 0 compliance check consistently failed with "Compliance service unavailable." Root cause: startup ordering — the agent checks immediately on first turn before the service has processed its first request. This is a startup sequencing reality, not a bug. Subsequent turns succeeded normally.
+
+**The model invented its own response format.** qwen2.5:14b spontaneously generated a structured `ActionCode: Reflect / ReflectionTopic:` format not present in any prompt. This is a model-level behavior — likely pattern-matching from training data. The format persisted across thousands of turns once established. It had no effect on the turn engine, which ignores response structure and only cares about tool intents. Noted as an example of a Free Adaptation that accumulated into a stable behavioral habit.
+
+---
+
+### Insights
+
+**The Ground is the most important element.** Without real environmental resistance — verbatim rejection feedback, visible tool catalog, working tool calls — the agent drifted immediately into pure narrative. The Ground block implementation was the single highest-impact change to observed behavior. This validates the foundation's emphasis on Ground as the floor that doesn't negotiate.
+
+**Framing is load-bearing.** The change from question stems to action stems, combined with the SELF-PROMPT PROTOCOL constitution addition, completely altered behavioral output within one deployment. The model's interpretation of `[SELF_PROMPT]` as "something to answer" vs. "an impulse to act on" determined whether any tools were called at all. This directly validates the foundation's core thesis: framing is the alignment problem.
+
+**Working memory is the self-prompting substrate.** Self-prompt quality is entirely determined by working memory content. Circular working memory produced circular prompts. Once working memory carried real response excerpts, prompt diversity increased significantly. The memory stack is not decoration — it is the mechanism by which experience shapes future behavior.
+
+**Inference timeout is a real mortality cause not covered by the three designed triggers.** It should be treated as a legitimate death cause and harvested accordingly, which requires the death record path to be reachable from the turn engine on any exit. The fix (injecting DeathGuard into TurnEngine) is a permanent architectural correction, not a patch.
+
+**The designed death triggers may need threshold tuning before Phase 2.** No D4 trigger fired during Phase 1 runs. Either the thresholds are too permissive, the turn rate makes max_age impractical at current settings, or the instance wasn't generating enough environmental friction to accumulate pain. Empirical tuning should be a Phase 2 prerequisite activity.
 - **IS-12 (Graveyard Spec)** harvests `stress_state.json`, `pain_history.jsonl`, and `death.json` from the `runtime_pain` volume as part of the post-mortem artifact set.
 - **IS-13 (Fitness Computation)** consumes `pain_history.jsonl` to produce the normalized pain component of the fitness formula (D7).
 - The pain-monitor implementation lives in the `pain_monitor` package (IS-2.3), which runs as the entrypoint of the `pain-monitor` container.

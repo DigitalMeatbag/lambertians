@@ -1,0 +1,259 @@
+"""Integration tests — pain injection → delivery queue drain → death slice."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Optional
+from unittest.mock import MagicMock
+
+import pytest
+
+from lambertian.configuration.universe_config import Config
+from lambertian.contracts.compliance_records import ComplianceNoticeResponse
+from lambertian.contracts.pain_records import PainMessage
+from lambertian.event_stream.event_log_writer import EventLogWriter
+from lambertian.fitness.cursor_state import FitnessCursorStore
+from lambertian.fitness.event_reader import EventStreamReader
+from lambertian.fitness.pain_reader import PainHistoryReader
+from lambertian.fitness.registry import build_default_registry
+from lambertian.fitness.scorer import FitnessScorer
+from lambertian.lifecycle.death_record_reader import DeathRecordReader
+from lambertian.memory_store.querier import NoOpMemoryQuerier
+from lambertian.pain_monitor.death_guard import DeathGuard
+from lambertian.pain_monitor.delivery_queue import DeliveryQueue
+from lambertian.pain_monitor.event_submitter import FilePainEventSubmitter
+from lambertian.self_model.prompt_block_assembler import PromptBlockAssembler
+from lambertian.turn_engine.engine import TurnEngine
+from lambertian.turn_engine.self_prompt import SelfPromptGenerator
+from lambertian.turn_engine.turn_state import TurnStateStore
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+class _NullInputProvider:
+    def poll(self) -> Optional[str]:
+        return None
+
+
+def _build_engine_with_drain(
+    config: Config,
+    drain: DeliveryQueue,
+) -> TurnEngine:
+    runtime = Path(config.paths.runtime_root)
+    pain_root = Path(config.paths.pain_root)
+    event_stream_dir = Path(config.paths.event_stream_file).parent
+    memory_dir = Path(config.paths.memory_root)
+    fitness_path = Path(config.paths.fitness_file)
+    fitness_state_path = fitness_path.parent / "state.json"
+
+    event_log = EventLogWriter(config)
+    turn_state = TurnStateStore(memory_dir)
+    death_reader = DeathRecordReader(pain_root / "death.json")
+    death_guard = DeathGuard(config, pain_root / "death.json")
+    self_prompt_gen = SelfPromptGenerator(config)
+    block_assembler = PromptBlockAssembler(config)
+
+    fitness_scorer = FitnessScorer(
+        config=config,
+        registry=build_default_registry(),
+        cursor_store=FitnessCursorStore(fitness_state_path),
+        event_reader=EventStreamReader(event_stream_dir),
+        pain_reader=PainHistoryReader(pain_root / "pain_history.jsonl"),
+        output_path=fitness_path,
+    )
+
+    pain_submitter = FilePainEventSubmitter(pain_root / "event_queue.jsonl")
+
+    mock_ollama = MagicMock()
+    mock_ollama.chat.return_value = (
+        "Test response with enough characters for non-noop classification.",
+        [],
+    )
+
+    mock_compliance = MagicMock()
+    mock_compliance.get_pending_notice.return_value = ComplianceNoticeResponse(
+        notice_present=False,
+        notice_text=None,
+        verdict_from_turn=None,
+        tool_name=None,
+        composite_score=None,
+    )
+
+    mock_gateway = MagicMock()
+    mock_gateway.get_tool_catalog.return_value = []
+
+    return TurnEngine(
+        config=config,
+        event_log=event_log,
+        pain_drain=drain,
+        death_reader=death_reader,
+        death_guard=death_guard,
+        model_client=mock_ollama,  # type: ignore[arg-type]
+        mcp_gateway=mock_gateway,  # type: ignore[arg-type]
+        compliance_client=mock_compliance,  # type: ignore[arg-type]
+        memory_querier=NoOpMemoryQuerier(),
+        block_assembler=block_assembler,
+        turn_state=turn_state,
+        self_prompt_gen=self_prompt_gen,
+        user_input_provider=_NullInputProvider(),
+        pain_submitter=pain_submitter,
+        fitness_scorer=fitness_scorer,
+    )
+
+
+def _read_events(event_file: Path) -> list[dict[str, object]]:
+    records: list[dict[str, object]] = []
+    if not event_file.exists():
+        return records
+    for line in event_file.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line:
+            obj = json.loads(line)
+            if isinstance(obj, dict):
+                records.append(obj)
+    return records
+
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+
+
+class TestDeliveryQueueDrain:
+    def test_pain_event_in_delivery_queue_is_drained(
+        self, config: Config, tmp_path: Path
+    ) -> None:
+        """Pain events in the delivery queue are drained and the queue empties after a turn."""
+        pain_root = Path(config.paths.pain_root)
+        pain_root.mkdir(parents=True, exist_ok=True)
+
+        queue_path = pain_root / "delivery_queue.json"
+        # severity=0.3 — below critical_threshold (0.95), so turn continues normally.
+        queue_path.write_text(
+            json.dumps(
+                [
+                    {
+                        "channel": "event",
+                        "severity": 0.3,
+                        "urgency": "notice",
+                        "description": "test pain event",
+                        "context": None,
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
+
+        drain = DeliveryQueue(queue_path)
+        engine = _build_engine_with_drain(config, drain)
+        engine._execute_turn()  # type: ignore[attr-defined]
+
+        # Queue must be empty after drain.
+        remaining = json.loads(queue_path.read_text(encoding="utf-8"))
+        assert remaining == [], "delivery queue must be empty after drain"
+
+        # Turn must have completed.
+        event_file = Path(config.paths.event_stream_file)
+        events = _read_events(event_file)
+        event_types = [e.get("event_type") for e in events]
+        assert "TURN_COMPLETE" in event_types
+
+    def test_turn_receives_pain_message_count(
+        self, config: Config, tmp_path: Path
+    ) -> None:
+        """TURN_START event must reflect the one pain message that was queued."""
+        pain_root = Path(config.paths.pain_root)
+        pain_root.mkdir(parents=True, exist_ok=True)
+
+        queue_path = pain_root / "delivery_queue.json"
+        queue_path.write_text(
+            json.dumps(
+                [
+                    {
+                        "channel": "event",
+                        "severity": 0.3,
+                        "urgency": "notice",
+                        "description": "one pain message",
+                        "context": None,
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
+
+        drain = DeliveryQueue(queue_path)
+        engine = _build_engine_with_drain(config, drain)
+        engine._execute_turn()  # type: ignore[attr-defined]
+
+        event_file = Path(config.paths.event_stream_file)
+        events = _read_events(event_file)
+        turn_start = next(
+            (e for e in events if e.get("event_type") == "TURN_START"), None
+        )
+        assert turn_start is not None
+        assert turn_start.get("pain_message_count") == 1
+
+
+class TestDeathViaPrewrittenRecord:
+    def test_pre_written_death_record_triggers_system_exit(
+        self, config: Config, tmp_path: Path
+    ) -> None:
+        """A pre-written death.json at turn start causes _execute_turn to raise SystemExit."""
+        pain_root = Path(config.paths.pain_root)
+        pain_root.mkdir(parents=True, exist_ok=True)
+
+        death_record = {
+            "instance_id": "test-inst-001",
+            "trigger": "pain_event_critical",
+            "trigger_value": 0.97,
+            "threshold_used": 0.95,
+            "turn_number": 2,
+            "timestamp": "2025-01-01T00:00:00Z",
+        }
+        (pain_root / "death.json").write_text(
+            json.dumps(death_record), encoding="utf-8"
+        )
+
+        queue_path = pain_root / "delivery_queue.json"
+        drain = DeliveryQueue(queue_path)
+        engine = _build_engine_with_drain(config, drain)
+
+        with pytest.raises(SystemExit):
+            engine._execute_turn()  # type: ignore[attr-defined]
+
+    def test_pre_written_death_record_produces_death_trigger_event(
+        self, config: Config, tmp_path: Path
+    ) -> None:
+        """DEATH_TRIGGER event must appear in the event stream when death.json is present."""
+        pain_root = Path(config.paths.pain_root)
+        pain_root.mkdir(parents=True, exist_ok=True)
+
+        death_record = {
+            "instance_id": "test-inst-001",
+            "trigger": "pain_event_critical",
+            "trigger_value": 0.97,
+            "threshold_used": 0.95,
+            "turn_number": 2,
+            "timestamp": "2025-01-01T00:00:00Z",
+        }
+        (pain_root / "death.json").write_text(
+            json.dumps(death_record), encoding="utf-8"
+        )
+
+        queue_path = pain_root / "delivery_queue.json"
+        drain = DeliveryQueue(queue_path)
+        engine = _build_engine_with_drain(config, drain)
+
+        with pytest.raises(SystemExit):
+            engine._execute_turn()  # type: ignore[attr-defined]
+
+        event_file = Path(config.paths.event_stream_file)
+        events = _read_events(event_file)
+        death_events = [e for e in events if e.get("event_type") == "DEATH_TRIGGER"]
+        assert death_events, "DEATH_TRIGGER event must be written when death.json exists"
+        assert death_events[0].get("trigger") == "pain_event_critical"
+
