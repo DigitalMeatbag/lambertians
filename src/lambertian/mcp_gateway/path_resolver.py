@@ -14,7 +14,7 @@ class PathResolver:
 
     Permitted read roots (resolved absolute paths):
         runtime/memory, runtime/event_stream, runtime/fitness, runtime/self,
-        runtime/pain, runtime/agent-work, config/
+        runtime/pain, runtime/agent-work, runtime/env, config/
 
     Permitted write root: runtime/agent-work ONLY.
     """
@@ -28,6 +28,7 @@ class PathResolver:
             rb / "self",
             rb / "pain",
             rb / "agent-work",
+            rb / "env",
             config_base.resolve(),
         )
         self._write_root: Path = rb / "agent-work"

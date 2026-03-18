@@ -138,6 +138,7 @@ services:
       - runtime_self:/app/runtime/self
       - runtime_agent_work:/app/runtime/agent-work
       - ./config:/app/config:ro
+      - ./runtime/env:/app/runtime/env:ro
     tmpfs:
       # /tmp is the only writable non-volume path (Python scratch, etc.)
       - /tmp:mode=1777

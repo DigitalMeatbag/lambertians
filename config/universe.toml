@@ -153,3 +153,10 @@ live_reviewed_adaptations = true
 live_compliance_blocks    = true
 live_running_fitness      = true
 read_graveyard_artifacts  = true
+
+[env_monitor]
+# update_interval_seconds: how often host_state.json is refreshed.
+# Should be less than average turn duration (~20-30s on BIGBEEF) so reads
+# are almost always fresh. Tune empirically once turn timing is observed.
+update_interval_seconds = 10
+output_path             = "runtime/env/host_state.json"

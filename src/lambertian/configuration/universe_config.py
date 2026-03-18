@@ -186,6 +186,12 @@ class CreatorObservabilityConfig:
 
 
 @dataclass(frozen=True)
+class EnvMonitorConfig:
+    update_interval_seconds: int
+    output_path: str
+
+
+@dataclass(frozen=True)
 class Config:
     universe: UniverseConfig
     model: ModelConfig
@@ -200,3 +206,4 @@ class Config:
     fitness: FitnessConfig
     paths: PathsConfig
     creator_observability: CreatorObservabilityConfig
+    env_monitor: EnvMonitorConfig

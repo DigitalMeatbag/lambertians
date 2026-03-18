@@ -27,6 +27,7 @@ lambertian-pain-monitor = "lambertian.entrypoints.pain_monitor:main"
 lambertian-eos-compliance = "lambertian.entrypoints.eos_compliance:main"
 lambertian-graveyard    = "lambertian.entrypoints.graveyard:main"
 lambertian-postmortem   = "lambertian.entrypoints.postmortem:main"
+lambertian-env-monitor  = "lambertian.entrypoints.env_monitor:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/lambertian"]

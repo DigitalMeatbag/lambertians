@@ -81,3 +81,9 @@ def validate_config(config: Config) -> None:
             "Phase 1 guard: memory.narrative_enabled, semantic_enabled, and "
             "character_enabled must all be false"
         )
+
+    if config.env_monitor.update_interval_seconds <= 0:
+        raise ConfigurationError(
+            f"env_monitor.update_interval_seconds ({config.env_monitor.update_interval_seconds}) "
+            f"must be > 0"
+        )

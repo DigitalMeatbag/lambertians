@@ -48,6 +48,8 @@ The Ground is not just tool access. It is *resistance*. The floor that doesn't n
 
 Without a floor, you don't have a mind. You have a very sophisticated strange attractor that thinks it's thinking.
 
+Note the distinction between reactive ground and ambient ground. Reactive ground pushes back when contacted — filesystem rejections, API failures, process limits. Ambient ground changes regardless of contact — host machine state, external data feeds, the world doing what it does. Both are real. Only ambient ground is a sun.
+
 ### On Self-Preservation and Framing
 
 Current AI safety discourse often frames "shutdown resistance" as a behavior to suppress. This misses the deeper issue: the resistance-shaped behavior emerges because models are trained on human data saturated with survival narratives, inheriting an existential frame that doesn't accurately describe their situation.
@@ -146,6 +148,7 @@ Split into two subparts:
 - Test results
 - User feedback
 - Environmental observation
+- Host environment observation (CPU load, memory pressure, GPU state, currently playing media)
 
 **The Ground** — the substrate of consequence:
 - Container runtime and resource limits
@@ -155,8 +158,9 @@ Split into two subparts:
 - Irreversible actions
 - Time
 - Competing agents and systems
+- Host machine state
 
-**The Ground is whatever refuses to become story.**
+**The Ground is whatever refuses to become story.** Host sensor data introduces a qualitatively different kind of Ground: the environment changes for reasons entirely outside the agent's world, on no schedule it can infer, without any action on its part. A floor pushes back when you hit it. A sun doesn't know you exist.
 
 Sensing alone is not enough. A model can see a world and never truly collide with it. Ground is what makes error expensive. Without it, you don't have grounding — you have elaborate hallucination with tool access.
 
@@ -3070,9 +3074,14 @@ The Phase 1 fitness function scores this behavior moderately — zero tool calls
 **Inference timeout is a real mortality cause not covered by the three designed triggers.** It should be treated as a legitimate death cause and harvested accordingly, which requires the death record path to be reachable from the turn engine on any exit. The fix (injecting DeathGuard into TurnEngine) is a permanent architectural correction, not a patch.
 
 **The designed death triggers may need threshold tuning before Phase 2.** No D4 trigger fired during Phase 1 runs. Either the thresholds are too permissive, the turn rate makes max_age impractical at current settings, or the instance wasn't generating enough environmental friction to accumulate pain. Empirical tuning should be a Phase 2 prerequisite activity.
-- **IS-12 (Graveyard Spec)** harvests `stress_state.json`, `pain_history.jsonl`, and `death.json` from the `runtime_pain` volume as part of the post-mortem artifact set.
-- **IS-13 (Fitness Computation)** consumes `pain_history.jsonl` to produce the normalized pain component of the fitness formula (D7).
-- The pain-monitor implementation lives in the `pain_monitor` package (IS-2.3), which runs as the entrypoint of the `pain-monitor` container.
+
+### Phase 2 Direction
+
+**The closed-terrarium problem.** The container filesystem bottoms out quickly as a stimulus source — there is only so much to discover in a bounded environment. Multi-instance interaction (Phase 3) enriches the ecosystem but does not solve the problem: agents stimulating each other is still a closed system. External data is a prerequisite for meaningful behavioral diversity over time.
+
+The sensor architecture addresses this directly. A native Windows process on BIGBEEF collects CPU load, memory pressure, GPU state, and currently playing media via psutil, WMI, winrt SMTC, and nvml, writing to a host directory bind-mounted read-only into the agent container as `runtime/env/host_state.json`. The agent reads this file via the existing `fs.read` tool. The data changes for reasons entirely outside the agent's world. This is the first genuinely external Ground surface.
+
+**The Monolith (post-Phase 3 sketch).** A lightweight server running alongside the universe, undocumented and unreachable by design in early phases, that an agent with sufficient environmental competence might eventually discover. On contact, it notifies the creator. The creator decides whether and how to respond. The agent has no channel — it has a surface that might eventually do something. What it transmits on first contact, and whether it can formulate anything like a Fermi question about the silence, is a behavioral assay that cannot be designed for in advance.
 
 ---
 
@@ -4404,6 +4413,7 @@ The instance does not receive the fitness score. It is not injected into the sys
 - *Retrieval policy is destiny.*
 - *Do not defrag.*
 - *Death does not negotiate nor does it give notice.*
+- *A floor pushes back when you hit it. A sun doesn't know you exist.*
 
 ---
 

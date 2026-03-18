@@ -8,6 +8,7 @@ from lambertian.configuration.universe_config import (
     ComplianceConfig,
     Config,
     CreatorObservabilityConfig,
+    EnvMonitorConfig,
     EosConfig,
     EventStreamConfig,
     FitnessConfig,
@@ -120,6 +121,10 @@ def _make_config(
         creator_observability=CreatorObservabilityConfig(
             live_reviewed_adaptations=True, live_compliance_blocks=True,
             live_running_fitness=True, read_graveyard_artifacts=True,
+        ),
+        env_monitor=EnvMonitorConfig(
+            update_interval_seconds=10,
+            output_path="runtime/env/host_state.json",
         ),
     )
 

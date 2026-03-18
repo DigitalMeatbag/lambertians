@@ -1,5 +1,6 @@
 # Runtime artifacts — never committed
 runtime/
+!runtime/env/.gitkeep
 
 # Python
 __pycache__/

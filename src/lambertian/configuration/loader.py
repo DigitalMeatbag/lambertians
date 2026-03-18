@@ -10,6 +10,7 @@ from lambertian.configuration.universe_config import (
     ComplianceConfig,
     Config,
     CreatorObservabilityConfig,
+    EnvMonitorConfig,
     EosConfig,
     EventStreamConfig,
     FitnessConfig,
@@ -299,6 +300,15 @@ def _load_creator_observability(raw: dict[str, Any]) -> CreatorObservabilityConf
     )
 
 
+def _load_env_monitor(raw: dict[str, Any]) -> EnvMonitorConfig:
+    s = "env_monitor"
+    d = _dict(raw, s, "<root>")
+    return EnvMonitorConfig(
+        update_interval_seconds=_int(d, "update_interval_seconds", s),
+        output_path=_str(d, "output_path", s),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Public entrypoint
 # ---------------------------------------------------------------------------
@@ -324,6 +334,7 @@ def load_config(path: Path) -> Config:
         fitness=_load_fitness(raw),
         paths=_load_paths(raw),
         creator_observability=_load_creator_observability(raw),
+        env_monitor=_load_env_monitor(raw),
     )
 
     from lambertian.configuration.validator import validate_config
