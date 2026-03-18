@@ -276,7 +276,7 @@ def test_chat_http_error_returns_error_text(config: Config) -> None:
 def test_embed_success(config: Config) -> None:
     client = OllamaClient(config)
     embedding = [0.1, 0.2, 0.3, 0.4]
-    body: dict[str, Any] = {"embedding": embedding}
+    body: dict[str, Any] = {"embeddings": [embedding]}
     mock = _make_mock_response(body)
     mock.raise_for_status = MagicMock()
     with patch.object(client._client, "post", return_value=mock):

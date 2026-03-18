@@ -76,10 +76,10 @@ class OllamaClient:
 
     def embed(self, text: str) -> list[float]:
         """Get embedding vector for text."""
-        url = f"{self._config.model.endpoint_url}/api/embeddings"
+        url = f"{self._config.model.endpoint_url}/api/embed"
         payload: dict[str, object] = {
             "model": self._config.memory.embedding_model,
-            "prompt": text,
+            "input": [text],
         }
         try:
             response = self._client.post(url, json=payload)
@@ -90,7 +90,8 @@ class OllamaClient:
 
         response.raise_for_status()
         raw: Any = response.json()  # Any: JSON parse boundary
-        return [float(x) for x in raw.get("embedding", [])]
+        raw_embeddings: list[list[Any]] = raw.get("embeddings", [[]])
+        return [float(x) for x in raw_embeddings[0]] if raw_embeddings else []
 
     def close(self) -> None:
         """Close the underlying HTTP client."""

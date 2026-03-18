@@ -13,7 +13,7 @@ normal_shutdown_grace_seconds = 5
 
 [model]
 provider                         = "ollama"
-name                             = "phi4"
+name                             = "qwen2.5:14b"
 endpoint_url                     = "http://ollama:11434"
 request_timeout_seconds          = 90
 context_window_tokens            = 16384

@@ -36,7 +36,7 @@ def test_model_provider(config: Config) -> None:
 
 
 def test_model_name(config: Config) -> None:
-    assert config.model.name == "phi4"
+    assert config.model.name == "qwen2.5:14b"
 
 
 def test_model_temperature(config: Config) -> None:
