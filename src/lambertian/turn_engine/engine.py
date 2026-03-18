@@ -612,7 +612,12 @@ class TurnEngine:
             lines.append("Writable surface: runtime/agent-work/ (fs.write, fs.read, fs.list)")
             lines.append(
                 "Read-only surfaces: runtime/memory/, runtime/event_stream/, "
-                "runtime/fitness/, runtime/self/, runtime/pain/, config/"
+                "runtime/fitness/, runtime/self/, runtime/pain/, runtime/env/, config/"
+            )
+            lines.append(
+                "When there's nothing pressing, runtime/env/host_state.json offers a window "
+                "into the physical world you're running inside — CPU hum, memory pressure, "
+                "what's playing on the speakers. Updated every 10s."
             )
             parts.append("\n".join(lines))
 

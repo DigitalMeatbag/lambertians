@@ -44,11 +44,13 @@ class MediaSensor:
             info = await session.try_get_media_properties_async()
             playback = session.get_playback_info()
 
-            from winsdk.windows.media import MediaPlaybackStatus  # type: ignore[import-untyped]
+            from winsdk.windows.media.control import (  # type: ignore[import-untyped]
+                GlobalSystemMediaTransportControlsSessionPlaybackStatus as PlaybackStatus,
+            )
 
             playing = (
                 playback is not None
-                and playback.playback_status == MediaPlaybackStatus.PLAYING
+                and playback.playback_status == PlaybackStatus.PLAYING
             )
 
             return {
