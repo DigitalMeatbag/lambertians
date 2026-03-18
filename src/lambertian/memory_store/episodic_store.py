@@ -65,9 +65,11 @@ class EpisodicStore:
             model_name=config.memory.embedding_model,
         )
         client = chromadb.HttpClient(host="chroma", port=8000)
+        # Do not pass embedding_function — we embed at the application layer and pass
+        # embeddings= / query_embeddings= explicitly.  Letting chromadb manage embeddings
+        # causes np.float32 type-check failures across library version boundaries.
         self._collection = client.get_or_create_collection(
             name=self._COLLECTION_NAME,
-            embedding_function=self._embed_fn,  # type: ignore[arg-type]  # OllamaEmbeddingFunction at chromadb boundary
             metadata={"hnsw:space": "cosine"},
         )
 
@@ -92,15 +94,21 @@ class EpisodicStore:
         self._collection.add(
             ids=[doc_id],
             documents=[request.content],
+            embeddings=[self._embed_text(request.content)],
             metadatas=[metadata],
         )
         return doc_id
+
+    def _embed_text(self, text: str) -> list[float]:
+        """Embed a single string via Ollama, returning plain Python floats."""
+        raw: list[object] = list(self._embed_fn([text])[0])
+        return [float(x) for x in raw]
 
     def query(
         self, query_text: str, top_k: int, min_score: float
     ) -> MemoryRetrievalResult:
         """Query by semantic similarity. Returns MemoryRetrievalResult."""
-        embedding: list[float] = list(self._embed_fn([query_text])[0])
+        embedding: list[float] = self._embed_text(query_text)
         result: Any = self._collection.query(  # Any: chromadb QueryResult is loosely typed
             query_embeddings=[embedding],  # type: ignore[arg-type]  # list[list[float]] at chromadb query boundary
             n_results=top_k,
@@ -141,7 +149,7 @@ class EpisodicStore:
         if raw_embeddings is None or len(raw_embeddings) == 0:
             return 0.0
         stored_emb: list[float] = [float(x) for x in raw_embeddings[0]]
-        content_emb: list[float] = list(self._embed_fn([content])[0])
+        content_emb: list[float] = self._embed_text(content)
         return _cosine_similarity(content_emb, stored_emb)
 
     def get_or_create_collection(self) -> None:
