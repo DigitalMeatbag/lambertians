@@ -163,7 +163,7 @@ def test_compute_postmortem_creates_fresh_readers(tmp_path: Path) -> None:
     )
     assert isinstance(result, FitnessScore)
     assert result.turn_number == 50
-    assert output_path.exists()
+    assert not output_path.exists()  # postmortem does not write to runtime fitness path
 
 
 def test_compute_running_accumulates_histogram(tmp_path: Path) -> None:
@@ -279,5 +279,5 @@ def test_compute_postmortem_builds_histogram(tmp_path: Path) -> None:
     )
     assert isinstance(result, FitnessScore)
     assert result.meaningful_event_count == 3  # 2 TOOL_CALL + 1 MEMORY_WRITE
-    assert output_path.exists()
+    assert not output_path.exists()  # postmortem does not write to runtime fitness path
 

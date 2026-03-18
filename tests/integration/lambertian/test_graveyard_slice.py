@@ -126,13 +126,26 @@ class TestGraveyardHarvestOnDeathRecord:
 
         harvest_seq = _build_harvest_sequence(config, runtime)
         death_reader = DeathRecordReader(pain_root / "death.json")
+        sentinel_path = Path(config.paths.graveyard_root) / "harvest_complete"
         poll_loop = GraveyardPollLoop(
             death_reader=death_reader,
             harvest_sequence=harvest_seq,
+            sentinel_path=sentinel_path,
         )
 
-        # run() detects death immediately (pre-written) and calls execute() once, then returns.
-        poll_loop.run()
+        # run() loops forever. Let the harvest's grace-period sleep pass (call 1),
+        # then raise StopIteration on the loop's idle sleep (call 2+).
+        _calls = 0
+
+        def _mock_sleep(s: float) -> None:
+            nonlocal _calls
+            _calls += 1
+            if _calls >= 2:
+                raise StopIteration
+
+        with patch("time.sleep", side_effect=_mock_sleep):
+            with pytest.raises(StopIteration):
+                poll_loop.run()
 
         graveyard_root = Path(config.paths.graveyard_root)
         harvest_dir = _find_harvest_dir(graveyard_root)
@@ -161,12 +174,24 @@ class TestGraveyardHarvestOnDeathRecord:
 
         harvest_seq = _build_harvest_sequence(config, runtime)
         death_reader = DeathRecordReader(pain_root / "death.json")
+        sentinel_path = Path(config.paths.graveyard_root) / "harvest_complete"
         poll_loop = GraveyardPollLoop(
             death_reader=death_reader,
             harvest_sequence=harvest_seq,
+            sentinel_path=sentinel_path,
         )
 
-        poll_loop.run()
+        _calls = 0
+
+        def _mock_sleep(s: float) -> None:
+            nonlocal _calls
+            _calls += 1
+            if _calls >= 2:
+                raise StopIteration
+
+        with patch("time.sleep", side_effect=_mock_sleep):
+            with pytest.raises(StopIteration):
+                poll_loop.run()
 
         sentinel = runtime / "graveyard" / "harvest_complete"
         assert sentinel.exists(), "harvest_complete sentinel must be written"
@@ -197,12 +222,24 @@ class TestGraveyardManifestFitnessScore:
 
         harvest_seq = _build_harvest_sequence(config, runtime, fitness_score=target_score)
         death_reader = DeathRecordReader(pain_root / "death.json")
+        sentinel_path = Path(config.paths.graveyard_root) / "harvest_complete"
         poll_loop = GraveyardPollLoop(
             death_reader=death_reader,
             harvest_sequence=harvest_seq,
+            sentinel_path=sentinel_path,
         )
 
-        poll_loop.run()
+        _calls = 0
+
+        def _mock_sleep(s: float) -> None:
+            nonlocal _calls
+            _calls += 1
+            if _calls >= 2:
+                raise StopIteration
+
+        with patch("time.sleep", side_effect=_mock_sleep):
+            with pytest.raises(StopIteration):
+                poll_loop.run()
 
         graveyard_root = Path(config.paths.graveyard_root)
         harvest_dir = _find_harvest_dir(graveyard_root)

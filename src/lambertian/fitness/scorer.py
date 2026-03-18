@@ -129,7 +129,8 @@ class FitnessScorer:
             cumulative_pain=cumulative_pain,
             computed_at=datetime.now(timezone.utc).isoformat(),
         )
-        self._write_score(result)
+        # HarvestSequence writes the result to the artifact directory; do not write to
+        # the runtime fitness path here (graveyard has read-only access to that volume).
         return result
 
     def _compute_score(

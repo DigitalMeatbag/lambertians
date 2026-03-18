@@ -55,5 +55,9 @@ def main() -> None:
         runtime_base,
     )
 
-    poll = GraveyardPollLoop(death_reader, harvest)
+    poll = GraveyardPollLoop(
+        death_reader,
+        harvest,
+        sentinel_path=Path(config.paths.graveyard_root) / "harvest_complete",
+    )
     poll.run()

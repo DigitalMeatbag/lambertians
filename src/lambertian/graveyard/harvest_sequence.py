@@ -123,8 +123,9 @@ class HarvestSequence:
             json.dumps(
                 {
                     "instance_id": death.instance_id,
+                    "death_timestamp": death.timestamp,
                     "output_dir": str(output_dir),
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "harvest_timestamp": datetime.now(timezone.utc).isoformat(),
                 }
             ),
             encoding="utf-8",
