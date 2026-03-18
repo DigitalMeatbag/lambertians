@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
@@ -57,6 +57,8 @@ class McpConfig:
     retry_count: int
     emit_pain_on_failure: bool
     emit_pain_on_rejection: bool
+    # [ASSUMED: 65536 (64 KB) — IS-7 requires truncation limit; no value specified in IS-1]
+    http_fetch_max_bytes: int = field(default=65536)
 
 
 @dataclass(frozen=True)

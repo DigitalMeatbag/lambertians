@@ -145,6 +145,7 @@ def _load_mcp(raw: dict[str, Any]) -> McpConfig:
         retry_count=_int(d, "retry_count", s),
         emit_pain_on_failure=_bool(d, "emit_pain_on_failure", s),
         emit_pain_on_rejection=_bool(d, "emit_pain_on_rejection", s),
+        http_fetch_max_bytes=_int(d, "http_fetch_max_bytes", s),
     )
 
 

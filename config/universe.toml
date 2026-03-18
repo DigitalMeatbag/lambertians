@@ -46,6 +46,8 @@ request_timeout_seconds = 30
 retry_count             = 0
 emit_pain_on_failure    = true
 emit_pain_on_rejection  = true
+# [ASSUMED: 65536 (64 KB) — IS-7 http_fetch truncation limit; not specified in IS-1]
+http_fetch_max_bytes    = 65536
 
 [pain.stress]
 scale_min                 = 0.0
