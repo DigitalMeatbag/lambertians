@@ -494,6 +494,9 @@ class TurnEngine:
         else:
             self._turn_state.write_noop_state(0)
 
+        # TODO (IS-13 integration pass): call fitness_scorer.compute_running(turn_number) here.
+        # Fitness is observer-only (IS-13.1); failure must log a warning and not abort the turn.
+
         # Step 17: Increment turn counter, build TurnRecord, write TURN_COMPLETE.
         timestamp_end = datetime.now(timezone.utc).isoformat()
         new_turn_number = self._turn_state.increment_turn()
