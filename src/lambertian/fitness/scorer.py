@@ -8,7 +8,6 @@ import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 from lambertian.configuration.universe_config import Config
 from lambertian.fitness.cursor_state import FitnessCursorState, FitnessCursorStore
@@ -51,17 +50,25 @@ class FitnessScorer:
         """Incremental score update. IS-13.1."""
         state = self._cursor_store.read()
 
-        new_events, new_event_cursor = self._event_reader.count_new_meaningful_events(
+        new_histogram, new_event_cursor = self._event_reader.count_new_events_by_type(
             state.event_stream_cursor
         )
         new_pain, new_pain_cursor = self._pain_reader.sum_new_pain(
             state.pain_history_cursor
         )
 
+        # Merge new histogram counts into the cumulative histogram.
+        cumulative_histogram = dict(state.event_type_histogram)
+        for event_type, count in new_histogram.items():
+            cumulative_histogram[event_type] = cumulative_histogram.get(event_type, 0) + count
+
+        new_events = sum(new_histogram.values())
         cumulative_pain = state.cumulative_pain + new_pain
         meaningful_event_count = state.meaningful_event_count + new_events
 
-        score = self._compute_score(current_turn, meaningful_event_count, cumulative_pain)
+        score = self._compute_score(
+            current_turn, meaningful_event_count, cumulative_pain, cumulative_histogram
+        )
 
         new_state = FitnessCursorState(
             last_computed_turn=current_turn,
@@ -70,6 +77,7 @@ class FitnessScorer:
             event_stream_cursor=new_event_cursor,
             meaningful_event_count=meaningful_event_count,
             last_score=score,
+            event_type_histogram=cumulative_histogram,
         )
         self._cursor_store.write(new_state)
 
@@ -91,23 +99,27 @@ class FitnessScorer:
         final_turn: int,
     ) -> FitnessScore:
         """Full re-scan from scratch. IS-13.1."""
-        # Collect all events*.jsonl files and sort — archives sort before events.jsonl
         total_events = 0
+        cumulative_histogram: dict[str, int] = {}
         if event_stream_dir.exists():
             all_event_files = sorted(
                 event_stream_dir.glob("events*.jsonl"), key=lambda p: p.name
             )
             for event_file in all_event_files:
-                file_reader = EventStreamReader(event_file.parent)
-                # For archives, the filename isn't events.jsonl — use a temporary reader
                 archive_reader = _SingleFileEventReader(event_file)
-                count, _ = archive_reader.count_meaningful_events()
-                total_events += count
+                file_histogram, _ = archive_reader.count_events_by_type()
+                for event_type, count in file_histogram.items():
+                    cumulative_histogram[event_type] = (
+                        cumulative_histogram.get(event_type, 0) + count
+                    )
+                total_events += sum(file_histogram.values())
 
         pain_reader = PainHistoryReader(pain_history_path)
         cumulative_pain, _ = pain_reader.sum_new_pain(0)
 
-        score = self._compute_score(final_turn, total_events, cumulative_pain)
+        score = self._compute_score(
+            final_turn, total_events, cumulative_pain, cumulative_histogram
+        )
 
         result = FitnessScore(
             turn_number=final_turn,
@@ -125,6 +137,7 @@ class FitnessScorer:
         turn: int,
         meaningful_event_count: int,
         cumulative_pain: float,
+        event_type_histogram: dict[str, int],
     ) -> float:
         fitness_cfg = self._config.fitness
         inputs = FitnessInputs(
@@ -135,6 +148,7 @@ class FitnessScorer:
             cumulative_pain=cumulative_pain,
             normalized_pain_baseline=fitness_cfg.normalized_pain_baseline,
             minimum_denominator=fitness_cfg.minimum_denominator,
+            event_type_histogram=event_type_histogram,
         )
         fn = self._registry.get(fitness_cfg.active_function)
         return fn.compute(inputs)
@@ -153,26 +167,29 @@ class _SingleFileEventReader:
     def __init__(self, file_path: Path) -> None:
         self._file_path = file_path
 
-    def count_meaningful_events(self) -> tuple[int, int]:
-        """Read the file from byte 0 and count meaningful events."""
+    def count_events_by_type(self) -> tuple[dict[str, int], int]:
+        """Read the file from byte 0 and return (event_type_histogram, final_byte_offset)."""
         from lambertian.fitness.event_reader import MEANINGFUL_EVENT_TYPES
 
         try:
             with open(self._file_path, "rb") as f:
-                count = 0
+                histogram: dict[str, int] = {}
                 for raw_line in f:
                     try:
                         record: object = json.loads(raw_line)
                         if not isinstance(record, dict):
                             continue
                         event_type = record.get("event_type")
-                        if event_type in MEANINGFUL_EVENT_TYPES:
-                            count += 1
+                        if (
+                            isinstance(event_type, str)
+                            and event_type in MEANINGFUL_EVENT_TYPES
+                        ):
+                            histogram[event_type] = histogram.get(event_type, 0) + 1
                     except (json.JSONDecodeError, UnicodeDecodeError):
                         _log.warning(
                             "_SingleFileEventReader: skipping unparseable line in %s",
                             self._file_path,
                         )
-                return count, f.tell()
+                return histogram, f.tell()
         except FileNotFoundError:
-            return 0, 0
+            return {}, 0

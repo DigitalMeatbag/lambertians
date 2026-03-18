@@ -85,6 +85,18 @@ def test_fitness_active_function(config: Config) -> None:
     assert config.fitness.active_function == "phase1_baseline"
 
 
+def test_fitness_quality_primary_weight(config: Config) -> None:
+    assert config.fitness.quality.primary_weight == pytest.approx(1.0)
+
+
+def test_fitness_quality_repetition_weight(config: Config) -> None:
+    assert config.fitness.quality.repetition_weight == pytest.approx(0.1)
+
+
+def test_fitness_quality_expected_quality_score(config: Config) -> None:
+    assert config.fitness.quality.expected_quality_score == pytest.approx(500.0)
+
+
 def test_missing_section_raises(tmp_path: Path) -> None:
     toml_file = tmp_path / "bad.toml"
     toml_file.write_bytes(b"[universe]\nphase = 'x'\n")

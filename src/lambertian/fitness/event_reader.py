@@ -23,29 +23,38 @@ class EventStreamReader:
     def __init__(self, event_stream_dir: Path) -> None:
         self._event_stream_dir = event_stream_dir
 
-    def count_new_meaningful_events(self, from_byte_offset: int) -> tuple[int, int]:
-        """Return (count, new_byte_offset). If file absent: returns (0, 0).
+    def count_new_events_by_type(self, from_byte_offset: int) -> tuple[dict[str, int], int]:
+        """Return (event_type_histogram, new_byte_offset) for events after from_byte_offset.
 
-        Seeks to from_byte_offset. Skips unparseable lines.
+        Only counts event types in MEANINGFUL_EVENT_TYPES. If file absent: returns ({}, 0).
+        Skips unparseable lines.
         """
         events_file = self._event_stream_dir / "events.jsonl"
         try:
             with open(events_file, "rb") as f:
                 f.seek(from_byte_offset)
-                count = 0
+                histogram: dict[str, int] = {}
                 for raw_line in f:
                     try:
                         record: object = json.loads(raw_line)
                         if not isinstance(record, dict):
                             continue
                         event_type = record.get("event_type")
-                        if event_type in MEANINGFUL_EVENT_TYPES:
-                            count += 1
+                        if isinstance(event_type, str) and event_type in MEANINGFUL_EVENT_TYPES:
+                            histogram[event_type] = histogram.get(event_type, 0) + 1
                     except (json.JSONDecodeError, UnicodeDecodeError):
                         _log.warning(
                             "EventStreamReader: skipping unparseable line at offset %d",
                             from_byte_offset,
                         )
-                return count, f.tell()
+                return histogram, f.tell()
         except FileNotFoundError:
-            return 0, 0
+            return {}, 0
+
+    def count_new_meaningful_events(self, from_byte_offset: int) -> tuple[int, int]:
+        """Return (count, new_byte_offset). If file absent: returns (0, 0).
+
+        Seeks to from_byte_offset. Skips unparseable lines.
+        """
+        histogram, new_offset = self.count_new_events_by_type(from_byte_offset)
+        return sum(histogram.values()), new_offset

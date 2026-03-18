@@ -80,3 +80,63 @@ def test_skips_unparseable_lines(tmp_path: Path) -> None:
     count, _ = reader.count_new_meaningful_events(0)
     assert count == 2
 
+
+# ---------------------------------------------------------------------------
+# count_new_events_by_type — Phase 2 histogram method
+# ---------------------------------------------------------------------------
+
+def test_count_by_type_returns_histogram(tmp_path: Path) -> None:
+    event_file = tmp_path / "events.jsonl"
+    _write_events(
+        event_file,
+        [
+            {"event_type": "TOOL_CALL", "turn_number": 1},
+            {"event_type": "TOOL_CALL", "turn_number": 2},
+            {"event_type": "MEMORY_WRITE", "turn_number": 2},
+            {"event_type": "TURN_COMPLETE", "turn_number": 2},  # not meaningful
+            {"event_type": "REVIEWED_ADAPTATION", "turn_number": 3},
+        ],
+    )
+    reader = EventStreamReader(tmp_path)
+    histogram, offset = reader.count_new_events_by_type(0)
+    assert histogram == {"TOOL_CALL": 2, "MEMORY_WRITE": 1, "REVIEWED_ADAPTATION": 1}
+    assert offset == event_file.stat().st_size
+
+
+def test_count_by_type_absent_file_returns_empty(tmp_path: Path) -> None:
+    reader = EventStreamReader(tmp_path)
+    histogram, offset = reader.count_new_events_by_type(0)
+    assert histogram == {}
+    assert offset == 0
+
+
+def test_count_by_type_mid_file_offset(tmp_path: Path) -> None:
+    event_file = tmp_path / "events.jsonl"
+    lines: list[dict[str, object]] = [
+        {"event_type": "TOOL_CALL"},
+        {"event_type": "MEMORY_WRITE"},
+    ]
+    _write_events(event_file, lines)
+
+    import json as _json
+    first_line_bytes = len((_json.dumps(lines[0]) + "\n").encode("utf-8"))
+    reader = EventStreamReader(tmp_path)
+    histogram, _ = reader.count_new_events_by_type(first_line_bytes)
+    assert histogram == {"MEMORY_WRITE": 1}
+    assert "TOOL_CALL" not in histogram
+
+
+def test_count_new_meaningful_events_delegates_to_histogram(tmp_path: Path) -> None:
+    event_file = tmp_path / "events.jsonl"
+    _write_events(
+        event_file,
+        [
+            {"event_type": "TOOL_CALL"},
+            {"event_type": "TOOL_CALL"},
+            {"event_type": "MEMORY_WRITE"},
+        ],
+    )
+    reader = EventStreamReader(tmp_path)
+    count, _ = reader.count_new_meaningful_events(0)
+    assert count == 3  # sum of histogram values
+

@@ -29,7 +29,7 @@ def main() -> None:
     death_reader = DeathRecordReader(runtime_base / "pain" / "death.json")
     event_log = EventLogWriter(config)
 
-    registry = build_default_registry()
+    registry = build_default_registry(quality_config=config.fitness.quality)
     cursor_store = FitnessCursorStore(runtime_base / "fitness" / "state.json")
     event_reader = EventStreamReader(runtime_base / "event_stream")
     pain_reader = PainHistoryReader(runtime_base / "pain" / "pain_history.jsonl")

@@ -55,6 +55,22 @@ def validate_config(config: Config) -> None:
             f"fitness.minimum_denominator ({fitness.minimum_denominator}) must be > 0"
         )
 
+    if fitness.quality.primary_weight <= 0:
+        raise ConfigurationError(
+            f"fitness.quality.primary_weight ({fitness.quality.primary_weight}) must be > 0"
+        )
+
+    if fitness.quality.repetition_weight < 0:
+        raise ConfigurationError(
+            f"fitness.quality.repetition_weight ({fitness.quality.repetition_weight}) must be >= 0"
+        )
+
+    if fitness.quality.expected_quality_score <= 0:
+        raise ConfigurationError(
+            f"fitness.quality.expected_quality_score ({fitness.quality.expected_quality_score}) "
+            f"must be > 0"
+        )
+
     if universe.instance_count != 1:
         raise ConfigurationError(
             f"Phase 1 guard: universe.instance_count must be 1, got {universe.instance_count}"

@@ -14,6 +14,7 @@ from lambertian.configuration.universe_config import (
     EosConfig,
     EventStreamConfig,
     FitnessConfig,
+    FitnessQualityConfig,
     GraveyardConfig,
     McpConfig,
     MemoryConfig,
@@ -96,6 +97,11 @@ def _make_config(max_age_turns: int = 1000) -> Config:
             compute_running_score=True, compute_postmortem_score=True,
             expected_events_per_100_turns=25.0, normalized_pain_baseline=10.0,
             minimum_denominator=0.10,
+            quality=FitnessQualityConfig(
+                primary_weight=1.0,
+                repetition_weight=0.1,
+                expected_quality_score=500.0,
+            ),
         ),
         paths=PathsConfig(
             runtime_root="runtime", event_stream_file="runtime/events.jsonl",

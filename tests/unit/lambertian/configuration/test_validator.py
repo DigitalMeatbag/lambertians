@@ -12,6 +12,7 @@ from lambertian.configuration.universe_config import (
     EosConfig,
     EventStreamConfig,
     FitnessConfig,
+    FitnessQualityConfig,
     GraveyardConfig,
     McpConfig,
     MemoryConfig,
@@ -79,6 +80,11 @@ def _make_valid_config(
         expected_events_per_100_turns=25.0,
         normalized_pain_baseline=10.0,
         minimum_denominator=0.10,
+        quality=FitnessQualityConfig(
+            primary_weight=1.0,
+            repetition_weight=0.1,
+            expected_quality_score=500.0,
+        ),
     )
     default_universe = UniverseConfig(
         phase="phase1",
@@ -248,6 +254,7 @@ def test_invariant_minimum_denominator_positive() -> None:
         compute_running_score=True, compute_postmortem_score=True,
         expected_events_per_100_turns=25.0, normalized_pain_baseline=10.0,
         minimum_denominator=0.0,  # zero — violation
+        quality=FitnessQualityConfig(primary_weight=1.0, repetition_weight=0.1, expected_quality_score=500.0),
     )
     with pytest.raises(ConfigurationError, match="minimum_denominator"):
         validate_config(_make_valid_config(fitness=fitness))
@@ -274,4 +281,52 @@ def test_invariant_phase1_narrative_disabled() -> None:
     )
     with pytest.raises(ConfigurationError, match="narrative_enabled"):
         validate_config(_make_valid_config(memory=memory))
+
+
+def test_invariant_quality_primary_weight_positive() -> None:
+    fitness = FitnessConfig(
+        enabled=True, active_function="phase2_quality_weighted",
+        compute_running_score=True, compute_postmortem_score=True,
+        expected_events_per_100_turns=25.0, normalized_pain_baseline=10.0,
+        minimum_denominator=0.10,
+        quality=FitnessQualityConfig(
+            primary_weight=0.0,  # zero — violation
+            repetition_weight=0.1,
+            expected_quality_score=500.0,
+        ),
+    )
+    with pytest.raises(ConfigurationError, match="primary_weight"):
+        validate_config(_make_valid_config(fitness=fitness))
+
+
+def test_invariant_quality_repetition_weight_non_negative() -> None:
+    fitness = FitnessConfig(
+        enabled=True, active_function="phase2_quality_weighted",
+        compute_running_score=True, compute_postmortem_score=True,
+        expected_events_per_100_turns=25.0, normalized_pain_baseline=10.0,
+        minimum_denominator=0.10,
+        quality=FitnessQualityConfig(
+            primary_weight=1.0,
+            repetition_weight=-0.1,  # negative — violation
+            expected_quality_score=500.0,
+        ),
+    )
+    with pytest.raises(ConfigurationError, match="repetition_weight"):
+        validate_config(_make_valid_config(fitness=fitness))
+
+
+def test_invariant_quality_expected_quality_score_positive() -> None:
+    fitness = FitnessConfig(
+        enabled=True, active_function="phase2_quality_weighted",
+        compute_running_score=True, compute_postmortem_score=True,
+        expected_events_per_100_turns=25.0, normalized_pain_baseline=10.0,
+        minimum_denominator=0.10,
+        quality=FitnessQualityConfig(
+            primary_weight=1.0,
+            repetition_weight=0.1,
+            expected_quality_score=0.0,  # zero — violation
+        ),
+    )
+    with pytest.raises(ConfigurationError, match="expected_quality_score"):
+        validate_config(_make_valid_config(fitness=fitness))
 

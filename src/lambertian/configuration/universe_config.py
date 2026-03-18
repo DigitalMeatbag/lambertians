@@ -148,6 +148,13 @@ class GraveyardConfig:
 
 
 @dataclass(frozen=True)
+class FitnessQualityConfig:
+    primary_weight: float
+    repetition_weight: float
+    expected_quality_score: float
+
+
+@dataclass(frozen=True)
 class FitnessConfig:
     enabled: bool
     active_function: str
@@ -156,6 +163,7 @@ class FitnessConfig:
     expected_events_per_100_turns: float
     normalized_pain_baseline: float
     minimum_denominator: float
+    quality: FitnessQualityConfig
 
 
 @dataclass(frozen=True)

@@ -35,6 +35,7 @@ def _make_scorer(
     *,
     cursor_state: FitnessCursorState | None = None,
     new_events: int = 0,
+    new_event_histogram: dict[str, int] | None = None,
     new_event_cursor: int = 0,
     new_pain: float = 0.0,
     new_pain_cursor: int = 0,
@@ -56,8 +57,14 @@ def _make_scorer(
         last_score=0.0,
     )
 
+    # Build histogram from new_events count if not explicitly provided.
+    if new_event_histogram is None:
+        histogram: dict[str, int] = {"TOOL_CALL": new_events} if new_events > 0 else {}
+    else:
+        histogram = new_event_histogram
+
     event_reader = MagicMock()
-    event_reader.count_new_meaningful_events.return_value = (new_events, new_event_cursor)
+    event_reader.count_new_events_by_type.return_value = (histogram, new_event_cursor)
 
     pain_reader = MagicMock()
     pain_reader.sum_new_pain.return_value = (new_pain, new_pain_cursor)
@@ -156,5 +163,121 @@ def test_compute_postmortem_creates_fresh_readers(tmp_path: Path) -> None:
     )
     assert isinstance(result, FitnessScore)
     assert result.turn_number == 50
+    assert output_path.exists()
+
+
+def test_compute_running_accumulates_histogram(tmp_path: Path) -> None:
+    """Histogram in cursor state merges new counts with existing cumulative counts."""
+    initial = FitnessCursorState(
+        last_computed_turn=5,
+        cumulative_pain=0.0,
+        pain_history_cursor=0,
+        event_stream_cursor=100,
+        meaningful_event_count=3,
+        last_score=0.1,
+        event_type_histogram={"TOOL_CALL": 2, "MEMORY_WRITE": 1},
+    )
+    scorer, cursor_store, _, _ = _make_scorer(
+        tmp_path,
+        cursor_state=initial,
+        new_event_histogram={"TOOL_CALL": 1, "REVIEWED_ADAPTATION": 2},
+    )
+    scorer.compute_running(10)
+    written: FitnessCursorState = cursor_store.write.call_args[0][0]
+    assert written.event_type_histogram == {
+        "TOOL_CALL": 3,
+        "MEMORY_WRITE": 1,
+        "REVIEWED_ADAPTATION": 2,
+    }
+    assert written.meaningful_event_count == 6  # 3 + 3 (sum of new_event_histogram)
+
+
+def test_compute_running_with_quality_function(tmp_path: Path) -> None:
+    """Quality-weighted active function uses histogram from cursor state."""
+    from lambertian.configuration.universe_config import FitnessQualityConfig
+    from lambertian.fitness.registry import build_default_registry
+
+    quality_cfg = FitnessQualityConfig(
+        primary_weight=1.0, repetition_weight=0.1, expected_quality_score=500.0
+    )
+    config = _make_config(active_fn="phase2_quality_weighted")
+    registry = build_default_registry(quality_config=quality_cfg)
+    output_path = tmp_path / "score.json"
+
+    cursor_store = MagicMock(spec=FitnessCursorStore)
+    cursor_store.read.return_value = FitnessCursorState(
+        last_computed_turn=0,
+        cumulative_pain=0.0,
+        pain_history_cursor=0,
+        event_stream_cursor=0,
+        meaningful_event_count=0,
+        last_score=0.0,
+        event_type_histogram={},
+    )
+
+    event_reader = MagicMock()
+    event_reader.count_new_events_by_type.return_value = (
+        {"TOOL_CALL": 3, "MEMORY_WRITE": 2},
+        100,
+    )
+    pain_reader = MagicMock()
+    pain_reader.sum_new_pain.return_value = (0.0, 0)
+
+    scorer = FitnessScorer(
+        config=config,  # type: ignore[arg-type]
+        registry=registry,
+        cursor_store=cursor_store,
+        event_reader=event_reader,
+        pain_reader=pain_reader,
+        output_path=output_path,
+    )
+    result = scorer.compute_running(100)
+    assert isinstance(result, FitnessScore)
+    assert result.score > 0.0
+    assert output_path.exists()
+
+
+def test_compute_postmortem_builds_histogram(tmp_path: Path) -> None:
+    """Post-mortem scan builds histogram from event files."""
+    import json as _json
+
+    config = _make_config(max_age=100)
+    registry = build_default_registry()
+    output_path = tmp_path / "score.json"
+
+    cursor_store = MagicMock(spec=FitnessCursorStore)
+    event_reader = MagicMock()
+    event_reader.count_new_events_by_type.return_value = (0, 0)
+    pain_reader = MagicMock()
+    pain_reader.sum_new_pain.return_value = (0.0, 0)
+
+    scorer = FitnessScorer(
+        config=config,  # type: ignore[arg-type]
+        registry=registry,
+        cursor_store=cursor_store,
+        event_reader=event_reader,
+        pain_reader=pain_reader,
+        output_path=output_path,
+    )
+
+    event_dir = tmp_path / "event_stream"
+    event_dir.mkdir()
+    events_file = event_dir / "events.jsonl"
+    with events_file.open("w") as f:
+        f.write(_json.dumps({"event_type": "TOOL_CALL"}) + "\n")
+        f.write(_json.dumps({"event_type": "TOOL_CALL"}) + "\n")
+        f.write(_json.dumps({"event_type": "MEMORY_WRITE"}) + "\n")
+        f.write(_json.dumps({"event_type": "TURN_COMPLETE"}) + "\n")  # not meaningful
+
+    pain_file = tmp_path / "pain_history.jsonl"
+    pain_file.write_text("")
+
+    result = scorer.compute_postmortem(
+        event_stream_dir=event_dir,
+        pain_history_path=pain_file,
+        final_turn=50,
+    )
+    assert isinstance(result, FitnessScore)
+    assert result.meaningful_event_count == 3  # 2 TOOL_CALL + 1 MEMORY_WRITE
     assert output_path.exists()
 

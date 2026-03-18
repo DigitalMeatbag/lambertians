@@ -13,6 +13,7 @@ from lambertian.configuration.universe_config import (
     EosConfig,
     EventStreamConfig,
     FitnessConfig,
+    FitnessQualityConfig,
     GraveyardConfig,
     McpConfig,
     MemoryConfig,
@@ -254,6 +255,13 @@ def _load_graveyard(raw: dict[str, Any]) -> GraveyardConfig:
 def _load_fitness(raw: dict[str, Any]) -> FitnessConfig:
     s = "fitness"
     d = _dict(raw, s, "<root>")
+    qs = "fitness.quality"
+    qd = _dict(d, "quality", s)
+    quality = FitnessQualityConfig(
+        primary_weight=_float(qd, "primary_weight", qs),
+        repetition_weight=_float(qd, "repetition_weight", qs),
+        expected_quality_score=_float(qd, "expected_quality_score", qs),
+    )
     return FitnessConfig(
         enabled=_bool(d, "enabled", s),
         active_function=_str(d, "active_function", s),
@@ -262,6 +270,7 @@ def _load_fitness(raw: dict[str, Any]) -> FitnessConfig:
         expected_events_per_100_turns=_float(d, "expected_events_per_100_turns", s),
         normalized_pain_baseline=_float(d, "normalized_pain_baseline", s),
         minimum_denominator=_float(d, "minimum_denominator", s),
+        quality=quality,
     )
 
 
