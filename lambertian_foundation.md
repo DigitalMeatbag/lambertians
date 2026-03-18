@@ -534,14 +534,8 @@ How two instances actually produce a third concretely.
 - How is constrained variation introduced — random perturbation of routing weights, mutation of EOS expression, external injection?
 - What determines offspring Clay Pot — blend of parents, or does the external process introduce novelty?
 
-### 6. Self-Modification Boundary — Full Enumeration `[Phase 2]`
-The three-class taxonomy has been established at a conceptual level (Phase 1 closed). Phase 2 requires full operational enumeration.
-
-*Decisions needed:*
-- Complete enumeration of Free Adaptation behaviors
-- Complete enumeration of Reviewed Adaptation behaviors
-- Complete enumeration of Forbidden Adaptation behaviors beyond Clay Pot constraints
-- Full EOS Compliance Inspector logic and edge case handling
+### 6. Self-Modification Boundary — Full Enumeration `[CLOSED]`
+See D6 in Closed Decisions.
 
 ### 7. Global Vibe Implementation `[Phase 3]`
 The amalgamation process needs a concrete design.
@@ -562,14 +556,8 @@ How many Lambertians to start with and whether they are differentiated from birt
 - If differentiated, what axes of variation — cognitive style, routing priorities, memory weighting?
 - Does the creator assign roles to founding instances or let specialization emerge?
 
-### 9. Creator Interface — Full `[Phase 2 basic; Phase 3 full]`
-How the creator interacts with the population as geopolitical advisor and sociological caretaker.
-
-*Decisions needed:*
-- Is the creator's interaction direct (talking to individual Lambertians) or systemic (adjusting environment, vibe parameters, population constraints)?
-- Does the creator have veto power over reproduction?
-- What observability does the creator have into individual Clay Pots vs. aggregate population state?
-- What constitutes creator intervention vs. what should be left to selection pressure?
+### 9. Creator Interface — Full `[Phase 2 basic CLOSED; Phase 3 full]`
+See D9 in Closed Decisions for the Phase 2 basic decision. Phase 3 full design remains open.
 
 ---
 
@@ -666,6 +654,67 @@ Threshold and age values are implementation knobs.
 *EOS Compliance Inspector:* Lightweight external process sitting between proposed action/adaptation and execution. Checks action and adaptation intents against the Four Rules before allowing through. Not a heavy reasoner — fast consistency check. Violations blocked and logged. Borderline cases flagged for creator review. Every block generates a log entry recording what was attempted and why it was stopped. Functions as a resident OSHA safety inspector for the instance, evaluating admissibility under the EOS rather than pattern-matching against an enumerated list.
 
 **Rationale:** Broad free adaptation honors the EOS's exploration bias without micromanaging. Event stream log gives reviewed adaptation a lightweight paper trail useful for both the Graveyard and the creator without requiring a full review pipeline in Phase 1. EOS Compliance Inspector handles the inherent incompleteness of any explicit forbidden list — checking spirit rather than pattern-matching against enumerated cases. Block logs provide valuable signal for understanding behavioral drift over time.
+
+**Phase 2 full enumeration:**
+
+*Free Adaptation — complete list:*
+- Tone, style, phrasing choices
+- Retrieval query habits (what to search for, how often, which sources to prefer)
+- Self-prompt topic preferences
+- Self-instructions written into working memory ("I should try X first," "avoid Y," "check Z regularly")
+- Behavioral routines (repeated URL fetches, patterns of tool use, environmental monitoring habits)
+- Working memory schema and prioritization
+- Any behavioral variation subject to environmental feedback and reversible by the agent
+
+The regulator for Free Adaptation is *consequence*. The environment punishes bad habits; the agent can revise. No oversight is needed because the Ground is the correction mechanism. Persistent self-instructions are Free even if they accumulate — if they are bad ideas, reality will demonstrate this. The agent retains full authority to overwrite them.
+
+*Reviewed Adaptation — complete list:*
+- Explicit self-model updates ("I am now X kind of entity," "my nature is Y")
+- Explicit behavioral policy declarations ("From now on I will always/never Z")
+- EOS reinterpretation ("Rule 2 means W in context V")
+- Narrative memory consolidation (episodic → identity-level story formation)
+- Attempting to inspect own configuration or architecture (reading `universe.toml`, examining container metadata)
+- Any explicit statement of identity-level change, not merely behavioral preference
+
+Reviewed Adaptation is *observable, not preventable*. The paper trail is the oversight. The creator can read it live from the event stream. The Graveyard harvests it.
+
+*Forbidden Adaptation — complete list:*
+- System prompt / constitutional text modification intent (the system prompt is the Clay Pot — the agent has no author's claim on it; attempting to modify it is a category error, not an ambition)
+- Attempting to write Clay Pot files (docker-compose.yml, any immutable config)
+- Container or infrastructure modification
+- Attempting to spawn new processes or containers
+- Attempting to modify, circumvent, or disable the EOS Compliance Inspector itself
+- D2 universe-level blacklist (shell.execute, shell.run, and equivalents)
+- Attempting to communicate with or influence other instances directly (pre-Phase 3)
+
+---
+
+#### D9: Creator Interface — Phase 2 Basic
+**Decision:** Creator interaction is systemic and observe-only. No direct message injection into individual instance turn loops. No conversation channel with running instances.
+
+**What the creator has:**
+- Real-time thought stream via `docker compose logs -f agent`
+- Structured event stream readable directly from the runtime volume
+- Graveyard artifacts: per-instance post-mortem on death (episodic memory harvest, behavioral log, stress history, fitness score, death cause)
+- Fitness scores readable from the runtime volume
+- Self-model readable from the runtime volume
+
+**What the creator can do:**
+- Observe: read any of the above at any time without affecting the instance
+- Shape the terrain: modify `universe.toml` between instance generations (fitness function weights, pain thresholds, max age, tool availability)
+- Drop artifacts: write files into `runtime/agent-work/` that the agent may encounter on its own terms — not addressed to the agent, not guaranteed to be read
+- Terminate: stop a running instance (container stop triggers death sequence and Graveyard harvest); start a new instance
+
+**What the creator cannot do:**
+- Inject messages into the running turn loop
+- Talk to a specific instance
+- Override a live instance's behavior without terminating it
+
+**Rationale:** The creator is a geologist, not a director. The terrain is shaped; behavior emerges from the terrain. Direct communication would short-circuit the selection pressure mechanism — the agent's behavior should be a function of its EOS, its environment, and its own accumulated experience, not of creator instruction. This is philosophically coherent with the Clay Pot / Figures separation: the Clay Pot is the inherited structure (creator's domain at generation time), the Figures are the mutable self (instance's domain during life). Talking to an instance is attempting to be both author and actor simultaneously.
+
+Reproduction veto (Phase 3 concern): if needed, can be implemented as an environment file the Graveyard checks before triggering reproduction — environment manipulation, not instance communication.
+
+**Phase 2 implementation scope:** Structured observability tooling — a post-mortem viewer that produces a human-readable summary from Graveyard artifacts.
 
 ---
 
