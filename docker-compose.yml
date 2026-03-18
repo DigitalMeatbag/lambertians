@@ -2,8 +2,6 @@
 # This file is the concrete Clay Pot composition artifact (D1).
 # The agent instance has no write access to this file at runtime.
 
-version: "3.9"
-
 networks:
   lambertian-core:
     # Internal organism traffic: agent ↔ ollama, chroma, pain-monitor,
@@ -32,12 +30,22 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped
+    # RTX 4070 Super passthrough — requires nvidia-container-toolkit on host.
+    # Remove the deploy block if running CPU-only.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/version"]
+      # ollama/ollama image has no curl; use the bundled CLI instead.
+      test: ["CMD", "ollama", "list"]
       interval: 10s
-      timeout: 5s
-      retries: 6
-      start_period: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
 
   # ── Vector memory persistence ────────────────────────────────────────────
   chroma:
