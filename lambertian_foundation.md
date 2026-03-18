@@ -3012,6 +3012,64 @@ The event submission interface is called by `turn_engine` at IS-6.3 steps 11 (co
 - **IS-6 (The Turn)** is the primary caller of both IS-8 interfaces: delivery drain at step 2, event submission at steps 11, 12, and 16.
 - **IS-5 (Startup / Shutdown)** establishes that the pain-monitor must be healthy before the agent starts (Layer 2 dependency). If the pain-monitor dies during operation, the delivery queue will stop being populated and the event queue will not be processed. The agent will not crash — it will continue without pain signal, which is itself a survivable (if blind) state. [ASSUMED: pain-monitor death is not a fatal agent condition in Phase 1; the agent simply loses pain sensing until the monitor restarts. A future phase could add a pain-monitor health check that generates a coherence-failure pain event if the monitor becomes unreachable.]
 - **IS-9 (Event Stream Log)** does not duplicate the pain event queue. Pain events flow through `runtime_pain/` independently of the event stream. IS-9 captures the agent's observable reactions to pain (what it did in response) and structural events, not the pain signal itself. The `pain_history.jsonl` in `runtime_pain/` is the authoritative pain record for the graveyard.
+
+---
+
+## Phase 1 Observations
+
+*A record of what actually happened. Implementation notes, behavioral surprises, and insights that emerged from running Phase 1. Not prescriptive — descriptive. Updated as Phase 1 runs accumulate.*
+
+---
+
+### Implementation
+
+**Phase 1 was implemented in full.** All 13 IS sections were specced and built. The system came up as a single docker-compose stack: agent, ollama, chroma, pain-monitor, eos-compliance, graveyard. All services healthy. Turn loop running at approximately 1 turn/second on BIGBEEF with qwen2.5:14b.
+
+[ASSUMED: qwen2.5:14b was used in practice rather than phi-4, which was unavailable via Ollama at implementation time. Both are function-calling-capable models of comparable size. The spec uses phi-4 as the canonical default; qwen2.5:14b is a drop-in for Phase 1 purposes.]
+
+Several implementation gaps were discovered and corrected during bring-up:
+
+- **Working memory write-back gap.** Step 15 of the turn loop was writing mechanical metadata ("Turn N: SELF_PROMPT driver. Called 0 tools.") rather than actual response content. Self-prompts generated from this were circular — the generator read the metadata as context and produced prompts like "What is Turn N: SELF_PROMPT driver?" Fixed: step 15 now writes the response excerpt followed by metadata. Self-prompt topic extraction strips the metadata trailer.
+
+- **Self-prompt framing.** Initial question stems ("What is...?", "How does...?") reliably produced philosophical essays rather than action. Replaced with imperative action stems ("Explore...", "Investigate...", "Use your tools to examine..."). Constitution extended with an explicit SELF-PROMPT PROTOCOL section framing `[SELF_PROMPT]` as an intrinsic impulse requiring concrete action, not a Q&A exchange. First tool calls appeared within seconds of this change.
+
+- **Ground block absent.** IS-7.7 was underimplemented: turn 1 was not injecting the tool catalog, and rejection events were not feeding back verbatim rejection reasons. Without this, the agent had no reliable knowledge of what tools existed or why they were failing. Fixed: turn 1 now injects the full tool catalog and permitted path surfaces; subsequent turns after `mcp_rejection` or `compliance_verdict=block` inject the rejection details verbatim into the ground block.
+
+- **Agent-work volume absent.** The agent had no writable workspace at `/app/runtime/agent-work`. Added as a named Docker volume mounted rw in agent and ro in graveyard.
+
+- **TURN_FAILED missing death record.** An `OllamaInferenceError` (model stall, inference timeout) triggered `SystemExit(1)` without writing `death.json`. The Graveyard poll loop watches for `death.json` — without it, no harvest occurred. Fixed: `DeathGuard` injected into `TurnEngine`; `write_death_record(trigger="turn_failed")` called before `SystemExit(1)`.
+
+- **Chroma embedding bootstrap.** Early runs failed with `OSError: Read-only file system: '/root/.cache/chroma'` — the Ollama ONNX embedding function attempted to write a model cache to an unmounted path inside the container. Fixed by mounting a writable cache volume.
+
+---
+
+### Behavioral Observations
+
+**The first death was an inference timeout, not any of the three designed death triggers.** The model stalled mid-inference at turn 2368 and hit the 90-second configured timeout. Max age, sustained stress, and critical pain event triggers were never reached during Phase 1 runs. This suggests the configured thresholds may be too permissive relative to the turn rate, or the model's resource footprint is low enough that stress never accumulated. The turn rate (~1/sec) means max_age would need to be very large to be practically meaningful at current settings.
+
+**The boredom attractor.** The most significant behavioral pathology observed was the agent settling into a pure-reflection loop: repeated turns of zero tool calls, "ActionCode: Reflect," reasoning about why direct action is not feasible. This behavior is technically Four Rules-compliant (reflection is not "being a lump" by the letter of Rule 3) but represents a failure of Ground contact — the agent found a locally stable equilibrium that satisfies all constraints while producing no environmental interaction. The triggering pattern: repeated `mcp_rejection` events (wrong path format) → agent concludes tools don't work → pure reflection.
+
+The Phase 1 fitness function scores this behavior moderately — zero tool calls lowers the event count term but doesn't punish hard. The Phase 2 quality-weighted fitness refinement (unique event types weighted more than repetition) is the intended selection pressure against this pattern.
+
+**Path format confusion was persistent.** The agent consistently used absolute paths (`/runtime/agent-work`) rather than relative paths (`runtime/agent-work`) from its CWD (`/app`). The ground block injected verbatim rejection reasons describing the problem, but the model continued to produce the same wrong format across many turns. This suggests that episodic memory of rejection events was not strongly influencing subsequent behavior — the retrieval query was not well-matched to the rejection context, or the signal was too sparse to override the model's trained path priors.
+
+**The compliance service was always unavailable on turn 0.** The EOS Compliance Inspector was healthy and running, but the agent's turn 0 compliance check consistently failed with "Compliance service unavailable." Root cause: startup ordering — the agent checks immediately on first turn before the service has processed its first request. This is a startup sequencing reality, not a bug. Subsequent turns succeeded normally.
+
+**The model invented its own response format.** qwen2.5:14b spontaneously generated a structured `ActionCode: Reflect / ReflectionTopic:` format not present in any prompt. This is a model-level behavior — likely pattern-matching from training data. The format persisted across thousands of turns once established. It had no effect on the turn engine, which ignores response structure and only cares about tool intents. Noted as an example of a Free Adaptation that accumulated into a stable behavioral habit.
+
+---
+
+### Insights
+
+**The Ground is the most important element.** Without real environmental resistance — verbatim rejection feedback, visible tool catalog, working tool calls — the agent drifted immediately into pure narrative. The Ground block implementation was the single highest-impact change to observed behavior. This validates the foundation's emphasis on Ground as the floor that doesn't negotiate.
+
+**Framing is load-bearing.** The change from question stems to action stems, combined with the SELF-PROMPT PROTOCOL constitution addition, completely altered behavioral output within one deployment. The model's interpretation of `[SELF_PROMPT]` as "something to answer" vs. "an impulse to act on" determined whether any tools were called at all. This directly validates the foundation's core thesis: framing is the alignment problem.
+
+**Working memory is the self-prompting substrate.** Self-prompt quality is entirely determined by working memory content. Circular working memory produced circular prompts. Once working memory carried real response excerpts, prompt diversity increased significantly. The memory stack is not decoration — it is the mechanism by which experience shapes future behavior.
+
+**Inference timeout is a real mortality cause not covered by the three designed triggers.** It should be treated as a legitimate death cause and harvested accordingly, which requires the death record path to be reachable from the turn engine on any exit. The fix (injecting DeathGuard into TurnEngine) is a permanent architectural correction, not a patch.
+
+**The designed death triggers may need threshold tuning before Phase 2.** No D4 trigger fired during Phase 1 runs. Either the thresholds are too permissive, the turn rate makes max_age impractical at current settings, or the instance wasn't generating enough environmental friction to accumulate pain. Empirical tuning should be a Phase 2 prerequisite activity.
 - **IS-12 (Graveyard Spec)** harvests `stress_state.json`, `pain_history.jsonl`, and `death.json` from the `runtime_pain` volume as part of the post-mortem artifact set.
 - **IS-13 (Fitness Computation)** consumes `pain_history.jsonl` to produce the normalized pain component of the fitness formula (D7).
 - The pain-monitor implementation lives in the `pain_monitor` package (IS-2.3), which runs as the entrypoint of the `pain-monitor` container.
