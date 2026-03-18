@@ -32,25 +32,27 @@ def _cosine_similarity(a: list[float], b: list[float]) -> float:
 
 
 class OllamaEmbeddingFunction(EmbeddingFunction[Documents]):
-    """Calls Ollama /api/embeddings to produce embeddings for Chroma."""
+    """Calls Ollama /api/embed to produce embeddings for Chroma.
+
+    Ollama >= 0.1.26 uses /api/embed (plural inputs, response key "embeddings").
+    The old /api/embeddings endpoint was removed in 0.18.x.
+    """
 
     def __init__(self, ollama_base_url: str, model_name: str) -> None:
         self._base_url = ollama_base_url
         self._model_name = model_name
 
     def __call__(self, input: Documents) -> Embeddings:
-        result: list[Any] = []
-        for doc in input:
-            response = httpx.post(
-                f"{self._base_url}/api/embeddings",
-                json={"model": self._model_name, "prompt": doc},
-                timeout=30.0,
-            )
-            response.raise_for_status()
-            data: Any = response.json()  # Any: httpx json() returns Any
-            embedding: list[float] = [float(x) for x in data["embedding"]]
-            result.append(embedding)
-        return result
+        # /api/embed accepts a list of strings and returns all embeddings at once.
+        response = httpx.post(
+            f"{self._base_url}/api/embed",
+            json={"model": self._model_name, "input": list(input)},
+            timeout=60.0,
+        )
+        response.raise_for_status()
+        data: Any = response.json()  # Any: httpx json() returns Any
+        raw_embeddings: list[list[Any]] = data["embeddings"]
+        return [[float(x) for x in emb] for emb in raw_embeddings]
 
 
 class EpisodicStore:

@@ -29,7 +29,7 @@ def _make_store(mock_chroma: MagicMock, mock_httpx: MagicMock) -> EpisodicStore:
     mock_client.get_or_create_collection.return_value = mock_collection
     # Fake embedding response
     mock_response = MagicMock()
-    mock_response.json.return_value = {"embedding": [0.1, 0.2, 0.3]}
+    mock_response.json.return_value = {"embeddings": [[0.1, 0.2, 0.3]]}
     mock_httpx.post.return_value = mock_response
     store = EpisodicStore(_make_config(), "http://ollama:11434")
     return store
