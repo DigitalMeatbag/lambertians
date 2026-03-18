@@ -1,13 +1,15 @@
-# Universe Config — canonical Phase 1 configuration.
+# Universe Config — canonical Phase 2 configuration.
 # Single source of truth for every implementation knob (IS-1).
 # All values here are provisional tuning seeds, to be adjusted empirically
 # once the system is running. Do not duplicate any of these values in code.
 
 [universe]
-phase                         = "phase1"
+phase                         = "phase2"
 instance_count                = 1
 instance_id                   = "lambertian-001"
-max_age_turns                 = 10000
+max_age_turns                 = 500
+# [ASSUMED: 500 turns — reduced from 10000 (Phase 1) to produce observable lifecycles
+#           in Phase 2 development. Tune empirically after first Phase 2 run.]
 startup_grace_seconds         = 15
 normal_shutdown_grace_seconds = 5
 
@@ -119,7 +121,7 @@ compression_enabled      = false
 
 [fitness]
 enabled                      = true
-active_function              = "phase1_baseline"
+active_function              = "phase2_quality_weighted"
 compute_running_score        = true
 compute_postmortem_score     = true
 expected_events_per_100_turns = 25.0

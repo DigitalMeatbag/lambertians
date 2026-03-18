@@ -1,4 +1,4 @@
-# docker-compose.yml — Phase 1 single-instance topology (IS-3).
+# docker-compose.yml — Phase 2 single-instance topology (IS-3).
 # This file is the concrete Clay Pot composition artifact (D1).
 # The agent instance has no write access to this file at runtime.
 

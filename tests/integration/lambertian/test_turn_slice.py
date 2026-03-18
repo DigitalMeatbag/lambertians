@@ -70,7 +70,7 @@ def _build_engine(
 
     fitness_scorer = FitnessScorer(
         config=config,
-        registry=build_default_registry(),
+        registry=build_default_registry(quality_config=config.fitness.quality),
         cursor_store=FitnessCursorStore(fitness_state_path),
         event_reader=EventStreamReader(event_stream_dir),
         pain_reader=PainHistoryReader(pain_root / "pain_history.jsonl"),

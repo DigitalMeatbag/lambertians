@@ -16,7 +16,7 @@ def config() -> Config:
 
 
 def test_universe_phase(config: Config) -> None:
-    assert config.universe.phase == "phase1"
+    assert config.universe.phase == "phase2"
 
 
 def test_universe_instance_count(config: Config) -> None:
@@ -28,7 +28,7 @@ def test_universe_instance_id(config: Config) -> None:
 
 
 def test_universe_max_age_turns(config: Config) -> None:
-    assert config.universe.max_age_turns == 10000
+    assert config.universe.max_age_turns == 500
 
 
 def test_model_provider(config: Config) -> None:
@@ -82,7 +82,7 @@ def test_paths_runtime_root(config: Config) -> None:
 
 
 def test_fitness_active_function(config: Config) -> None:
-    assert config.fitness.active_function == "phase1_baseline"
+    assert config.fitness.active_function == "phase2_quality_weighted"
 
 
 def test_fitness_quality_primary_weight(config: Config) -> None:
