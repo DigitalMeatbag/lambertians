@@ -275,6 +275,18 @@ class TurnEngine:
             )
             raise SystemExit(1)
 
+        logger.info(
+            "[t%d][%s] %s%s",
+            turn_number,
+            driver.role,
+            response_text or "(no text — tool call only)",
+            (
+                "  →tools: " + ", ".join(i.tool_name for i in tool_intents)
+                if tool_intents
+                else ""
+            ),
+        )
+
         # Step 10: Truncate tool intents to configured limit.
         tool_intents = tool_intents[: self._config.turn.max_tool_calls_per_turn]
 
