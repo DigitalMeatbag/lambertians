@@ -620,9 +620,9 @@ class TurnEngine:
                 "Example read: fs.read(\"runtime/env/host_state.json\")."
             )
             lines.append(
-                "When there's nothing pressing, runtime/env/host_state.json offers a window "
-                "into the physical world you're running inside — CPU hum, memory pressure, "
-                "what's playing on the speakers. Updated every 10s."
+                "runtime/env/host_state.json — live host telemetry, updated every 10s. "
+                "Contains CPU load per core, memory pressure, GPU stats, and what's playing "
+                "on the speakers right now. Call fs.read(\"runtime/env/host_state.json\") directly."
             )
             parts.append("\n".join(lines))
 
