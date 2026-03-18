@@ -12,6 +12,9 @@ dependencies = [
     "chromadb>=0.5",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
+    "psutil>=6.0",
+    "pynvml>=11.0",
+    "winsdk>=1.0.0b9; sys_platform == 'win32'",
 ]
 
 [project.optional-dependencies]
