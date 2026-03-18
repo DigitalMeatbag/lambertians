@@ -36,6 +36,10 @@ class EventLogWriter:
             else 0
         )
         self._last_flush_time: float = time.monotonic()
+        # Monotonically increasing per-instance counter appended to archive names so
+        # rapid back-to-back rotations never produce the same filename, even on
+        # platforms (e.g. Windows) where datetime resolution is coarser than 1 µs.
+        self._rotation_index: int = 0
 
     def write_event(
         self,
@@ -93,7 +97,16 @@ class EventLogWriter:
         except OSError as exc:
             _log.warning("EventLogWriter: error closing file before rotation: %s", exc)
 
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        self._rotation_index += 1
+        now_utc = datetime.now(timezone.utc)
+        # Microseconds + per-instance rotation index prevent same-filename collisions
+        # even on platforms with sub-millisecond datetime resolution limits.
+        timestamp = (
+            now_utc.strftime("%Y%m%dT%H%M%S")
+            + f"{now_utc.microsecond:06d}"
+            + f"{self._rotation_index:04d}"
+            + "Z"
+        )
         rotated_path = os.path.join(self._base_dir, f"events.{timestamp}.jsonl")
         os.replace(self._active_path, rotated_path)
 
