@@ -100,3 +100,4 @@ def test_wrong_type_raises(tmp_path: Path) -> None:
     toml_file.write_bytes(bad)
     with pytest.raises(ConfigurationError, match="instance_count"):
         load_config(toml_file)
+

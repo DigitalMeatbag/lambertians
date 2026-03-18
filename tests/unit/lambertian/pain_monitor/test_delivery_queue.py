@@ -91,3 +91,4 @@ def test_append_accumulates_across_instances(tmp_path: Path) -> None:
     drained = reader.drain()
     assert len(drained) == 2
     assert reader.drain() == []
+

@@ -85,3 +85,4 @@ def test_read_raises_on_wrong_type(tmp_path: Path) -> None:
     reader = DeathRecordReader(death_path)
     with pytest.raises(DeathRecordParseError):
         reader.read()
+

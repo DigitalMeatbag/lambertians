@@ -137,7 +137,7 @@ def config(tmp_path: Path) -> Config:
             borderline_score_min=0.40,
             block_score_threshold=0.70,
             emit_pain_event_on_block=True,
-            service_port=8082,
+            service_port=8082, service_host="eos-compliance",
         ),
         graveyard=GraveyardConfig(
             enabled=True,
@@ -249,3 +249,4 @@ class TestMemoryQuerier:
         bootstrap = AgentBootstrap(config, config_path)
         engine = bootstrap._build_turn_engine(NoOpMemoryQuerier())
         assert engine is not None
+

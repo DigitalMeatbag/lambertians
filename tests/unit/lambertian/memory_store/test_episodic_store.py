@@ -207,3 +207,4 @@ class TestCheckLastWrittenSimilarity:
         }
         sim = store.check_last_written_similarity("some content")
         assert sim == pytest.approx(1.0)
+

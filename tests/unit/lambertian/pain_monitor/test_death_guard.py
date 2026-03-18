@@ -84,7 +84,7 @@ def _make_config(max_age_turns: int = 1000) -> Config:
         compliance=ComplianceConfig(
             enabled=True, block_on_violation=True, flag_borderline_cases=True,
             borderline_score_min=0.40, block_score_threshold=0.70,
-            emit_pain_event_on_block=True, service_port=8082,
+            emit_pain_event_on_block=True, service_port=8082, service_host="eos-compliance",
         ),
         graveyard=GraveyardConfig(
             enabled=True, artifact_format="json", include_episodic_memory=True,
@@ -193,3 +193,4 @@ def test_second_write_is_noop(tmp_path: Path) -> None:
     guard.check_sustained_stress(0.95, 10)
     second_content = death_path.read_text()
     assert first_content == second_content
+

@@ -106,6 +106,7 @@ borderline_score_min    = 0.40
 block_score_threshold   = 0.70
 emit_pain_event_on_block = true
 service_port            = 8082
+service_host            = "eos-compliance"
 
 [graveyard]
 enabled                  = true

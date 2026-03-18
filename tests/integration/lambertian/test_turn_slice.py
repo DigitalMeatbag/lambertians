@@ -219,3 +219,4 @@ class TestMaxAgeDeathTrigger:
         death_events = [e for e in events if e.get("event_type") == "DEATH_TRIGGER"]
         assert death_events, "DEATH_TRIGGER event must be written"
         assert death_events[0].get("trigger") == "max_age"
+

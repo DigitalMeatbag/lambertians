@@ -91,7 +91,7 @@ def _make_config(
         compliance=ComplianceConfig(
             enabled=True, block_on_violation=True, flag_borderline_cases=True,
             borderline_score_min=0.40, block_score_threshold=0.70,
-            emit_pain_event_on_block=True, service_port=8082,
+            emit_pain_event_on_block=True, service_port=8082, service_host="eos-compliance",
         ),
         graveyard=GraveyardConfig(
             enabled=True, artifact_format="json", include_episodic_memory=True,
@@ -227,3 +227,4 @@ def test_render_pain_block_lines_order() -> None:
     assert lines[2].startswith("severity:")
     assert lines[3].startswith("urgency:")
     assert lines[4].startswith("description:")
+

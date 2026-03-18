@@ -54,3 +54,4 @@ class TestMemoryWriteRequest:
         req = MemoryWriteRequest("c", "model_response", 1, 0, None, None)
         with pytest.raises(Exception):
             req.content = "other"  # type: ignore[misc]
+

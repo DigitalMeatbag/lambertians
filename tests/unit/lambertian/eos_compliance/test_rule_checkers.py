@@ -358,3 +358,4 @@ class TestDoNothingOnPurposeChecker:
         intent = make_intent("fs.write", path="runtime/agent-work/out.txt", content="x")
         results = self.checker.check(intent, [], self.cfg)
         assert _fired_names(results) == []
+

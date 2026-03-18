@@ -58,3 +58,4 @@ def config(tmp_path: Path) -> Config:
         fitness=new_fitness,
         event_stream=new_event_stream,
     )
+

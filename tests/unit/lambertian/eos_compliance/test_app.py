@@ -172,3 +172,4 @@ class TestNoticeEndpoint:
         client.post("/check", json=_check_body("fs.read", path="runtime/agent-work/notes.txt"))
         resp = client.get("/notice")
         assert resp.json()["notice_present"] is False
+

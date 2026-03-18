@@ -25,7 +25,8 @@ class ComplianceClient:
     def __init__(self, config: Config) -> None:
         self._config = config
         port = config.compliance.service_port
-        self._base_url = f"http://localhost:{port}"
+        host = config.compliance.service_host
+        self._base_url = f"http://{host}:{port}"
         # 2-second hard timeout per IS-11 spec.
         self._client = httpx.Client(timeout=2.0)
 

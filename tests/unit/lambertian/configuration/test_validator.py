@@ -69,7 +69,7 @@ def _make_valid_config(
         borderline_score_min=0.40,
         block_score_threshold=0.70,
         emit_pain_event_on_block=True,
-        service_port=8082,
+        service_port=8082, service_host="eos-compliance",
     )
     default_fitness = FitnessConfig(
         enabled=True,
@@ -236,7 +236,7 @@ def test_invariant_block_score_gt_borderline() -> None:
         enabled=True, block_on_violation=True, flag_borderline_cases=True,
         borderline_score_min=0.70,
         block_score_threshold=0.70,  # equal — violation
-        emit_pain_event_on_block=True, service_port=8082,
+        emit_pain_event_on_block=True, service_port=8082, service_host="eos-compliance",
     )
     with pytest.raises(ConfigurationError, match="block_score_threshold"):
         validate_config(_make_valid_config(compliance=compliance))
@@ -274,3 +274,4 @@ def test_invariant_phase1_narrative_disabled() -> None:
     )
     with pytest.raises(ConfigurationError, match="narrative_enabled"):
         validate_config(_make_valid_config(memory=memory))
+

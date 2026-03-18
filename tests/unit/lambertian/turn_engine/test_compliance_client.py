@@ -138,7 +138,7 @@ def config() -> Config:
             borderline_score_min=0.40,
             block_score_threshold=0.70,
             emit_pain_event_on_block=True,
-            service_port=8082,
+            service_port=8082, service_host="eos-compliance",
         ),
         graveyard=GraveyardConfig(
             enabled=True,
@@ -322,3 +322,4 @@ class TestGetPendingNotice:
 
         with pytest.raises(ComplianceUnavailableError):
             client.get_pending_notice()
+

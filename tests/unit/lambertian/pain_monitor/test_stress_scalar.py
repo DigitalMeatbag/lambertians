@@ -101,3 +101,4 @@ def test_update_ema_alpha_zero() -> None:
     # alpha=0 means scalar never changes
     result = update_ema(0.5, 0.9, 0.0)
     assert result == pytest.approx(0.5)
+

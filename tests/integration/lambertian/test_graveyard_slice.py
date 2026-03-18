@@ -210,3 +210,4 @@ class TestGraveyardManifestFitnessScore:
 
         manifest = json.loads((harvest_dir / "manifest.json").read_text(encoding="utf-8"))
         assert manifest.get("fitness_score") == pytest.approx(0.75)
+

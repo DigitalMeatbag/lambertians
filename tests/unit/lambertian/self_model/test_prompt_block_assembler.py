@@ -135,7 +135,7 @@ def config() -> Config:
             borderline_score_min=0.40,
             block_score_threshold=0.70,
             emit_pain_event_on_block=True,
-            service_port=8082,
+            service_port=8082, service_host="eos-compliance",
         ),
         graveyard=GraveyardConfig(
             enabled=True,
@@ -274,3 +274,4 @@ class TestSelfModelWriter:
         writer.write()
         raw = (tmp_path / "self" / "self_model.json").read_text(encoding="utf-8")
         assert "[SYSTEM_SELF_MODEL]" not in raw
+

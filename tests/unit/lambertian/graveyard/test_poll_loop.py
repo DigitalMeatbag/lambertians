@@ -70,3 +70,4 @@ def test_run_returns_after_harvest(monkeypatch: object) -> None:
     harvest_sequence.execute.assert_called_once()
     # Only one read call — returned immediately
     assert death_reader.read.call_count == 1
+

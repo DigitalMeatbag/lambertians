@@ -79,3 +79,4 @@ def test_skips_unparseable_lines(tmp_path: Path) -> None:
     reader = EventStreamReader(tmp_path)
     count, _ = reader.count_new_meaningful_events(0)
     assert count == 2
+

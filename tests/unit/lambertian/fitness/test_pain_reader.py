@@ -67,3 +67,4 @@ def test_sum_from_mid_file_offset(tmp_path: Path) -> None:
     reader = PainHistoryReader(pain_file)
     total, _ = reader.sum_new_pain(first_line_bytes)
     assert abs(total - 0.3) < 1e-9
+

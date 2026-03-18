@@ -65,3 +65,4 @@ def test_manifest_writer_creates_output_dir(tmp_path: Path) -> None:
     writer = ManifestWriter()
     writer.write(manifest, output_dir)
     assert (output_dir / "manifest.json").exists()
+

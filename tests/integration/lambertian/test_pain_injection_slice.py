@@ -253,3 +253,4 @@ class TestDeathViaPrewrittenRecord:
         death_events = [e for e in events if e.get("event_type") == "DEATH_TRIGGER"]
         assert death_events, "DEATH_TRIGGER event must be written when death.json exists"
         assert death_events[0].get("trigger") == "pain_event_critical"
+

@@ -171,3 +171,4 @@ class TestRollingContext:
         rolling_assistant = messages[-2]
         assert rolling_user["role"] == "user"
         assert rolling_assistant["role"] == "assistant"
+

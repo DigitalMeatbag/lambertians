@@ -133,6 +133,7 @@ class ComplianceConfig:
     block_score_threshold: float
     emit_pain_event_on_block: bool
     service_port: int
+    service_host: str
 
 
 @dataclass(frozen=True)

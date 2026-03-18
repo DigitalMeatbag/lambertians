@@ -93,3 +93,4 @@ class TestRecentSelfPrompts:
             store.append_self_prompt(f"prompt {i}", turn_number=i, max_entries=10)
         result = store.read_recent_self_prompts(2)
         assert len(result) == 2
+

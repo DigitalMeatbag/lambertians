@@ -73,3 +73,4 @@ def test_write_is_atomic(tmp_path: Path) -> None:
     tmp = state_path.with_suffix(".tmp")
     assert not tmp.exists()
     assert state_path.exists()
+

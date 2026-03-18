@@ -144,3 +144,4 @@ def test_execute_raises_on_missing_death_record(tmp_path: Path) -> None:
 
     with pytest.raises(RuntimeError, match="no death record"):
         seq.execute()
+

@@ -103,3 +103,4 @@ def test_malformed_line_skipped(tmp_path: Path) -> None:
     # Only the valid event should be returned.
     assert len(events) == 1
     assert events[0].event_id == "e1"
+

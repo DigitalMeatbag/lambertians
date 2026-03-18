@@ -159,3 +159,4 @@ class TestEventStreamReaderMeaningfulCounts:
         # (all lines already past).
         count_incremental, _ = reader.count_new_meaningful_events(offset_after_first)
         assert count_incremental == 0
+

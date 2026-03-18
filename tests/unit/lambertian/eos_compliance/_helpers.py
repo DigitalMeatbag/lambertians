@@ -133,7 +133,7 @@ def make_config(
             borderline_score_min=borderline_score_min,
             block_score_threshold=block_score_threshold,
             emit_pain_event_on_block=True,
-            service_port=8082,
+            service_port=8082, service_host="eos-compliance",
         ),
         graveyard=GraveyardConfig(
             enabled=True,
@@ -185,3 +185,4 @@ def make_tool_call(tool_name: str, **kwargs: object) -> dict[str, object]:
         "arguments": dict(kwargs),
     }
     return result
+

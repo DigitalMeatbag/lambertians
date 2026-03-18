@@ -72,3 +72,4 @@ class TestIsWorthy:
     def test_good_content_worthy(self, checker: WorthinessChecker) -> None:
         content = "This is a substantial piece of content that demonstrates the system is working correctly and producing meaningful output for episodic storage."
         assert checker.is_worthy(content, "model_response") is True
+

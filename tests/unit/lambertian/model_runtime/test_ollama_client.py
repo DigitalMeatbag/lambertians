@@ -137,7 +137,7 @@ def config() -> Config:
             borderline_score_min=0.40,
             block_score_threshold=0.70,
             emit_pain_event_on_block=True,
-            service_port=8082,
+            service_port=8082, service_host="eos-compliance",
         ),
         graveyard=GraveyardConfig(
             enabled=True,
@@ -291,3 +291,4 @@ def test_embed_timeout_raises_inference_error(config: Config) -> None:
     ):
         with pytest.raises(OllamaInferenceError, match="timeout"):
             client.embed("test")
+

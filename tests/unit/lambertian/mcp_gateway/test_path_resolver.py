@@ -145,3 +145,4 @@ class TestResolveList:
         target = tmp_path / "hidden"
         with pytest.raises(PathBoundaryViolation):
             resolver.resolve_list(str(target))
+

@@ -157,3 +157,4 @@ def test_compute_postmortem_creates_fresh_readers(tmp_path: Path) -> None:
     assert isinstance(result, FitnessScore)
     assert result.turn_number == 50
     assert output_path.exists()
+

@@ -163,3 +163,4 @@ class TestComplianceInspectorNoticeQueue:
         assert notice.verdict_from_turn == 42
         assert notice.tool_name == "fs.read"
         assert notice.composite_score == 0.60
+

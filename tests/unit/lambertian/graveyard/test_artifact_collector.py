@@ -125,3 +125,4 @@ def test_missing_source_file_produces_failure_artifact(tmp_path: Path) -> None:
     failed = [a for a in artifacts if not a.success]
     # At minimum death.json, pain_history.jsonl, stress_history.jsonl should fail
     assert len(failed) >= 3
+

@@ -53,3 +53,4 @@ class TestWrite:
         s = WorkingMemoryStore(nested, max_chars=50)
         s.write("content", turn_number=1)
         assert s.read() == "content"
+

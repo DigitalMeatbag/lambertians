@@ -143,7 +143,7 @@ def config() -> Config:
             borderline_score_min=0.40,
             block_score_threshold=0.70,
             emit_pain_event_on_block=True,
-            service_port=8082,
+            service_port=8082, service_host="eos-compliance",
         ),
         graveyard=GraveyardConfig(
             enabled=True,
@@ -435,3 +435,4 @@ class TestUnknownTool:
     def test_unknown_tool_has_tool_name(self, gateway: McpGateway) -> None:
         result = gateway.dispatch(make_intent("nonexistent.tool", {}))
         assert result.tool_name == "nonexistent.tool"
+

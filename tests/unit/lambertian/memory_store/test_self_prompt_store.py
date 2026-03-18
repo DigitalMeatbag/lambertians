@@ -68,3 +68,4 @@ class TestComputeMaxSimilarity:
         s2 = SelfPromptStore(tmp_path / "sp.json", 3, _zero_embedding)
         sim = s2.compute_max_similarity("candidate")
         assert sim == pytest.approx(0.0)
+

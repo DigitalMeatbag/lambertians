@@ -137,7 +137,7 @@ def _make_config(tmp_path: Path, max_file_size_mb: int = 64, max_archives: int =
             borderline_score_min=0.40,
             block_score_threshold=0.70,
             emit_pain_event_on_block=True,
-            service_port=8082,
+            service_port=8082, service_host="eos-compliance",
         ),
         graveyard=GraveyardConfig(
             enabled=True,
@@ -293,3 +293,4 @@ def test_write_failure_raises_event_log_write_error(tmp_path: Path) -> None:
             writer.write_event("TURN_COMPLETE", 1, "turn_engine", {})
 
     writer.close()
+

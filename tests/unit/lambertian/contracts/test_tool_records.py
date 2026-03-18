@@ -121,3 +121,4 @@ def test_tool_result_is_immutable() -> None:
     )
     with pytest.raises(dataclasses.FrozenInstanceError):
         result.success = False  # type: ignore[misc]
+

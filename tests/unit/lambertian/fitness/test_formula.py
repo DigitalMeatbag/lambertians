@@ -61,3 +61,4 @@ def test_min_denominator_floor_applies() -> None:
     # lifespan_term=0.1, engagement=1.0, normalized_pain=0.0001, denominator=0.10
     # score = 0.1 / 0.10 = 1.0
     assert compute_phase1_baseline(inputs) == pytest.approx(1.0)
+

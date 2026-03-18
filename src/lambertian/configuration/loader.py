@@ -233,6 +233,7 @@ def _load_compliance(raw: dict[str, Any]) -> ComplianceConfig:
         block_score_threshold=_float(d, "block_score_threshold", s),
         emit_pain_event_on_block=_bool(d, "emit_pain_event_on_block", s),
         service_port=_int(d, "service_port", s),
+        service_host=_str(d, "service_host", s),
     )
 
 
