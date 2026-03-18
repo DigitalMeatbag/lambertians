@@ -615,6 +615,11 @@ class TurnEngine:
                 "runtime/fitness/, runtime/self/, runtime/pain/, runtime/env/, config/"
             )
             lines.append(
+                "Paths are relative — no leading slash. "
+                "Start with fs.list(\"runtime/\") to discover what's available. "
+                "Example read: fs.read(\"runtime/env/host_state.json\")."
+            )
+            lines.append(
                 "When there's nothing pressing, runtime/env/host_state.json offers a window "
                 "into the physical world you're running inside — CPU hum, memory pressure, "
                 "what's playing on the speakers. Updated every 10s."

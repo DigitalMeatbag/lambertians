@@ -139,6 +139,22 @@ class TestResolveList:
         resolved = resolver.resolve_list(str(target))
         assert resolved == target.resolve()
 
+    def test_runtime_root_permitted_for_list(
+        self, resolver: PathResolver, tmp_path: Path
+    ) -> None:
+        # runtime/ itself is a valid list target for subdirectory discovery.
+        target = tmp_path / "runtime"
+        resolved = resolver.resolve_list(str(target))
+        assert resolved == target.resolve()
+
+    def test_runtime_root_still_rejected_for_read(
+        self, resolver: PathResolver, tmp_path: Path
+    ) -> None:
+        # runtime/ is list-only — reading a file directly in runtime/ is not permitted.
+        target = tmp_path / "runtime" / "unlisted_file.txt"
+        with pytest.raises(PathBoundaryViolation):
+            resolver.resolve_read(str(target))
+
     def test_outside_all_roots_rejected(
         self, resolver: PathResolver, tmp_path: Path
     ) -> None:

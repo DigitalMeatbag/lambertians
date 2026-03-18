@@ -12,6 +12,11 @@ class PathBoundaryViolation(Exception):
 class PathResolver:
     """Resolves and validates tool-supplied paths against permitted boundaries.
 
+    Permitted list roots (resolved absolute paths):
+        runtime/  (directory listing only — allows discovery of subdirectories)
+        runtime/memory, runtime/event_stream, runtime/fitness, runtime/self,
+        runtime/pain, runtime/agent-work, runtime/env, config/
+
     Permitted read roots (resolved absolute paths):
         runtime/memory, runtime/event_stream, runtime/fitness, runtime/self,
         runtime/pain, runtime/agent-work, runtime/env, config/
@@ -31,6 +36,7 @@ class PathResolver:
             rb / "env",
             config_base.resolve(),
         )
+        self._list_roots: tuple[Path, ...] = (rb,) + self._read_roots
         self._write_root: Path = rb / "agent-work"
 
     def resolve_read(self, path: str) -> Path:
@@ -53,5 +59,11 @@ class PathResolver:
         )
 
     def resolve_list(self, path: str) -> Path:
-        """Resolve path for list. Permitted boundaries same as read."""
-        return self.resolve_read(path)
+        """Resolve path for list. Permits runtime/ root for subdirectory discovery."""
+        resolved = Path(path).resolve()
+        for root in self._list_roots:
+            if resolved == root or resolved.is_relative_to(root):
+                return resolved
+        raise PathBoundaryViolation(
+            f"List path {path!r} resolves to {resolved} which is outside permitted roots"
+        )
