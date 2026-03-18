@@ -13,7 +13,7 @@ dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "psutil>=6.0",
-    "pynvml>=11.0",
+    "nvidia-ml-py>=11.0",
     "winsdk>=1.0.0b9; sys_platform == 'win32'",
 ]
 
