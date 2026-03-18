@@ -131,7 +131,7 @@ services:
     volumes:
       - runtime_event_stream:/app/runtime/event_stream
       - runtime_memory:/app/runtime/memory
-      - runtime_pain:/app/runtime/pain:ro
+      - runtime_pain:/app/runtime/pain
       - runtime_fitness:/app/runtime/fitness
       - runtime_self:/app/runtime/self
       - ./config:/app/config:ro

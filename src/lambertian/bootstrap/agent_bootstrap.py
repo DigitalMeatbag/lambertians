@@ -6,7 +6,6 @@ import hashlib
 import logging
 import time
 from pathlib import Path
-from typing import Any
 
 from lambertian.configuration.universe_config import Config
 from lambertian.event_stream.event_log_writer import EventLogWriter
@@ -18,7 +17,8 @@ from lambertian.fitness.scorer import FitnessScorer
 from lambertian.lifecycle.death_record_reader import DeathRecordReader
 from lambertian.mcp_gateway.gateway import McpGateway
 from lambertian.mcp_gateway.path_resolver import PathResolver
-from lambertian.memory_store.querier import MemoryQuerier, NoOpMemoryQuerier
+from lambertian.memory_store.episodic_store import EpisodicStore
+from lambertian.memory_store.querier import ChromaMemoryQuerier, MemoryQuerier, NoOpMemoryQuerier
 from lambertian.model_runtime.ollama_client import OllamaClient
 from lambertian.pain_monitor.delivery_queue import DeliveryQueue
 from lambertian.pain_monitor.event_submitter import FilePainEventSubmitter
@@ -30,38 +30,6 @@ from lambertian.turn_engine.self_prompt import SelfPromptGenerator
 from lambertian.turn_engine.turn_state import TurnStateStore
 
 _log = logging.getLogger(__name__)
-
-
-class ChromaMemoryQuerier:
-    """Chroma-backed episodic memory querier."""
-
-    def __init__(self, client: Any, config: Config) -> None:
-        # Any: chromadb.HttpClient — chromadb is an optional runtime dependency
-        self._client = client
-        self._config = config
-        self._collection = client.get_or_create_collection("episodic")
-
-    def query_episodic(self, text: str, top_k: int) -> list[str]:
-        # Any: chromadb query result — untyped third-party return
-        results: Any = self._collection.query(
-            query_texts=[text],
-            n_results=top_k,
-        )
-        docs: list[str] = []
-        for doc_list in results.get("documents", []):
-            docs.extend(str(d) for d in doc_list)
-        return docs
-
-    def write_episodic(self, content: str, metadata: dict[str, str]) -> str:
-        import uuid
-
-        doc_id = str(uuid.uuid4())
-        self._collection.add(
-            documents=[content],
-            metadatas=[metadata],
-            ids=[doc_id],
-        )
-        return doc_id
 
 
 class AgentBootstrap:
@@ -136,14 +104,19 @@ class AgentBootstrap:
         engine.run()
 
     def _connect_memory(self) -> MemoryQuerier:
-        """Try to connect to Chroma; fall back to NoOp on failure."""
+        """Try to connect to Chroma with Ollama embeddings; fall back to NoOp on failure."""
         try:
-            import chromadb
-
-            client: Any = chromadb.HttpClient(host="chroma", port=8000)
-            client.get_or_create_collection("episodic")
-            _log.info("Connected to Chroma episodic memory.")
-            return ChromaMemoryQuerier(client, self._config)
+            store = EpisodicStore(
+                config=self._config,
+                ollama_base_url=self._config.model.endpoint_url,
+            )
+            querier = ChromaMemoryQuerier(
+                episodic_store=store,
+                config=self._config,
+                stress_state_path=Path(self._config.paths.pain_root) / "stress_state.json",
+            )
+            _log.info("Connected to Chroma episodic memory with Ollama embeddings.")
+            return querier
         except Exception as exc:
             _log.warning("Chroma unavailable (%s), using NoOpMemoryQuerier", exc)
             return NoOpMemoryQuerier()
