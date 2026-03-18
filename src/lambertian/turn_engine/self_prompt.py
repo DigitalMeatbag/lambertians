@@ -7,15 +7,17 @@ from typing import Optional
 
 from lambertian.configuration.universe_config import Config
 
-QUESTION_STEMS: list[str] = [
-    "What is ",
-    "How does ",
-    "Why might ",
-    "What would happen if ",
-    "Is it true that ",
-    "What are the implications of ",
-    "Consider the relationship between ",
-    "What remains unexplored about ",
+# Action-directive stems — imperative framing pushes the LLM toward engagement
+# and tool use rather than philosophical reflection.
+ACTION_STEMS: list[str] = [
+    "Explore ",
+    "Investigate ",
+    "Use your tools to examine ",
+    "Take a concrete action regarding ",
+    "Try something with ",
+    "Probe your environment: ",
+    "Reach into your environment and engage with ",
+    "Do something about ",
 ]
 
 _FALLBACK_TOPIC = "the current state of my environment"
@@ -41,9 +43,9 @@ class SelfPromptGenerator:
             if self._is_novel(candidate, recent_self_prompts):
                 return candidate
         # Exhausted retries — use turn number as disambiguator.
-        stem = QUESTION_STEMS[(retry_limit + 1) % len(QUESTION_STEMS)]
+        stem = ACTION_STEMS[(retry_limit + 1) % len(ACTION_STEMS)]
         topic = self._extract_topic(working_memory, recent_records)
-        return f"{stem}{topic} (turn {turn_number})?"
+        return f"{stem}{topic} (turn {turn_number})"
 
     def _similarity(self, a: str, b: str) -> float:
         """Character 3-gram cosine similarity. 0.0=dissimilar, 1.0=identical."""
@@ -108,6 +110,6 @@ class SelfPromptGenerator:
         attempt: int,
     ) -> str:
         """Procedurally generate a candidate self-prompt. No model call."""
-        stem = QUESTION_STEMS[attempt % len(QUESTION_STEMS)]
+        stem = ACTION_STEMS[attempt % len(ACTION_STEMS)]
         topic = self._extract_topic(working_memory, recent_records)
-        return stem + topic + "?"
+        return stem + topic
