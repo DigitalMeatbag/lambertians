@@ -461,13 +461,13 @@ class TurnEngine:
             memory_writes += 1
 
         # Step 15: Generate and write working memory summary.
+        # Working memory is the primary feed for self-prompt topic extraction.
+        # Response content leads so _extract_topic (split on ".") gets real content,
+        # not the mechanical header.  Metadata follows on its own line.
         executed_count = sum(1 for r in tool_call_records if r.executed)
-        summary = (
-            f"Turn {turn_number}: {driver.role} driver. "
-            f"Called {len(tool_call_records)} tools ({executed_count} executed). "
-            f"Wrote {memory_writes} memories. "
-            f"Response length: {len(response_text)} chars."
-        )
+        tool_summary = f"tools:{executed_count}/{len(tool_call_records)} mem:{memory_writes}"
+        response_excerpt = response_text.strip()[:400] if response_text else ""
+        summary = f"{response_excerpt}\n[t{turn_number} {driver.role} {tool_summary}]"
         self._turn_state.write_working_memory(summary, turn_number)
 
         # Step 16: Noop classification and noop state update.

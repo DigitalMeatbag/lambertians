@@ -94,9 +94,11 @@ class SelfPromptGenerator:
                     if tool_name:
                         return str(tool_name)
         if working_memory:
-            first_sentence = working_memory.split(".")[0].strip()
+            # Strip the trailing metadata line (\n[tN ...]) if present.
+            content = working_memory.split("\n[t")[0].strip()
+            first_sentence = content.split(".")[0].strip()
             if first_sentence:
-                return first_sentence[:80]
+                return first_sentence[:120]
         return _FALLBACK_TOPIC
 
     def _candidate_from_context(
