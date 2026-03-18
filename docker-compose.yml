@@ -55,8 +55,8 @@ services:
       - chroma_data:/chroma/chroma
     restart: unless-stopped
     healthcheck:
-      # chromadb image has no curl; Python is always present.
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/heartbeat')\""]
+      # chromadb image has no curl/python; use bash's built-in /dev/tcp check.
+      test: ["CMD-SHELL", "bash -c 'echo >/dev/tcp/localhost/8000' 2>/dev/null"]
       interval: 10s
       timeout: 5s
       retries: 6
