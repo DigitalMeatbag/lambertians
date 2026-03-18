@@ -243,7 +243,7 @@ class TurnEngine:
             eos_block=eos_block,
             compliance_block=compliance_block,
             pain_blocks=pain_blocks,
-            ground_block=None,  # Phase 1: no ground block
+            ground_block=self._build_ground_block(turn_number),
             memory_working_block=memory_working_block,
             memory_episodic_block=memory_episodic_block,
             driver=driver,
@@ -434,6 +434,7 @@ class TurnEngine:
                         executed=True,
                         result_summary=result.error_detail,
                         generated_pain_event=pain_forwarded,
+                        error_type=result.error_type,
                     )
                 )
 
@@ -573,6 +574,67 @@ class TurnEngine:
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+
+    def _build_ground_block(self, turn_number: int) -> Optional[str]:
+        """Assemble [SYSTEM_GROUND] per IS-7.7.
+
+        Turn 1: inject full tool catalog with names, signatures, and descriptions.
+        Any turn after a turn with mcp_rejection or compliance-blocked calls:
+            inject rejection/block reasons verbatim with tool name and argument.
+        Returns None when neither condition applies.
+        """
+        parts: list[str] = []
+
+        if turn_number == 1:
+            lines = ["Your available tools (Phase 1 catalog):"]
+            for entry in self._mcp_gateway.get_tool_catalog():
+                fn = entry.get("function", {})
+                if isinstance(fn, dict):
+                    name = fn.get("name", "?")
+                    desc = fn.get("description", "")
+                    props = (fn.get("parameters") or {}).get("properties") or {}
+                    sig_parts = []
+                    for param, meta in props.items():
+                        if isinstance(meta, dict):
+                            sig_parts.append(f"{param}: {meta.get('type', 'any')}")
+                    sig = f"({', '.join(sig_parts)})"
+                    lines.append(f"  {name}{sig} — {desc}")
+            lines.append("")
+            lines.append("Writable surface: runtime/agent-work/ (fs.write, fs.read, fs.list)")
+            lines.append(
+                "Read-only surfaces: runtime/memory/, runtime/event_stream/, "
+                "runtime/fitness/, runtime/self/, runtime/pain/, config/"
+            )
+            parts.append("\n".join(lines))
+
+        if self._rolling_context:
+            last = self._rolling_context[-1]
+            rejections: list[str] = []
+            tool_calls = last.get("tool_calls", [])
+            if isinstance(tool_calls, list):
+                for tc in tool_calls:
+                    if not isinstance(tc, dict):
+                        continue
+                    error_type = tc.get("error_type")
+                    verdict = tc.get("compliance_verdict", "")
+                    tool_name = tc.get("tool_name", "?")
+                    detail = tc.get("result_summary") or ""
+                    if error_type == "mcp_rejection":
+                        rejections.append(
+                            f"  mcp_rejection — {tool_name}: {detail}"
+                        )
+                    elif verdict == "block" and not tc.get("executed"):
+                        rejections.append(
+                            f"  compliance_block — {tool_name}: blocked by EOS inspector"
+                        )
+            if rejections:
+                parts.append(
+                    "Ground resistance from prior turn:\n" + "\n".join(rejections)
+                )
+
+        if not parts:
+            return None
+        return "[SYSTEM_GROUND]\n\n" + "\n\n".join(parts)
 
     def _format_pain_block(self, msg: PainMessage) -> str:
         context_part = f" [{msg.context}]" if msg.context else ""

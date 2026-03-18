@@ -21,6 +21,7 @@ class ToolCallRecord:
     executed: bool
     result_summary: Optional[str]
     generated_pain_event: bool
+    error_type: Optional[str] = None  # populated from ToolResult.error_type on dispatch failure
 
 
 @dataclass(frozen=True)

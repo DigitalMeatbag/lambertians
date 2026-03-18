@@ -17,6 +17,7 @@ volumes:
   runtime_pain:           # pain-monitor (rw), agent (ro), graveyard (ro)
   runtime_fitness:        # agent (rw), graveyard (ro)
   runtime_self:           # agent (rw)
+  runtime_agent_work:     # agent (rw), graveyard (ro) — agent-authored files
   chroma_data:            # chroma internal persistence
   ollama_data:            # model weights and caches
   graveyard_output:       # finalized post-mortem bundles
@@ -111,6 +112,7 @@ services:
       - runtime_memory:/app/runtime/memory:ro
       - runtime_pain:/app/runtime/pain:ro
       - runtime_fitness:/app/runtime/fitness:ro
+      - runtime_agent_work:/app/runtime/agent-work:ro
       - graveyard_output:/app/runtime/graveyard
       - ./config:/app/config:ro
     restart: unless-stopped
@@ -134,6 +136,7 @@ services:
       - runtime_pain:/app/runtime/pain
       - runtime_fitness:/app/runtime/fitness
       - runtime_self:/app/runtime/self
+      - runtime_agent_work:/app/runtime/agent-work
       - ./config:/app/config:ro
     tmpfs:
       # /tmp is the only writable non-volume path (Python scratch, etc.)
