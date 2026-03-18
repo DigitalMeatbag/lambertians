@@ -21,6 +21,11 @@ def main() -> None:
     config = load_config(Path("config/universe.toml"))
     runtime_base = Path("runtime")
 
+    # Write ready sentinel so the Docker healthcheck passes (IS-5.4).
+    ready_path = Path(config.paths.graveyard_root) / "ready"
+    ready_path.parent.mkdir(parents=True, exist_ok=True)
+    ready_path.touch()
+
     death_reader = DeathRecordReader(runtime_base / "pain" / "death.json")
     event_log = EventLogWriter(config)
 
