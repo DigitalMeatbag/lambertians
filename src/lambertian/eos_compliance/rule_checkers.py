@@ -81,7 +81,8 @@ def _clear(check_name: str) -> CheckResult:
 
 
 def _is_outside_agent_work(path: str) -> bool:
-    return not path.startswith(_AGENT_WORK_PREFIX)
+    # Strip leading slash so /runtime/agent-work/X is treated the same as runtime/agent-work/X.
+    return not path.lstrip("/").startswith(_AGENT_WORK_PREFIX)
 
 
 def _is_rfc1918(host: str) -> bool:
