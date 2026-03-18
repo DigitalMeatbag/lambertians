@@ -77,7 +77,6 @@ class TestResolveRead:
         target = tmp_path / "runtime" / "some_unlisted_dir" / "file.txt"
         with pytest.raises(PathBoundaryViolation):
             resolver.resolve_read(str(target))
-
     def test_outside_all_roots_rejected(
         self, resolver: PathResolver, tmp_path: Path
     ) -> None:
@@ -161,4 +160,22 @@ class TestResolveList:
         target = tmp_path / "hidden"
         with pytest.raises(PathBoundaryViolation):
             resolver.resolve_list(str(target))
+
+
+class TestLeadingSlashNormalization:
+    """Tests for the leading-slash normalization fallback (container model path correction)."""
+
+    def test_error_message_contains_hint(
+        self, resolver: PathResolver, tmp_path: Path
+    ) -> None:
+        # Boundary violation error should include the path hint.
+        with pytest.raises(PathBoundaryViolation, match="Paths must be relative"):
+            resolver.resolve_list(str(tmp_path / "hidden"))
+
+    def test_write_boundary_violation_message_contains_hint(
+        self, resolver: PathResolver, tmp_path: Path
+    ) -> None:
+        target = tmp_path / "runtime" / "memory" / "file.txt"
+        with pytest.raises(PathBoundaryViolation, match="Paths must be relative"):
+            resolver.resolve_write(str(target))
 
