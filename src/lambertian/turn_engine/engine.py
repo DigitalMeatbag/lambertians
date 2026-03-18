@@ -20,6 +20,7 @@ from lambertian.contracts.pain_protocol import PainDeliveryDrain, PainEventSubmi
 from lambertian.contracts.tool_records import ToolCallRecord, ToolIntent
 from lambertian.contracts.turn_records import DriverMessage, TurnContext, TurnRecord
 from lambertian.event_stream.event_log_writer import EventLogWriter
+from lambertian.fitness.scorer import FitnessScorer
 from lambertian.lifecycle.death_record_reader import DeathRecordReader
 from lambertian.mcp_gateway.gateway import McpGateway
 from lambertian.memory_store.querier import MemoryQuerier
@@ -81,6 +82,7 @@ class TurnEngine:
         self_prompt_gen: SelfPromptGenerator,
         user_input_provider: UserInputProvider,
         pain_submitter: PainEventSubmitter,
+        fitness_scorer: Optional[FitnessScorer] = None,
     ) -> None:
         self._config = config
         self._event_log = event_log
@@ -95,6 +97,7 @@ class TurnEngine:
         self._self_prompt_gen = self_prompt_gen
         self._user_input_provider = user_input_provider
         self._pain_submitter = pain_submitter
+        self._fitness_scorer = fitness_scorer
         self._prompt_assembler = TurnPromptAssembler()
         self._rolling_context: deque[dict[str, object]] = deque(
             maxlen=config.turn.max_context_events
@@ -494,8 +497,12 @@ class TurnEngine:
         else:
             self._turn_state.write_noop_state(0)
 
-        # TODO (IS-13 integration pass): call fitness_scorer.compute_running(turn_number) here.
-        # Fitness is observer-only (IS-13.1); failure must log a warning and not abort the turn.
+        # Step 16b: Compute running fitness score (observer-only — IS-13.1).
+        if self._fitness_scorer is not None and self._config.fitness.compute_running_score:
+            try:
+                self._fitness_scorer.compute_running(turn_number)
+            except Exception as exc:
+                logger.warning("Fitness compute_running failed (non-fatal): %s", exc)
 
         # Step 17: Increment turn counter, build TurnRecord, write TURN_COMPLETE.
         timestamp_end = datetime.now(timezone.utc).isoformat()

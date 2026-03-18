@@ -10,6 +10,11 @@ from typing import Any
 
 from lambertian.configuration.universe_config import Config
 from lambertian.event_stream.event_log_writer import EventLogWriter
+from lambertian.fitness.cursor_state import FitnessCursorStore
+from lambertian.fitness.event_reader import EventStreamReader
+from lambertian.fitness.pain_reader import PainHistoryReader
+from lambertian.fitness.registry import build_default_registry
+from lambertian.fitness.scorer import FitnessScorer
 from lambertian.lifecycle.death_record_reader import DeathRecordReader
 from lambertian.mcp_gateway.gateway import McpGateway
 from lambertian.mcp_gateway.path_resolver import PathResolver
@@ -71,6 +76,9 @@ class AgentBootstrap:
         pain_root = Path(config.paths.pain_root)
         runtime_root = Path(config.paths.runtime_root)
         self_model_dir = Path(config.paths.self_model_file).parent
+        fitness_score_path = Path(config.paths.fitness_file)
+        fitness_state_path = fitness_score_path.parent / "state.json"
+        event_stream_dir = Path(config.paths.event_stream_file).parent
 
         self._event_log = EventLogWriter(config)
         self._self_model_writer = SelfModelWriter(config, self_model_dir)
@@ -86,6 +94,14 @@ class AgentBootstrap:
         self._self_prompt_gen = SelfPromptGenerator(config)
         self._delivery_queue = DeliveryQueue(pain_root / "delivery_queue.json")
         self._pain_submitter = FilePainEventSubmitter(pain_root / "event_queue.jsonl")
+        self._fitness_scorer = FitnessScorer(
+            config=config,
+            registry=build_default_registry(),
+            cursor_store=FitnessCursorStore(fitness_state_path),
+            event_reader=EventStreamReader(event_stream_dir),
+            pain_reader=PainHistoryReader(pain_root / "pain_history.jsonl"),
+            output_path=fitness_score_path,
+        )
 
     def run(self) -> None:
         """Execute bootstrap steps, then enter turn loop."""
@@ -147,6 +163,7 @@ class AgentBootstrap:
             self_prompt_gen=self._self_prompt_gen,
             user_input_provider=StdinUserInputProvider(),
             pain_submitter=self._pain_submitter,
+            fitness_scorer=self._fitness_scorer,
         )
 
     def _compute_config_hash(self) -> str:
