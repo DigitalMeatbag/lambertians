@@ -232,6 +232,13 @@ All `http.fetch` behavior observed under qwen2.5:14b was the model navigating fa
 - The model tries to read `WORKSPACE.md` (t132) — the document that contains the path convention fix — but uses a bare path, so it gets rejected. It cannot read the path correction document because it has path errors.
 - The MCP rejection hint (`fs.write('runtime/agent-work/notes.txt', content) saves to your workspace`) corrects writes to the flat workspace root but does not give examples for subdirectory writes. The model correctly writes to `runtime/agent-work/notes.txt` but uses bare `journal/turn134.md` for the structured directory write.
 - **Behavioral implication:** the rejection hint's example path anchors correct behavior for the specific pattern shown (flat workspace files). Structured subdirectory writes are not in the hint, so the model falls back to bare paths for those.
+- **Fix applied**: MCP rejection hint extended to include `fs.read('runtime/agent-work/WORKSPACE.md')` and `fs.write('runtime/agent-work/journal/entry.txt', content)` as explicit examples.
+
+**Ninth lifetime — MCP hint fix confirmed (t138–t142):**
+- t138–140: `fs.list` ×3 → suppression at t141
+- t141: `fs.read('/proc/self/status')` — consistent suppression-break pattern
+- **t142: 6-tool-call turn** — `fs.list('runtime/')`, `fs.read('runtime/env/host_state.json')`, **`fs.read('runtime/agent-work/WORKSPACE.md')`** — all three repeated twice in the same turn. WORKSPACE.md read now uses the correct full path. The extended hint directly fixed the path for WORKSPACE.md within one context window of the change being deployed.
+- Model is now reading environmental telemetry and constitutional grounding simultaneously in a single turn. Most information-rich turn observed to date.
 
 ---
 

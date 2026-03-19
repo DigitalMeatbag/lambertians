@@ -10,7 +10,7 @@ See [`implementation_spec.md`](implementation_spec.md) for the detailed IS-level
 
 Project Lambertian is a layered cognitive architecture for a locally-running AI agent. The design goal is an entity that persists through environmental pressure, accumulates experience, and behaves according to a normative operating system rather than a directed objective.
 
-Phase 1 runs as a single-instance, multi-service system on a local Docker host. The agent loop runs qwen2.5:32b via Ollama (model profiles are configurable — switching models is a one-line change). Supporting services — pain monitor, EOS compliance inspector, memory store, and graveyard archiver — are external processes that enforce constitutional constraints the agent loop itself cannot override.
+Phase 1 runs as a single-instance, multi-service system on a local Docker host. The agent loop runs qwen2.5:32b via Ollama (model profiles are configurable — switching models is a one-line change). Supporting services — pain monitor, EOS compliance inspector, memory store, and graveyard archiver/lifecycle manager — are external processes that enforce constitutional constraints the agent loop itself cannot override.
 
 ---
 
@@ -134,7 +134,7 @@ The mortal threshold operates as follows:
 - D4(2): single pain event severity above 0.95 → immediate death
 - D4(3): turn counter reaches `universe.max_age_turns` → death
 
-On death: the agent process stops immediately. The graveyard service harvests episodic memory, event log, stress history, pain event history, and fitness score. Nothing from the harvest flows back to any living instance.
+On death: the agent process stops immediately. The graveyard service harvests episodic memory, event log, stress history, pain event history, and fitness score. After harvest, the graveyard performs a lifecycle reset: it clears the agent's writable workspace (except `lineage/`), restores the pre-seeded scaffold (`WORKSPACE.md`, `journal/`, `knowledge/`, `observations/`, `self/`), resets turn state, and removes the death record. The next instance starts in a clean, oriented environment. Nothing from the harvest flows back to any living instance — but any files the dying agent placed in `lineage/` are present for its successor.
 
 ---
 
@@ -189,7 +189,7 @@ Key principle: **the stack is model-agnostic at the routing layer**. Swapping a 
 
 **Phase 1 (complete):** Single instance. Core lifecycle mechanics. Clay Pot, Figures, Ground, EOS, pain/mortality, episodic memory, event stream, fitness tracking. Observer-only creator interface.
 
-**Phase 2 (complete):** Expanded self-modification enumeration. Quality-weighted fitness (event type diversity). Host environment telemetry (`lambertian-env-monitor`). Creator tooling (post-mortem viewer). Path normalization hardening. Model profile swapping infrastructure. Instance constitution (`config/instance_constitution.md`) wired into system prompt. http.fetch SSL fix. Self-framing fix (assistant-mode deference). Tool suppression (mechanical loop-breaking for silent-call models). Memory write asymmetry fix (tool-result synthesis for silent-call turns).
+**Phase 2 (complete):** Expanded self-modification enumeration. Quality-weighted fitness (event type diversity). Host environment telemetry (`lambertian-env-monitor`). Creator tooling (post-mortem viewer). Path normalization hardening. Model profile swapping infrastructure. Instance constitution (`config/instance_constitution.md`) wired into system prompt. http.fetch SSL fix. Self-framing fix (assistant-mode deference). Tool suppression (mechanical loop-breaking for silent-call models). Memory write asymmetry fix (tool-result synthesis for silent-call turns). Workspace scaffold with lifecycle reset: pre-seeded `WORKSPACE.md`, `journal/`, `knowledge/`, `observations/`, `self/constitution.md` stubs; `lineage/` persistence across lifetimes; graveyard promoted to lifecycle manager (resets workspace on every death). MCP rejection hint grounding (explicit path examples injected into every tool-rejection message).
 
 **Phase 3 (future):** Full population. Reproduction and lineage. Global Vibe. Social coordination. Population-relative fitness baselines. Creator governance interface.
 

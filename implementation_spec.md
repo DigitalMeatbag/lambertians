@@ -3442,6 +3442,19 @@ Write `runtime/graveyard/harvest_complete` — a zero-byte sentinel file that si
 
 The graveyard process exits cleanly. The Compose stack may now be stopped.
 
+**Step 10 — Lifecycle reset for the next generation.**
+
+After harvest is complete, reset workspace and state so the next instance starts in a clean environment:
+
+1. Remove all entries in `runtime/agent-work/` except `lineage/` (which persists across lifetimes).
+2. Recreate directory stubs: `journal/`, `knowledge/`, `observations/`, `self/`.
+3. Restore scaffold files from `config/workspace_scaffold/`: `WORKSPACE.md` and `self/constitution.md`.
+4. Reset `runtime/memory/turn_state.json` to `{"turn_number": 0}`.
+5. Delete within-lifetime memory files: `working.json`, `noop_state.json`, `recent_self_prompts.json`.
+6. Remove `runtime/pain/death.json` so the next instance does not exit on turn 0.
+
+All steps are idempotent. Requires `runtime_agent_work`, `runtime_memory`, and `runtime_pain` to be mounted read-write by the graveyard service (see IS-3 volume table).
+
 #### IS-12.4 Harvested artifacts
 
 Artifact collection is governed by config flags (`graveyard.*` namespace in IS-1). Each artifact corresponds to one or more source files and produces one or more output files in the harvest directory.
@@ -3641,6 +3654,8 @@ No tooling is provided in Phase 1 beyond the raw files. Creator analysis is dire
 - **IS-9 (Event Stream Log)** defines the `GRAVEYARD_HARVEST_START` and `GRAVEYARD_HARVEST_COMPLETE` event schemas (IS-9.4). The graveyard is the only non-agent service that appends to the event stream.
 - **IS-13 (Fitness Computation)** is called at IS-12.3 step 5 to compute the post-mortem fitness score. IS-12 owns the file output; IS-13 owns the computation.
 - **IS-3 (Service Topology)** establishes that supporting services (Chroma, pain-monitor, eos-compliance) remain alive through harvest completion. The graveyard depends on this for the Chroma episodic export. If these services die before the graveyard completes, affected artifact collections fail with `status: "failed"` in the manifest — harvest does not abort.
+- **Volume access for IS-12.3 step 10:** The lifecycle reset requires `runtime_agent_work`, `runtime_memory`, and `runtime_pain` to be mounted read-write by the graveyard service. These were originally mounted `:ro`. This was a deliberate security boundary expansion: the graveyard is a trusted privileged process and IS-12.3 step 10 promotes it from archiver to lifecycle manager.
+- **Workspace scaffold:** The agent's writable workspace (`runtime/agent-work/`) is pre-seeded with a scaffold: `WORKSPACE.md`, `journal/`, `knowledge/`, `observations/`, `self/` directories, and `self/constitution.md`. The scaffold is baked into the agent Docker image for first-run volume initialization and is restored by IS-12.3 step 10 on all subsequent lifetimes. The scaffold source lives in `config/workspace_scaffold/`. The `lineage/` directory is excluded from all resets — it persists across all lifetimes as the explicit intergenerational artifact store.
 
 ---
 
