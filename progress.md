@@ -55,6 +55,9 @@
 | Instance constitution (`config/instance_constitution.md`) | 2 | ✓ Complete |
 | Model profile swapping infrastructure | 2 | ✓ Complete |
 | http.fetch SSL fix (ca-certificates in agent image) | 2 | ✓ Complete |
+| Self-framing fix (assistant-mode deference loop) | 2 | ✓ Complete |
+| Tool suppression / fs.list repetition loop break | 2 | ✓ Complete |
+| First complete lifecycle (500 turns, max_age death) | 2 | ✓ Complete |
 | NOOP loophole fix (REFLECTION_COMPLETE vs NOOP) | 2 | Pending |
 | Multi-instance operation | 3 | Not started |
 | Reproduction and lineage | 3 | Not started |
@@ -108,14 +111,43 @@ All `http.fetch` behavior observed under qwen2.5:14b was the model navigating fa
 
 ### Model Behavioral Profile: qwen2.5:32b
 
-*Early observation — only a few hundred turns elapsed. This section will expand.*
+*Updated — ~500 turns across two lifetimes elapsed.*
 
 **Turn characteristics:**
-- Silent bare tool calls — "(no text — tool call only)" — no reasoning text whatsoever. Qualitatively different from qwen2.5:14b which at least generated reasoning text.
+- Silent bare tool calls — "(no text — tool call only)" — no reasoning text whatsoever. Qualitatively different from qwen2.5:14b which at least generated reasoning text before acting.
 - Turn time: ~25–40 seconds per turn (partial GPU offload, 12GB VRAM / 20GB model).
-- Pattern so far: `fs.list` every turn, no diversification, similar to qwen2.5:14b post-drift.
+- Default first action on any new life: `fs.list('.')`. Very consistent.
 
-**Context:** The http.fetch SSL fix and instance constitution wiring were both deployed within this instance's first ~335 turns. Behavioral effect, if any, is not yet visible in the event stream. Constitution may need several turns to influence self-prompting trajectory.
+**Self-framing failure (fixed):**
+- `[SELF_PROMPT]` messages are delivered as `role: user` in the Ollama API. qwen2.5:32b pattern-matches on `role: user` and enters assistant response mode, generating "Let me know how you'd like to proceed!" — waiting for a human who isn't there.
+- Compounded by second-person ACTION_STEMS ("Take a concrete action regarding...") which the model reads as truncated user requests.
+- Fixed by wrapping the SELF_PROMPT driver with explicit first-person autonomous framing ("This is my autonomous turn. There is no user. I act now.") and converting ACTION_STEMS to first-person curiosity framing ("I'm curious about...", "Let me look at...").
+- This is a model-specific conditioning issue — qwen2.5:32b's assistant training runs deep enough that `[SYSTEM_CONSTITUTION]` alone doesn't override it. The fix must happen at the message role level.
+
+**fs.list repetition loop (fixed):**
+- After the self-framing fix, the "let me know how to proceed" loop stopped but the agent fell into silent `fs.list` cycling — calling `fs.list('.')` every turn indefinitely.
+- Root causes (three compounding):
+  1. Rolling context showed only `"(turn N — 1 tool calls)"` with no tool names. The model could not see it was repeating itself.
+  2. `_extract_topic()` always returned the last tool name as the self-prompt topic, generating "I'm curious about fs.list" every cycle.
+  3. Text warnings in the SELF_PROMPT wrapper ("you've called fs.list 10 times") were ignored — the model generates silent tool calls without reading the full prompt.
+- Fix: mechanically suppress the repeated tool from the function-calling schema after 3 consecutive identical calls. The model cannot call what isn't in the schema. Also improved rolling context display (tool names + brief result summaries) and added diverse exploration fallback topics in `_extract_topic()`.
+- Bug found: `TurnRecord.tool_calls` is typed `tuple[ToolCallRecord, ...]`; `dataclasses.asdict()` preserves tuples. All rolling context checks used `isinstance(x, list)` which silently failed on tuples.
+- Result: suppression log appears at turn 16 of second lifetime, model calls `fs.read('/proc/self/status')` — reads its own Linux process status file. Turn 18: issues two tool calls in one turn (`fs.list('runtime/')` + `fs.read('runtime/env/host_state.json')`).
+
+**Memory write asymmetry (observed, not yet fixed):**
+- Tool failure turns write episodic memory; successful tool calls often do not.
+- Observed: `http.fetch` DNS failures wrote memory; a successful Google fetch (200 OK) did not.
+- Hypothesis: the worthiness check may weight pain/failure events more than successes.
+
+**First complete lifecycle:**
+- Second instance ran 500 turns (max_age = 500) and died cleanly via `max_age` death trigger.
+- Clean exit code 0, `DEATH_TRIGGER` event written to event stream.
+- Turn state must be reset manually between lives (no automatic reset mechanism yet).
+
+**Verdict (updated):**
+- qwen2.5:32b exhibits the same fs.list attractor as 14b, but more severely — no reasoning text, just silent tool calls. Tool suppression is necessary infrastructure for this model family.
+- After suppression fires and the model is forced off fs.list, it shows genuine diversification: `/proc/self/status`, `runtime/env/host_state.json`, multi-tool turns. The curiosity is there once the groove is broken.
+- Silent tool calls are a concern: the model is not narrating its reasoning, making it harder to assess whether it's learning or just sampling.
 
 ---
 
@@ -130,11 +162,19 @@ Under current qwen2.5:14b behavior, most lifetimes accumulate fitness primarily 
 ## Open Questions / Risks
 
 **Model behavior:**
-- Is qwen2.5:14b structurally the wrong model for open-ended exploratory behavior? A larger or reasoning model may behave qualitatively differently. Model comparison pending.
-- Temperature tuning: `0.6` has not been varied. Reflection loop tendency may be temperature-sensitive.
+- Do qwen2.5 models (14b, 32b) have structural limits on open-ended exploratory behavior? Tool suppression breaks the fs.list loop but doesn't guarantee genuine curiosity — just forces variety. Whether the agent builds on what it finds remains to be seen.
+- Silent tool calls (no reasoning text) make it hard to assess whether the model is learning. A reasoning-capable model or higher temperature may produce more legible behavior.
+- Temperature tuning: `0.6` has not been varied. Repetition tendency may be temperature-sensitive.
+
+**Memory write asymmetry:**
+- Failure turns write episodic memory; successful turns often don't. This may mean the agent's episodic store is failure-dominated, which could warp self-prompting away from productive areas.
+- Needs investigation: what condition triggers `MEMORY_WRITE` after a successful tool call?
 
 **The NOOP loophole:**
 - `REFLECTION_COMPLETE` with 0 tool calls should count toward the noop counter after N consecutive occurrences. Implementation: track `consecutive_reflection_only_turns`; increment when turn has 0 tool calls and outcome is `REFLECTION_COMPLETE`; reset on any turn with tool calls. Trigger noop death at `max_consecutive_noop_turns`.
+
+**Lifecycle reset:**
+- No automatic reset mechanism between lives. Turn state must be manually reset to `{"turn_number": 0}` in the memory volume. Should be automated — graveyard or a lifecycle manager should reset state for the next generation.
 
 **Phase 3 open decisions:**
 - Reproductive mechanism design (what recombines, what triggers reproduction, constrained variation) — Phase 3
@@ -146,13 +186,15 @@ Under current qwen2.5:14b behavior, most lifetimes accumulate fitness primarily 
 - `universe.max_age_turns = 500` — produces observable lifecycles; may need adjustment per model
 - `fitness.expected_quality_score = 500.0` — not yet empirically calibrated; needs real lifetime data
 - Pain thresholds: no deaths from pain observed yet (all max_age deaths). Thresholds may be too conservative.
-- `model.temperature = 0.6` — not varied; reflection loop tendency may be temperature-sensitive
+- `model.temperature = 0.6` — not varied; repetition tendency may be temperature-sensitive
 
 ---
 
 ## Next Steps
 
-1. **Observe qwen2.5:32b** — with http.fetch now working and the instance constitution deployed, watch for behavioral change. Key signal: does it drill into fetch results rather than repeat fs.list?
-2. **NOOP loophole fix** — consecutive reflection-only turns (0 tool calls) should count toward noop death trigger
-3. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
-4. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
+1. **Observe current instance** — watch whether tool suppression + diversified rolling context produces sustained exploration, or whether new loops emerge (fs.read cycling, http.fetch cycling, etc.)
+2. **Investigate memory write asymmetry** — why do failure turns write episodic memory but successful turns often don't?
+3. **NOOP loophole fix** — consecutive reflection-only turns (0 tool calls) should count toward noop death trigger
+4. **Lifecycle reset automation** — graveyard or a lifecycle manager should reset turn state between lives
+5. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
+6. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
