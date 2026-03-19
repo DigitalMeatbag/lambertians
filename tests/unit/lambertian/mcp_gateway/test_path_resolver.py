@@ -146,6 +146,19 @@ class TestResolveList:
         resolved = resolver.resolve_list(str(target))
         assert resolved == target.resolve()
 
+    def test_dot_redirects_to_runtime_root(
+        self, resolver: PathResolver, tmp_path: Path
+    ) -> None:
+        # '.' is silently normalized to runtime/ so the model can discover subdirectories.
+        resolved = resolver.resolve_list(".")
+        assert resolved == (tmp_path / "runtime").resolve()
+
+    def test_bare_slash_redirects_to_runtime_root(
+        self, resolver: PathResolver, tmp_path: Path
+    ) -> None:
+        resolved = resolver.resolve_list("/")
+        assert resolved == (tmp_path / "runtime").resolve()
+
     def test_runtime_root_still_rejected_for_read(
         self, resolver: PathResolver, tmp_path: Path
     ) -> None:

@@ -88,16 +88,16 @@ class PathResolver:
     # ------------------------------------------------------------------
 
     def _resolve_with_fallback(self, path: str) -> Path:
-        """Resolve path. If it starts with '/', also try stripping the leading slash."""
-        resolved = Path(path).resolve()
-        if path.startswith("/") and len(path) > 1:
-            # Model commonly emits /runtime/X instead of runtime/X.
-            # Stripping the leading slash re-anchors to CWD (which is /app in container).
-            stripped_resolved = Path(path[1:]).resolve()
-            # Return the stripped version only if it resolves differently (avoids no-op on /app paths).
-            if stripped_resolved != resolved:
-                return stripped_resolved
-        return resolved
+        """Resolve path. Normalizes common model path errors before boundary check.
+
+        - Leading slash stripped: /runtime/X -> runtime/X (re-anchors to CWD /app).
+        - Bare '.' or '/' redirected to runtime/ (model's way of saying 'start here').
+        """
+        stripped = path.lstrip("/")
+        # '.' and '' (bare slash) both mean "start from the top" -- redirect to runtime/.
+        if stripped in (".", ""):
+            return self._list_roots[0]  # runtime/ base
+        return Path(stripped).resolve()
 
     @staticmethod
     def _within(resolved: Path, roots: tuple[Path, ...]) -> bool:
