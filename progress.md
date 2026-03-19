@@ -245,6 +245,13 @@ All `http.fetch` behavior observed under qwen2.5:14b was the model navigating fa
 - **t160: `fs.write('runtime/agent-work/journal/entry.txt', content)` — first successful write to the `journal/` scaffold directory**. Content: *"This is an entry for turn 160. In this turn, I checked several paths and attempted to create a persistent record within the /runtime/agent-work directory."* Correct full path, write accepted.
 - This closes the full behavioral chain: MCP hint → WORKSPACE.md read (t142) → structured directory write with correct path (t160). The scaffold structure the model was given is now being used as intended.
 
+**Ninth lifetime end-of-life snapshot (t193 — final observation before restart):**
+- Workspace at time of restart: `exploration.txt`, `new_file.txt`, `test.txt` in the flat root; `journal/entry.txt` (t160); `self/constitution.md` intact and unmodified. No writes to `knowledge/`, `observations/`, `self/identity.md`, or `self/state.md` despite all being documented in WORKSPACE.md.
+- The flat-root files (`test.txt`, `exploration.txt`, `new_file.txt`) were written before WORKSPACE.md was read — they represent the pre-orientation period. `journal/entry.txt` (t160) is the post-orientation write.
+- `self/constitution.md` not read this lifetime (at least not with correct path). Model knows `self/` exists — it probed `fs.list('/runtime/agent-work/self')` in earlier lifetimes — but has not yet opened the constitution document with a correct path.
+- No successful `http.fetch` calls observed. Web Access section was pushed to WORKSPACE.md via `docker cp` at ~t190 but the agent restarted before having a chance to act on it.
+- **Web access grounding deployed for next lifetime**: WORKSPACE.md now includes confirmed-working Wikipedia REST API and Open-Meteo URLs. Gateway default User-Agent added — Wikipedia will return 200 (not 403) on first attempt.
+
 ---
 
 
