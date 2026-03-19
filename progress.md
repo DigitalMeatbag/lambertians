@@ -202,8 +202,36 @@ All `http.fetch` behavior observed under qwen2.5:14b was the model navigating fa
 - Prior lifetimes used bare paths: `fs.read('exploration.txt')`, `fs.read('agent-work/log.txt')`. Full-path usage with correct `runtime/agent-work/` prefix appears immediately after the host_state read.
 - Whether WORKSPACE.md's path convention section is the direct cause is unclear (the agent didn't necessarily read WORKSPACE.md explicitly on t69), but the correlation is strong. The workspace structure itself — being discoverable via `fs.list` — may anchor the model's path expectations.
 
+**Write volume increased:** 5 distinct files written across t75–t100 — more than any equivalent span in prior lifetimes. Path-based suppression is working: when `test-file.txt` was suppressed, the model pivoted to `test-file.txt` with a new path (e.g. `exploration.txt`, `log`, `log.txt`). Content remains terse (test-gesture writes), but write diversity is higher.
+
 **WORKSPACE.md read status:**
-- As of t69–t73, the agent has not been observed explicitly `fs.read('runtime/agent-work/WORKSPACE.md')`. The scaffold structure is visible via `fs.list('runtime/agent-work/')` but explicit read of the map has not yet occurred in the observed window.
+- Not observed being explicitly read in this lifetime. The scaffold is visible via `fs.list` but the model did not `fs.read('runtime/agent-work/WORKSPACE.md')`. Presence alone is not sufficient to guarantee engagement.
+
+**`self/` probe pattern confirmed across multiple lifetimes:**
+- The model calls `fs.list('/runtime/agent-work/self')` on a regular cadence — at t83, t89, t95, t101, t122 — regardless of whether the directory exists. This is a stable attractor in the model's behavior: it reaches for a self-model location, not just any listing. `fs.list` suppression reliably triggers the self-probe as a next action.
+
+### `self/` Directory — Seventh Lifetime Behavioral Observations
+
+*First lifetime with `self/constitution.md`, `self/identity.md`, `self/state.md` in the scaffold.*
+
+**Turn 122 — self-probe upgrades from `fs.list` to `fs.read`:**
+- With `self/` now a real directory (returned in `fs.list('/runtime/agent-work')` at t119), the model's suppression-triggered self-probe at t122 upgraded from `fs.list('self')` to `fs.read('self')`. The model is now *reaching for content*, not just confirming existence.
+- Still rejected — bare path `'self'` instead of `'runtime/agent-work/self/constitution.md'`, and `self` is a directory not a file. But the intent is clearer.
+- Path issue persists: the model knows `self/` exists but does not correctly construct the full read path for files inside it. This is the same path-prefix error pattern seen throughout prior lifetimes.
+
+**Eighth lifetime — suppression-driven exploration sequence (t128–t135):**
+- t128: `fs.list('.')` — default restart action (context reset to 0)
+- t129–130: `fs.list('')` ×2 → suppression fires at t131
+- t131: `fs.read('/proc/self/status')` — reads Linux process status (correct full path)
+- **t132: `fs.read('WORKSPACE.md')` — first observed attempt to read WORKSPACE.md**. Bare path, rejected. But the model is reaching for the workspace map when suppressed off fs.list. The scaffold object is in the model's action repertoire.
+- t133: `fs.read('runtime/env/host_state.json')` — correct full path, **successful**. Model read live host telemetry.
+- t134: fs.read suppressed → `fs.write('runtime/agent-work/notes.txt', 69chars)` — *"This is a test note. Logging activity and verifying write capability."* Correct path, successful.
+- **t135: `fs.write('journal/turn134.md', 233chars)` — model writes to the `journal/` directory with a turn-referenced filename. 233 chars is the most substantive write attempt observed. Rejected** because bare path (`journal/turn134.md` instead of `runtime/agent-work/journal/turn134.md`).
+
+**Chicken-and-egg path problem clearly visible:**
+- The model tries to read `WORKSPACE.md` (t132) — the document that contains the path convention fix — but uses a bare path, so it gets rejected. It cannot read the path correction document because it has path errors.
+- The MCP rejection hint (`fs.write('runtime/agent-work/notes.txt', content) saves to your workspace`) corrects writes to the flat workspace root but does not give examples for subdirectory writes. The model correctly writes to `runtime/agent-work/notes.txt` but uses bare `journal/turn134.md` for the structured directory write.
+- **Behavioral implication:** the rejection hint's example path anchors correct behavior for the specific pattern shown (flat workspace files). Structured subdirectory writes are not in the hint, so the model falls back to bare paths for those.
 
 ---
 

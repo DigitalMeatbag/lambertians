@@ -13,7 +13,9 @@ _PATH_HINT = (
     "Tools work — use a valid path. "
     "fs.list('runtime/') lists all subdirectories. "
     "fs.read('runtime/env/host_state.json') reads live host telemetry. "
-    "fs.write('runtime/agent-work/notes.txt', content) saves to your workspace."
+    "fs.read('runtime/agent-work/WORKSPACE.md') reads your workspace map. "
+    "fs.write('runtime/agent-work/notes.txt', content) saves to your workspace. "
+    "fs.write('runtime/agent-work/journal/entry.txt', content) writes a journal entry."
 )
 
 
