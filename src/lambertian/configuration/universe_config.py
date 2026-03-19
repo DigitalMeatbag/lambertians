@@ -6,6 +6,11 @@ from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
+class InstanceConfig:
+    constitution_path: str
+
+
+@dataclass(frozen=True)
 class UniverseConfig:
     phase: str
     instance_count: int
@@ -207,3 +212,4 @@ class Config:
     paths: PathsConfig
     creator_observability: CreatorObservabilityConfig
     env_monitor: EnvMonitorConfig
+    instance: InstanceConfig

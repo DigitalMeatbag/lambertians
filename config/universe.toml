@@ -3,6 +3,12 @@
 # All values here are provisional tuning seeds, to be adjusted empirically
 # once the system is running. Do not duplicate any of these values in code.
 
+[instance]
+# Path to the instance constitution file (relative to the working directory).
+# This is the existential frame delivered to the agent at every turn.
+# It is part of the inherited Clay Pot — readable by the instance, not modifiable.
+constitution_path = "config/instance_constitution.md"
+
 [universe]
 phase                         = "phase2"
 instance_count                = 1

@@ -16,6 +16,7 @@ from lambertian.configuration.universe_config import (
     FitnessConfig,
     FitnessQualityConfig,
     GraveyardConfig,
+    InstanceConfig,
     McpConfig,
     MemoryConfig,
     ModelConfig,
@@ -80,6 +81,14 @@ def _dict(d: dict[str, Any], key: str, section: str) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Namespace projectors
 # ---------------------------------------------------------------------------
+
+def _load_instance(raw: dict[str, Any]) -> InstanceConfig:
+    s = "instance"
+    d = _dict(raw, s, "<root>")
+    return InstanceConfig(
+        constitution_path=_str(d, "constitution_path", s),
+    )
+
 
 def _load_universe(raw: dict[str, Any]) -> UniverseConfig:
     s = "universe"
@@ -351,6 +360,7 @@ def load_config(path: Path) -> Config:
         paths=_load_paths(raw),
         creator_observability=_load_creator_observability(raw),
         env_monitor=_load_env_monitor(raw),
+        instance=_load_instance(raw),
     )
 
     from lambertian.configuration.validator import validate_config

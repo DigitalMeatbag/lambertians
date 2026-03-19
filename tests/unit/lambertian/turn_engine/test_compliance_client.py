@@ -17,6 +17,7 @@ from lambertian.configuration.universe_config import (
     FitnessConfig,
     FitnessQualityConfig,
     GraveyardConfig,
+    InstanceConfig,
     McpConfig,
     MemoryConfig,
     ModelConfig,
@@ -183,6 +184,9 @@ def config() -> Config:
         env_monitor=EnvMonitorConfig(
             update_interval_seconds=10,
             output_path="runtime/env/host_state.json",
+        ),
+        instance=InstanceConfig(
+            constitution_path="config/instance_constitution.md",
         ),
     )
 

@@ -59,7 +59,8 @@ class AgentBootstrap:
             PathResolver(runtime_root, Path("config")),
         )
         self._compliance_client = ComplianceClient(config)
-        self._block_assembler = PromptBlockAssembler(config)
+        constitution_text = Path(config.instance.constitution_path).read_text(encoding="utf-8")
+        self._block_assembler = PromptBlockAssembler(config, constitution_text)
         self._turn_state = TurnStateStore(memory_dir)
         self._self_prompt_gen = SelfPromptGenerator(config)
         self._delivery_queue = DeliveryQueue(pain_root / "delivery_queue.json")

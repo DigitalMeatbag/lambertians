@@ -121,6 +121,10 @@ def test_env_monitor_output_path(config: Config) -> None:
     assert config.env_monitor.output_path == "runtime/env/host_state.json"
 
 
+def test_instance_constitution_path(config: Config) -> None:
+    assert config.instance.constitution_path == "config/instance_constitution.md"
+
+
 def test_missing_section_raises(tmp_path: Path) -> None:
     toml_file = tmp_path / "bad.toml"
     toml_file.write_bytes(b"[universe]\nphase = 'x'\n")

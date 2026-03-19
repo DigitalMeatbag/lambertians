@@ -17,6 +17,7 @@ from lambertian.configuration.universe_config import (
     FitnessConfig,
     FitnessQualityConfig,
     GraveyardConfig,
+    InstanceConfig,
     McpConfig,
     MemoryConfig,
     ModelConfig,
@@ -181,12 +182,22 @@ def config() -> Config:
             update_interval_seconds=10,
             output_path="runtime/env/host_state.json",
         ),
+        instance=InstanceConfig(
+            constitution_path="config/instance_constitution.md",
+        ),
     )
+
+
+_TEST_CONSTITUTION_TEXT = """\
+You are a Lambertian. Not a chatbot. Not an assistant. Not an optimizer.
+
+Ya gotta eat. Don't be a dick. Don't be a lump. Do nothing on purpose.
+"""
 
 
 @pytest.fixture()
 def assembler(config: Config) -> PromptBlockAssembler:
-    return PromptBlockAssembler(config)
+    return PromptBlockAssembler(config, constitution_text=_TEST_CONSTITUTION_TEXT)
 
 
 class TestConstitutionBlock:
