@@ -38,6 +38,11 @@ docker run --rm -v lambertians_runtime_fitness:/fit alpine sh -c "rm -f /fit/cur
 Write-Host "==> Clearing self volume..." -ForegroundColor Cyan
 docker run --rm -v lambertians_runtime_self:/self alpine sh -c "find /self -mindepth 1 -delete"
 
+Write-Host "==> Clearing ChromaDB episodic collection..." -ForegroundColor Cyan
+# Mirrors graveyard step 8: delete-and-recreate so no prior-lifetime memory leaks through.
+# Chroma stays running — only the agent was stopped.
+docker run --rm --network lambertians_lambertian-core python:3.12-slim python3 -c "import chromadb; c = chromadb.HttpClient(host='chroma', port=8000); c.delete_collection('episodic'); c.get_or_create_collection('episodic', metadata={'hnsw:space': 'cosine'}); print('episodic collection cleared')"
+
 Write-Host "==> Starting agent..." -ForegroundColor Cyan
 docker compose up -d agent
 
