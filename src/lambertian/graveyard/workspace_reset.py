@@ -5,8 +5,8 @@ for the next generation. Called by HarvestSequence after artifacts are collected
 
 Reset actions (all idempotent):
   1. Remove every entry in runtime/agent-work/ EXCEPT lineage/
-  2. Recreate directory stubs: journal/, knowledge/, observations/
-  3. Restore WORKSPACE.md from the scaffold template
+  2. Recreate directory stubs: journal/, knowledge/, observations/, self/
+  3. Restore scaffold files from templates: WORKSPACE.md, self/constitution.md
   4. Reset runtime/memory/turn_state.json to {"turn_number": 0}
   5. Delete within-lifetime memory files (recreated fresh by agent on startup):
        working.json, noop_state.json, recent_self_prompts.json
@@ -25,7 +25,7 @@ _log = logging.getLogger(__name__)
 _PRESERVED_DIRS: frozenset[str] = frozenset({"lineage"})
 
 # Directory stubs recreated each lifetime.
-_SCAFFOLD_DIRS: tuple[str, ...] = ("journal", "knowledge", "observations")
+_SCAFFOLD_DIRS: tuple[str, ...] = ("journal", "knowledge", "observations", "self")
 
 # Within-lifetime memory files deleted on reset (agent recreates on startup if absent).
 _EPHEMERAL_MEMORY_FILES: tuple[str, ...] = (
@@ -44,11 +44,15 @@ class WorkspaceReset:
         memory_dir: Path,
         pain_dir: Path,
         workspace_template: Path,
+        scaffold_dir: Path | None = None,
     ) -> None:
         self._agent_work = agent_work_dir
         self._memory = memory_dir
         self._pain = pain_dir
         self._template = workspace_template
+        # Root of the scaffold source tree (config/workspace_scaffold/agent-work/).
+        # When provided, used to restore files inside subdirectories (e.g. self/constitution.md).
+        self._scaffold_dir = scaffold_dir
 
     def execute(self) -> None:
         """Run all reset steps. Safe to call multiple times (idempotent)."""
@@ -90,13 +94,22 @@ class WorkspaceReset:
     # ── Step 3 ────────────────────────────────────────────────────────────────
 
     def _restore_workspace_map(self) -> None:
-        """Copy WORKSPACE.md from scaffold template into agent-work/."""
-        dest = self._agent_work / "WORKSPACE.md"
-        if not self._template.exists():
-            _log.error("Workspace template missing: %s", self._template)
+        """Restore scaffold files: WORKSPACE.md and self/constitution.md."""
+        self._restore_file(self._template, self._agent_work / "WORKSPACE.md")
+
+        if self._scaffold_dir is not None:
+            constitution_src = self._scaffold_dir / "self" / "constitution.md"
+            if constitution_src.exists():
+                self._restore_file(constitution_src, self._agent_work / "self" / "constitution.md")
+
+    def _restore_file(self, src: Path, dest: Path) -> None:
+        """Copy src to dest, logging the result."""
+        if not src.exists():
+            _log.error("Scaffold template missing: %s", src)
             return
-        dest.write_text(self._template.read_text(encoding="utf-8"), encoding="utf-8")
-        _log.info("Restored WORKSPACE.md from template")
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+        _log.info("Restored %s from template", dest.name)
 
     # ── Step 4 ────────────────────────────────────────────────────────────────
 

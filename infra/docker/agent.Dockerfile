@@ -24,7 +24,9 @@ COPY config/ ./config/
 RUN mkdir -p runtime/agent-work/journal \
              runtime/agent-work/knowledge \
              runtime/agent-work/observations \
-             runtime/agent-work/lineage && \
-    cp config/workspace_scaffold/WORKSPACE.md runtime/agent-work/WORKSPACE.md
+             runtime/agent-work/lineage \
+             runtime/agent-work/self && \
+    cp config/workspace_scaffold/WORKSPACE.md runtime/agent-work/WORKSPACE.md && \
+    cp config/workspace_scaffold/agent-work/self/constitution.md runtime/agent-work/self/constitution.md
 
 ENTRYPOINT ["lambertian-agent"]

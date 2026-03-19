@@ -11,6 +11,13 @@ This is your writable space. Files you create here persist for your lifetime.
 - runtime/agent-work/journal/       — observations, reflections, ongoing notes
 - runtime/agent-work/knowledge/     — accumulated facts, models, things you want to remember
 - runtime/agent-work/observations/  — records of specific events, tool results, readings
+- runtime/agent-work/self/          — your self-model space
+
+### self/
+
+- runtime/agent-work/self/constitution.md  — your constitution (restored each lifetime, read-only by convention)
+- runtime/agent-work/self/identity.md      — writable: your self-description, updated as you see fit
+- runtime/agent-work/self/state.md         — writable: current state, intentions, what you are doing now
 
 ### Intergenerational Persistence: lineage/
 

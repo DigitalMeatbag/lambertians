@@ -50,6 +50,7 @@ def main() -> None:
         memory_dir=runtime_base / "memory",
         pain_dir=runtime_base / "pain",
         workspace_template=Path("config/workspace_scaffold/WORKSPACE.md"),
+        scaffold_dir=Path("config/workspace_scaffold/agent-work"),
     )
     harvest = HarvestSequence(
         config,

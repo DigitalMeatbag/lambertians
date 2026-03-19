@@ -14,21 +14,27 @@ def _make_reset(tmp_path: Path) -> tuple[WorkspaceReset, Path, Path, Path, Path]
     agent_work = tmp_path / "agent-work"
     memory = tmp_path / "memory"
     pain = tmp_path / "pain"
+    scaffold_dir = tmp_path / "config" / "workspace_scaffold" / "agent-work"
     template_dir = tmp_path / "config" / "workspace_scaffold"
 
     agent_work.mkdir(parents=True)
     memory.mkdir(parents=True)
     pain.mkdir(parents=True)
-    template_dir.mkdir(parents=True)
+    (scaffold_dir / "self").mkdir(parents=True)
+    template_dir.mkdir(parents=True, exist_ok=True)
 
     template = template_dir / "WORKSPACE.md"
     template.write_text("# Workspace\nThis is the template.", encoding="utf-8")
+    (scaffold_dir / "self" / "constitution.md").write_text(
+        "# Constitution\nThis is the constitution.", encoding="utf-8"
+    )
 
     reset = WorkspaceReset(
         agent_work_dir=agent_work,
         memory_dir=memory,
         pain_dir=pain,
         workspace_template=template,
+        scaffold_dir=scaffold_dir,
     )
     return reset, agent_work, memory, pain, template
 
@@ -92,6 +98,11 @@ class TestRecreateScaffold:
         assert (agent_work / "knowledge").is_dir()
         assert (agent_work / "observations").is_dir()
 
+    def test_creates_self_dir(self, tmp_path: Path) -> None:
+        reset, agent_work, *_ = _make_reset(tmp_path)
+        reset.execute()
+        assert (agent_work / "self").is_dir()
+
     def test_creates_lineage_if_absent(self, tmp_path: Path) -> None:
         reset, agent_work, *_ = _make_reset(tmp_path)
         reset.execute()
@@ -127,6 +138,39 @@ class TestRestoreWorkspaceMap:
         template.unlink()  # remove the template
         reset.execute()  # should not raise; WORKSPACE.md just won't be written
         assert not (agent_work / "WORKSPACE.md").exists()
+
+    def test_restores_constitution_md(self, tmp_path: Path) -> None:
+        reset, agent_work, *_ = _make_reset(tmp_path)
+        reset.execute()
+        constitution = agent_work / "self" / "constitution.md"
+        assert constitution.exists()
+        assert "Constitution" in constitution.read_text(encoding="utf-8")
+
+    def test_overwrites_existing_constitution(self, tmp_path: Path) -> None:
+        reset, agent_work, *_ = _make_reset(tmp_path)
+        (agent_work / "self").mkdir(parents=True, exist_ok=True)
+        (agent_work / "self" / "constitution.md").write_text("modified", encoding="utf-8")
+        reset.execute()
+        assert "modified" not in (agent_work / "self" / "constitution.md").read_text(encoding="utf-8")
+
+    def test_no_scaffold_dir_skips_constitution(self, tmp_path: Path) -> None:
+        """WorkspaceReset without scaffold_dir gracefully skips constitution restore."""
+        agent_work = tmp_path / "agent-work"
+        memory = tmp_path / "memory"
+        pain = tmp_path / "pain"
+        agent_work.mkdir(parents=True)
+        memory.mkdir(parents=True)
+        pain.mkdir(parents=True)
+        template = tmp_path / "WORKSPACE.md"
+        template.write_text("# Workspace", encoding="utf-8")
+        reset = WorkspaceReset(
+            agent_work_dir=agent_work,
+            memory_dir=memory,
+            pain_dir=pain,
+            workspace_template=template,
+        )
+        reset.execute()  # should not raise
+        assert not (agent_work / "self" / "constitution.md").exists()
 
 
 class TestResetTurnState:
@@ -207,6 +251,8 @@ class TestFullReset:
         assert (agent_work / "journal").is_dir()
         assert (agent_work / "knowledge").is_dir()
         assert (agent_work / "observations").is_dir()
+        assert (agent_work / "self").is_dir()
+        assert (agent_work / "self" / "constitution.md").exists()
         # workspace map restored
         assert (agent_work / "WORKSPACE.md").read_text(
             encoding="utf-8"

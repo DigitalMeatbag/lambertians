@@ -74,6 +74,7 @@ def _build_harvest_sequence(
         memory_dir=runtime / "memory",
         pain_dir=runtime / "pain",
         workspace_template=runtime / "config" / "workspace_scaffold" / "WORKSPACE.md",
+        scaffold_dir=runtime / "config" / "workspace_scaffold" / "agent-work",
     )
 
     return HarvestSequence(
