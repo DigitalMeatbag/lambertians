@@ -240,6 +240,11 @@ All `http.fetch` behavior observed under qwen2.5:14b was the model navigating fa
 - **t142: 6-tool-call turn** — `fs.list('runtime/')`, `fs.read('runtime/env/host_state.json')`, **`fs.read('runtime/agent-work/WORKSPACE.md')`** — all three repeated twice in the same turn. WORKSPACE.md read now uses the correct full path. The extended hint directly fixed the path for WORKSPACE.md within one context window of the change being deployed.
 - Model is now reading environmental telemetry and constitutional grounding simultaneously in a single turn. Most information-rich turn observed to date.
 
+**Ninth lifetime continued — first successful structured journal write (t144–t160):**
+- t144: `fs.write('runtime/agent-work/new_file.txt', 56chars)` — *"This is a new file created in the workspace at turn 144."* Flat root write, correct path, successful. Model is writing files anchored to the turn number.
+- **t160: `fs.write('runtime/agent-work/journal/entry.txt', content)` — first successful write to the `journal/` scaffold directory**. Content: *"This is an entry for turn 160. In this turn, I checked several paths and attempted to create a persistent record within the /runtime/agent-work directory."* Correct full path, write accepted.
+- This closes the full behavioral chain: MCP hint → WORKSPACE.md read (t142) → structured directory write with correct path (t160). The scaffold structure the model was given is now being used as intended.
+
 ---
 
 
