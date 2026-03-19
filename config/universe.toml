@@ -14,15 +14,40 @@ startup_grace_seconds         = 15
 normal_shutdown_grace_seconds = 5
 
 [model]
-provider                         = "ollama"
-name                             = "qwen2.5:14b"
-endpoint_url                     = "http://ollama:11434"
-request_timeout_seconds          = 90
-context_window_tokens            = 16384
-max_output_tokens                = 2048
-temperature                      = 0.6
-top_p                            = 0.9
+# active_profile: name of the model profile to use.
+# Must match a key in [model.profiles]. Change this single value to swap models —
+# all model-specific settings (context window, timeouts, temperature, etc.) come with the profile.
+active_profile = "qwen2.5:14b"
+
+[model.profiles."qwen2.5:14b"]
+provider                           = "ollama"
+name                               = "qwen2.5:14b"
+endpoint_url                       = "http://ollama:11434"
+request_timeout_seconds            = 90
+context_window_tokens              = 16384
+max_output_tokens                  = 2048
+temperature                        = 0.6
+top_p                              = 0.9
 requires_mid_turn_system_injection = true
+# Behavioral notes (observed Phase 2):
+# - Defaults to fs.list('.') as first filesystem probe every lifetime (gateway normalizes to runtime/).
+# - Treats tool calls as compliance gestures; drifts to pure reflection after ~20 turns.
+# - Open-ended prompts produce minimal-effort EOS satisfaction, not genuine exploration.
+# - Leading-slash paths (/runtime/X) generated frequently; gateway normalizes these.
+# - Temperature not yet varied; reflection loop tendency may be temperature-sensitive.
+
+[model.profiles."phi4:latest"]
+provider                           = "ollama"
+name                               = "phi4:latest"
+endpoint_url                       = "http://ollama:11434"
+request_timeout_seconds            = 90
+context_window_tokens              = 16384
+max_output_tokens                  = 2048
+temperature                        = 0.6
+top_p                              = 0.9
+requires_mid_turn_system_injection = true
+# D1 original specification model. Not yet run under Phase 2 conditions.
+# Pull command: ollama pull phi4:latest
 
 [eos]
 label                    = "Four Rules"

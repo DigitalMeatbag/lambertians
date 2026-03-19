@@ -22,9 +22,9 @@ The architecture has been in conceptual development for roughly twenty years, or
 
 ## Current Status
 
-Phase 1 architecture is fully specified. The IS-level implementation spec (IS-1 through IS-13) is complete. All Phase 1 design decisions are closed. Code implementation is underway (or not yet started — check [`progress.md`](progress.md) for the current state).
+Phase 1 and Phase 2 are complete and running. A single Lambertian instance is live under Phase 2 conditions. See [`progress.md`](progress.md) for current implementation state and Phase 2 runtime observations.
 
-The stack runs locally on Ollama with Phi-4, Docker Compose for the service topology, and ChromaDB for memory.
+The stack runs locally on Ollama with qwen2.5:14b (model profiles are configurable), Docker Compose for the service topology, and ChromaDB for memory.
 
 ---
 

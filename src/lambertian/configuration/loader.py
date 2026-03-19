@@ -97,16 +97,32 @@ def _load_universe(raw: dict[str, Any]) -> UniverseConfig:
 def _load_model(raw: dict[str, Any]) -> ModelConfig:
     s = "model"
     d = _dict(raw, s, "<root>")
+    active_profile = _str(d, "active_profile", s)
+    profiles_raw = d.get("profiles", {})
+    if not isinstance(profiles_raw, dict):
+        raise ConfigurationError(
+            f"[model].profiles: expected table, got {type(profiles_raw).__name__!r}"
+        )
+    if active_profile not in profiles_raw:
+        raise ConfigurationError(
+            f"[model].active_profile '{active_profile}' not found in [model.profiles]"
+        )
+    pd = profiles_raw[active_profile]
+    if not isinstance(pd, dict):
+        raise ConfigurationError(
+            f"[model.profiles.{active_profile!r}]: expected table, got {type(pd).__name__!r}"
+        )
+    ps = f"model.profiles.{active_profile!r}"
     return ModelConfig(
-        provider=_str(d, "provider", s),
-        name=_str(d, "name", s),
-        endpoint_url=_str(d, "endpoint_url", s),
-        request_timeout_seconds=_int(d, "request_timeout_seconds", s),
-        context_window_tokens=_int(d, "context_window_tokens", s),
-        max_output_tokens=_int(d, "max_output_tokens", s),
-        temperature=_float(d, "temperature", s),
-        top_p=_float(d, "top_p", s),
-        requires_mid_turn_system_injection=_bool(d, "requires_mid_turn_system_injection", s),
+        provider=_str(pd, "provider", ps),
+        name=_str(pd, "name", ps),
+        endpoint_url=_str(pd, "endpoint_url", ps),
+        request_timeout_seconds=_int(pd, "request_timeout_seconds", ps),
+        context_window_tokens=_int(pd, "context_window_tokens", ps),
+        max_output_tokens=_int(pd, "max_output_tokens", ps),
+        temperature=_float(pd, "temperature", ps),
+        top_p=_float(pd, "top_p", ps),
+        requires_mid_turn_system_injection=_bool(pd, "requires_mid_turn_system_injection", ps),
     )
 
 

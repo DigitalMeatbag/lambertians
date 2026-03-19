@@ -53,11 +53,15 @@ See D9 in Closed Decisions for the Phase 2 basic decision. Phase 3 full design r
 ---
 
 #### D1: Base Model Selection
-**Decision:** Phi-4 as default model. Model configured at universe level — single value applies to all instances. Swappable without architectural changes.
+**Original decision:** Phi-4 as default model. Model configured at universe level — single value applies to all instances. Swappable without architectural changes.
 
-**Rationale:** Phi-4 punches above its weight on reasoning and behavioral constraint following relative to its size, runs comfortably on BIGBEEF. Universe-level config keeps Phase 1 simple while leaving per-instance model differentiation available for Phase 2/3 without rework.
+**Phase 2 revision:** Phi-4 was the D1 specification model, but qwen2.5:14b was used at runtime for Phase 2 development based on availability. Phase 2 operation has characterized qwen2.5:14b's behavioral profile (see `progress.md` — Phase 2 Runtime Observations). Model selection is being formalized as a profile system: `[model].active_profile` in `universe.toml` selects from a set of named profiles, each carrying complete model-specific config. Switching models is a single config change.
 
-**Future note:** Mid-conversation system-role message injection is a hard requirement for any future model candidates. Must be verified at model selection time.
+**Active model:** qwen2.5:14b (Phase 2). Phi-4 profile defined; not yet run under Phase 2 conditions.
+
+**Rationale:** Phi-4 was chosen for reasoning/constraint-following at small size. qwen2.5:14b was chosen for Phase 2 experimentation. The profile system makes systematic model comparison tractable — run the same lifetime conditions with different models and compare behavioral outputs via event stream and post-mortem artifacts.
+
+**Hard requirement:** Mid-conversation system-role message injection must be supported by any model candidate. Verify at model selection time.
 
 ---
 

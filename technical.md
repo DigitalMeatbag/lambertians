@@ -173,22 +173,23 @@ Diversity is designed in at the Clay Pot level: different routing architectures 
 | Component | Technology | Notes |
 |-----------|-----------|-------|
 | Model runtime | Ollama (local) | Sovereign; no external billing |
-| Base model | Phi-4 | Chosen for reasoning/constraint-following at small size |
+| Active model | qwen2.5:14b | Current runtime model; see D1 revision note |
+| Model selection | Profile-based (`config/universe.toml`) | Switch models by changing `[model].active_profile` |
 | Orchestration | Docker Compose | Clay Pot as container composition |
 | Memory | ChromaDB | Episodic/semantic vector store |
 | Embeddings | nomic-embed-text via Ollama | Local embedding; no external calls |
 | Agent framework | Custom Python | `src/lambertian/` package tree |
 | Config format | TOML (`config/universe.toml`) | Single source of truth for all knobs |
 
-Key principle: **the stack is model-agnostic at the routing layer**. Swapping a better local model is a config change, not an architectural rework. Build the plumbing, not the water source.
+Key principle: **the stack is model-agnostic at the routing layer**. Swapping a better local model is a one-line config change — set `[model].active_profile` to a defined profile name. Build the plumbing, not the water source.
 
 ---
 
 ## Phase Overview
 
-**Phase 1 (current):** Single instance. Core lifecycle mechanics. Clay Pot, Figures, Ground, EOS, pain/mortality, episodic memory, event stream, fitness tracking. Observer-only creator interface.
+**Phase 1 (complete):** Single instance. Core lifecycle mechanics. Clay Pot, Figures, Ground, EOS, pain/mortality, episodic memory, event stream, fitness tracking. Observer-only creator interface.
 
-**Phase 2 (planned):** Expanded self-modification enumeration. Richer fitness function (event quality weighting). Basic multi-instance groundwork. Creator tooling (post-mortem viewer).
+**Phase 2 (complete):** Expanded self-modification enumeration. Quality-weighted fitness (event type diversity). Host environment telemetry (`lambertian-env-monitor`). Creator tooling (post-mortem viewer). Path normalization hardening. Model profile swapping infrastructure.
 
 **Phase 3 (future):** Full population. Reproduction and lineage. Global Vibe. Social coordination. Population-relative fitness baselines. Creator governance interface.
 
