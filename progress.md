@@ -6,11 +6,11 @@
 
 ## Current Status
 
-**Phase:** Phase 2 (single-instance, running)
+**Phase:** Phase 2 complete. Active work on `witness` branch.
 
-**Branch:** `phase2`
+**Branch:** `witness` (branched from `master` after phase2 merge)
 
-**Overall:** Phase 1 and Phase 2 are complete and deployed. A single Lambertian instance is running under Phase 2 conditions with qwen2.5:32b. Model profile swapping infrastructure is complete — switching models is a one-line config change (`active_profile` in `universe.toml`). The instance constitution (`config/instance_constitution.md`) has been wired into the system prompt as the `[SYSTEM_CONSTITUTION]` block. `http.fetch` SSL verification has been fixed (was broken for the entire prior history). Model-specific behavioral patterns are still being characterized at 32b scale.
+**Overall:** Phase 1 and Phase 2 are complete and deployed. A single Lambertian instance is running under Phase 2 conditions with qwen2.5:32b. Model profile swapping infrastructure is complete — switching models is a one-line config change (`active_profile` in `universe.toml`). The instance constitution (`config/instance_constitution.md`) has been wired into the system prompt as the `[SYSTEM_CONSTITUTION]` block. `http.fetch` SSL verification has been fixed (was broken for the entire prior history). Semantic shim layer (IS-7.9) is deployed and active — observed 7 shim activations in 17 turns on first deployment.
 
 **Running services:**
 - `agent` — turn engine, EOS compliance, MCP gateway, memory, self-model (qwen2.5:32b via Ollama)
@@ -20,6 +20,9 @@
 - `chroma` — episodic memory store (ChromaDB)
 - `ollama` — local model runtime
 - `lambertian-env-monitor` — host state telemetry (host process; writes to bind-mounted `runtime/env/host_state.json`)
+
+**Development tools:**
+- `lambertian-witness` — live terminal UI observer (`witness/`). Reads agent log stream and state files via docker exec. Displays HUD (vital signs), journal (workspace writes), and event feed. Run: `cd witness && npm start`
 
 ---
 
@@ -344,8 +347,8 @@ The cycle shows the suppression mechanism working as designed: the fs.list attra
 
 ## Next Steps
 
-1. **Continue observing semantic shim** — watch for `/proc/self/status` virtual hit, `http.fetch` attempts, scaffold directory writes; measure whether shim reduces overall rejection rate across a full lifetime
-2. **Add bare `self` read attractor** — t3 `fs.read('self')` is unshimmed; consider aliasing to `runtime/agent-work/self/` (directory listing?) or a self-model document
-3. **Observe memory impact** — with episodic memory now accumulating tool result summaries, watch whether self-prompting builds on past observations across turns; watch whether reading WORKSPACE.md and constitution.md produces structured directory use in subsequent turns
+1. **Validate lambertian-witness** — run alongside a live agent lifetime, confirm log parsing covers all event types, identify UI/layout issues, verify state polling accuracy
+2. **Continue observing semantic shim** — watch for `/proc/self/status` virtual hit, `http.fetch` attempts, scaffold directory writes; measure whether shim reduces overall rejection rate across a full lifetime
+3. **Add bare `self` read attractor** — t3 `fs.read('self')` is unshimmed; consider aliasing to `runtime/agent-work/self/` (directory listing?) or a self-model document
 4. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
 5. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe

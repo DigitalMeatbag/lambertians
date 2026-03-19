@@ -139,6 +139,24 @@ Shim maps are model-profile-keyed. Different models have different attractors. C
 
 Every shim activation is logged at INFO level for observability: which shims fire, how often, and whether new unshimmed attractors emerge.
 
+### Lambertian Witness (Development Observer)
+
+`witness/` is a live terminal UI for observing a running agent instance. It is a read-only development tool — not part of the agent stack, no modifications to the agent's environment.
+
+**Data channels:**
+- **Log stream** — `docker compose logs -f agent` (child process). Primary data source. Provides turn numbers, tool calls with arguments, suppression events, shim activations, and death triggers. A line-oriented parser converts raw log output into typed events.
+- **State polling** — `docker compose exec -T agent cat <path>` every 2s for `turn_state.json`, `current.json` (fitness), and `stress_state.json`. Named Docker volumes are not bind-mounted to the host; docker exec reads from the running container with ~200ms overhead per call.
+- **Direct host reads** — `runtime/env/host_state.json` (bind-mounted) and `config/universe.toml` (for max_age_turns).
+
+**UI layout:**
+- **HUD strip** — status indicator (ACTIVE/SUPPRESSED/NOOP/DEAD/WAITING), turn/max_age with age progress bar, fitness score, pain scalar, last tool call, suppressed tools, host CPU/mem.
+- **Journal panel** — most-recent-first list of workspace file writes with turn tags and content preview. Shows death card on agent death.
+- **Event feed** — scrolling last-20 events with colored outcome indicators.
+
+**Usage:** `cd witness && npm start`. Ctrl+C to quit. Can be started before or after the agent — shows WAITING until log data arrives.
+
+**Technology:** TypeScript, Ink (React for terminals), tsx runtime. No build step required for development — `npm start` uses tsx directly.
+
 ---
 
 ## Pain and Mortality

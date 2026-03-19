@@ -1,0 +1,21 @@
+{
+  "name": "lambertian-witness",
+  "version": "0.1.0",
+  "description": "Live terminal observer for Project Lambertian",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/main.tsx",
+    "build": "tsc",
+    "dev": "tsx --watch src/main.tsx"
+  },
+  "dependencies": {
+    "ink": "^5.1.0",
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/react": "^18.3.18",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
