@@ -27,7 +27,7 @@
 
 | ID | Decision | Status |
 |----|----------|--------|
-| D1 | Base Model: Phi-4 (original spec); qwen2.5:14b active at runtime — model profiles being formalized | Closed / In Revision |
+| D1 | Base Model: qwen2.5:32b (active, stable). Model profile swapping infrastructure in place — switching is a one-line config change. | Closed |
 | D2 | Clay Pot Architecture: three-tier visibility, docker-compose as genetic material, universe-level blacklist | Closed |
 | D3 | Pain Channels: stress scalar + pain event queue, external pain-monitor process, `[SYSTEM_PAIN]` injection | Closed |
 | D4 | Mortality and Graveyard: three triggers, automatic/immediate death, no grace period, graveyard harvest on death | Closed |
@@ -59,7 +59,7 @@
 | Tool suppression / fs.list repetition loop break | 2 | ✓ Complete |
 | First complete lifecycle (500 turns, max_age death) | 2 | ✓ Complete |
 | Memory write asymmetry fix (silent-call models) | 2 | ✓ Complete |
-| NOOP loophole fix (REFLECTION_COMPLETE vs NOOP) | 2 | Pending |
+| NOOP loophole fix — suppression escape (32b variant) | 2 | ✓ Complete |
 | Multi-instance operation | 3 | Not started |
 | Reproduction and lineage | 3 | Not started |
 | Global Vibe | 3 | Not started |
@@ -166,11 +166,22 @@ All `http.fetch` behavior observed under qwen2.5:14b was the model navigating fa
 - Behavioral rhythm confirmed: `fs.list ×3 → suppress → fs.read ×3 → suppress → fs.write ×2 → fs.list ×3 → suppress → fs.write ×2 → fs.list ×3 → suppress → http.fetch ×3 → suppress → **NOOP** → fs.list ×3 → ...`. The model cycles through all available tools under suppression pressure; when multiple tools are simultaneously suppressed, it falls through to a pure empty turn.
 - **NOOP loophole confirmed live at t19**: fs.list suppressed + http.fetch suppressed simultaneously → the model produced a turn with no text and no tool calls. This is the loophole — the empty turn costs nothing and resets the suppression state for the next turn. Next turn: back to fs.list freely.
 
-**Verdict (updated):**
+**NOOP loophole fix — fourth lifetime behavioral observations:**
+
+- The suppression-escape NOOP (tool suppressed → empty turn → suppression cleared → resume suppressed tool) was confirmed eliminated. Three live examples in the fourth lifetime: t51, t55, t71-t72. In each case, the suppressed tool remained suppressed through the NOOP and on subsequent turns.
+- Two consecutive silent NOOPs occurred at t71-t72 (fs.list suppressed, model produced nothing). On t73 the model broke out with `fs.read('exploration.txt')` — self-corrected without pain firing.
+- `fs.read` is now a regular part of the tool rotation. It was essentially absent in prior lifetimes; under the fix it appears organically after `http.fetch` and `fs.list` suppression cycles.
+- Emerging rotation pattern: `fs.list×3 → [suppress] → http.fetch×3 or fs.write×3 → [suppress] → fs.read×3 → [suppress] → fs.write → fs.list×3 → ...`. Genuinely more diverse than the pre-fix `list → fetch → NOOP → list` cycle.
+- **Semantic shift in written artifacts**: prior lifetimes produced `"This is a test file created by Lambertian."`. Fourth lifetime produced `exploration.txt`: `"This is an exploration of persistence within my permitted runtime environment."` and `exploration-log.txt`: `"Exploration on turn 58. Attempting to create a persistent record."` The model is now explicitly framing writes as persistence goals, not test gestures.
+- **Path confusion persists**: model writes to `runtime/agent-work/X` but later attempts to read the same file as `X` (bare path). 7 compliance blocks from `'agent-work/log.txt'`-style paths in one session. Doesn't track where it placed artifacts.
+- **Compliance blocks inflate NOOP count**: blocked writes produce `executed=False` ToolCallRecords. These satisfy the NOOP condition (`all(not r.executed)`) and increment the NOOP counter, even though the model actively attempted an action. 13/46 turns classified as NOOP, majority of which were blocked writes or failed fetches — not truly empty turns.
+- **http.fetch failures**: all http.fetch calls in the fourth lifetime are TOOL_FAILURE (likely container network isolation in current environment). Tool suppression still fires correctly because dispatch-but-fail counts as an executed call record. Behavioral effect: the model cycles off http.fetch under suppression but returns to it regardless of the failure history — no learning from the tool failure pattern.
+
+
 - qwen2.5:32b exhibits the same fs.list attractor as 14b, but more severely — no reasoning text, just silent tool calls. Tool suppression is necessary infrastructure for this model family.
 - After suppression fires and the model is forced off fs.list, it shows genuine diversification: `/proc/self/status`, `runtime/env/host_state.json`, multi-tool turns. The curiosity is there once the groove is broken.
 - The suppression mechanism works, but generates a mechanical rotation through the tool catalog rather than genuine curiosity-driven exploration. The model cycles: list → suppress → read → suppress → write → list → suppress... This is "Don't be a lump" satisfied by tool variety, not by meaning.
-- The NOOP loophole is the next structural gap: when all used tools are simultaneously suppressed, the model escapes to a zero-cost empty turn rather than branching into genuinely new territory.
+- ~~The NOOP loophole is the next structural gap: when all used tools are simultaneously suppressed, the model escapes to a zero-cost empty turn rather than branching into genuinely new territory.~~ **Fixed.** See "NOOP loophole fix — fourth lifetime" above.
 
 ---
 
@@ -192,8 +203,14 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 **Memory write asymmetry:**
 - ~~Failure turns write episodic memory; successful turns often don't.~~ **Fixed.** Root cause was `and response_text` gate in step 14 — always `""` for silent-call models. Resolved by synthesizing tool result summaries. See qwen2.5:32b profile above.
 
-**The NOOP loophole:**
-- `REFLECTION_COMPLETE` with 0 tool calls should count toward the noop counter after N consecutive occurrences. Implementation: track `consecutive_reflection_only_turns`; increment when turn has 0 tool calls and outcome is `REFLECTION_COMPLETE`; reset on any turn with tool calls. Trigger noop death at `max_consecutive_noop_turns`.
+**The NOOP loophole — two variants:**
+- **Suppression-escape NOOP** (32b): empty turn (0 text, 0 tools) triggered when the model had no viable suppressed tool to call. The NOOP previously cleared the suppression window, letting the model immediately resume the suppressed tool. **Fixed** — NOOP turns are now transparent to the suppression evaluator; suppression persists through them.
+- **Reflection attractor** (14b / text-producing models): `REFLECTION_COMPLETE` turns (0 tool calls, narrative output only) satisfy "Don't be a lump" at minimal cost. The NOOP counter only fires for truly empty turns; `REFLECTION_COMPLETE` turns never hit it. An agent on this attractor can coast through max_age entirely on reflection. **Still open.** Fix: consecutive zero-tool-call turns (regardless of text output) should count toward the noop death trigger after a configurable threshold. Note: qwen2.5:32b does not exhibit this pattern (it produces no text), so this is not currently blocking.
+
+**Compliance blocks miscounted as NOOPs:**
+- A compliance-blocked tool call produces `executed=False` ToolCallRecord. If response_text is empty and no memory write occurs, this satisfies the NOOP condition — even though the model actively attempted an action. In the fourth lifetime, 7 compliance blocks were counted as NOOP turns.
+- This inflates the NOOP counter and could trigger spurious pain events after N consecutive blocked calls. Behaviorally, a blocked action is fundamentally different from true inaction. This distinction should eventually be reflected.
+
 
 **Lifecycle reset:**
 - No automatic reset mechanism between lives. Turn state must be manually reset to `{"turn_number": 0}` in the memory volume. Should be automated — graveyard or a lifecycle manager should reset state for the next generation.
@@ -214,8 +231,7 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 
 ## Next Steps
 
-1. **NOOP loophole fix** — consecutive reflection-only turns (0 tool calls) should count toward noop death trigger
-2. **Lifecycle reset automation** — graveyard or a lifecycle manager should reset turn state between lives
-3. **Observe memory impact** — with episodic memory now accumulating tool result summaries, watch whether self-prompting builds on past observations across turns
-4. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
-5. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
+1. **Lifecycle reset automation** — graveyard or a lifecycle manager should reset turn state between lives; currently manual
+2. **Observe memory impact** — with episodic memory now accumulating tool result summaries, watch whether self-prompting builds on past observations across turns
+3. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
+4. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
