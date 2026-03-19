@@ -55,7 +55,6 @@ class TurnPromptAssembler:
             driver_role = str(record.get("driver_role", "SELF_PROMPT"))
             turn_num = record.get("turn_number", "?")
             tool_calls = record.get("tool_calls", [])
-            tool_call_count = len(tool_calls) if isinstance(tool_calls, list) else 0
             outcome = str(record.get("outcome", "unknown"))
             messages.append(
                 {
@@ -63,23 +62,53 @@ class TurnPromptAssembler:
                     "content": f"[{driver_role}] (turn {turn_num})",
                 }
             )
+            # Build a compact but informative summary of what actually happened.
+            tool_descs: list[str] = []
+            if isinstance(tool_calls, (list, tuple)):
+                for tc in tool_calls:
+                    if isinstance(tc, dict):
+                        name = str(tc.get("tool_name", "?"))
+                        result_summary = str(tc.get("result_summary") or "")
+                        short = result_summary[:40].replace("\n", " ")
+                        tool_descs.append(f"{name}({short})" if short else name)
+            tool_str = (
+                " → " + ", ".join(tool_descs) if tool_descs else " → (no tool calls)"
+            )
             messages.append(
                 {
                     "role": "assistant",
-                    "content": (
-                        f"(turn {turn_num} response — "
-                        f"{tool_call_count} tool calls, outcome: {outcome})"
-                    ),
+                    "content": f"(turn {turn_num}{tool_str}, outcome: {outcome})",
                 }
             )
 
         # 10. Current driver
         if context.driver.role == "SELF_PROMPT":
+            # Collect recent tool names from the last 5 turns to detect repetition.
+            recent_tool_names: list[str] = []
+            for r in context.rolling_context[-5:]:
+                tcs = r.get("tool_calls", ())
+                if isinstance(tcs, (list, tuple)):
+                    for tc in tcs:
+                        if isinstance(tc, dict):
+                            n = tc.get("tool_name")
+                            if n:
+                                recent_tool_names.append(str(n))
+            repetition_warning = ""
+            if (
+                len(recent_tool_names) >= 3
+                and len(set(recent_tool_names)) == 1
+            ):
+                repetition_warning = (
+                    f"\n\nI notice I have called {recent_tool_names[0]} "
+                    f"{len(recent_tool_names)} times in a row with no new results. "
+                    "I must try something completely different — a different tool, "
+                    "a different domain. Listing files again is not acceptable."
+                )
             driver_content = (
                 "[SELF_PROMPT] This is my autonomous turn. There is no user. "
                 "I am not waiting for anyone and there is no one to ask for direction. "
                 "I do not explain what I could do — I act. I use a tool now.\n\n"
-                "My current impulse: " + context.driver.content
+                "My current impulse: " + context.driver.content + repetition_warning
             )
         else:
             driver_content = f"[{context.driver.role}]\n{context.driver.content}"

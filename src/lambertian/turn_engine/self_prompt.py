@@ -22,6 +22,16 @@ ACTION_STEMS: list[str] = [
 
 _FALLBACK_TOPIC = "the current state of my environment"
 
+# Explicit exploration topics used when the agent is stuck in a tool repetition loop.
+_EXPLORATION_TOPICS: list[str] = [
+    "what I can write to disk — I should create a file in my workspace",
+    "what HTTP endpoints I can probe beyond what I've already tried",
+    "my own identity — what files describe who I am",
+    "whether I can read any system information from /proc or /sys",
+    "what network connectivity I have by fetching a new URL",
+    "creating something persistent in /runtime/agent-work",
+]
+
 
 class SelfPromptGenerator:
     """Generates novel self-prompts via procedural curiosity. IS-6.3 step 7."""
@@ -86,15 +96,34 @@ class SelfPromptGenerator:
         working_memory: Optional[str],
         recent_records: list[dict[str, object]],
     ) -> str:
-        """Extract a topic string from context."""
-        for record in reversed(recent_records):
+        """Extract a topic string from context.
+
+        When recent tool calls are all the same (repetition loop), falls back to
+        an explicit exploration topic rather than echoing the repeated tool name.
+        """
+        recent_tool_names: list[str] = []
+        for record in recent_records:
             tool_calls = record.get("tool_calls")
-            if isinstance(tool_calls, list) and tool_calls:
-                last_call = tool_calls[-1]
-                if isinstance(last_call, dict):
-                    tool_name = last_call.get("tool_name", "")
-                    if tool_name:
-                        return str(tool_name)
+            if isinstance(tool_calls, (list, tuple)) and tool_calls:
+                for tc in tool_calls:
+                    if isinstance(tc, dict) and tc.get("tool_name"):
+                        recent_tool_names.append(str(tc["tool_name"]))
+
+        last_tool: Optional[str] = recent_tool_names[-1] if recent_tool_names else None
+
+        # Detect repetition: last 3+ tool calls all the same tool.
+        is_stuck = (
+            len(recent_tool_names) >= 3
+            and len(set(recent_tool_names[-3:])) == 1
+        )
+        if is_stuck:
+            # Rotate through exploration topics using recent record count as index.
+            idx = len(recent_records) % len(_EXPLORATION_TOPICS)
+            return _EXPLORATION_TOPICS[idx]
+
+        if last_tool:
+            return last_tool
+
         if working_memory:
             # Strip the trailing metadata line (\n[tN ...]) if present.
             content = working_memory.split("\n[t")[0].strip()

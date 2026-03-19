@@ -66,7 +66,7 @@ def _build_engine(
     death_reader = DeathRecordReader(pain_root / "death.json")
     death_guard = DeathGuard(config, pain_root / "death.json")
     self_prompt_gen = SelfPromptGenerator(config)
-    block_assembler = PromptBlockAssembler(config)
+    block_assembler = PromptBlockAssembler(config, constitution_text="[test constitution]")
 
     fitness_scorer = FitnessScorer(
         config=config,
