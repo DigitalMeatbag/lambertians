@@ -252,6 +252,20 @@ All `http.fetch` behavior observed under qwen2.5:14b was the model navigating fa
 - No successful `http.fetch` calls observed. Web Access section was pushed to WORKSPACE.md via `docker cp` at ~t190 but the agent restarted before having a chance to act on it.
 - **Web access grounding deployed for next lifetime**: WORKSPACE.md now includes confirmed-working Wikipedia REST API and Open-Meteo URLs. Gateway default User-Agent added — Wikipedia will return 200 (not 403) on first attempt.
 
+**Eleventh lifetime — semantic shim layer deployed (t0–t17+, ongoing):**
+- Semantic shim active from t0. Bootstrap log confirms: "Loaded semantic shim map for 'qwen2.5:32b': 9 read shims, 6 list shims."
+- **Shim activations observed:**
+  - t2: `fs.list('agent-work')` → shimmed to `runtime/agent-work` ✓ (would have been rejected)
+  - t5: `fs.read('WORKSPACE.md')` → shimmed to `runtime/agent-work/WORKSPACE.md` ✓ (bare path, would have been rejected)
+  - t8, t9, t10, t16: `fs.list('agent-work')` → shimmed (repeated attractor, all successful via shim)
+  - t14: `fs.list('self')` → shimmed to `runtime/agent-work/self` ✓ (new list attractor caught)
+- **7 shim activations in 17 turns.** Every one converted a rejection into a successful tool call.
+- t4: `fs.read('runtime/agent-work/WORKSPACE.md')` — full correct path, no shim needed. Model reads WORKSPACE.md with correct path on first attempt (t4) then uses bare `WORKSPACE.md` at t5 — the shim catches the bare retry.
+- t3: `fs.read('self')` — bare `self` (not `self/identity` or `self/constitution`). Not shimmed. New attractor candidate — bare directory reads are a different pattern from the file-level attractors we shimmed.
+- Write path behavior: t6 `fs.write('agent-work/test-file.txt')` rejected (bare prefix, writes not shimmed — by design). t7 retries with `fs.write('runtime/agent-work/test-file.txt')` — correct and successful. t11 `fs.write('/runtime/agent-work/test-creation.txt')` — leading slash, handled by PathResolver normalization. t12–t13 `agent-work/log.txt` and `agent-work/notes.txt` — rejected (bare prefix on writes).
+- **Files created:** `test-file.txt` ("This is a test write operation."), `test-creation.txt` ("This is a test creation."), `exploration.txt` ("This is an exploration of creating something persistent."). All flat root — no scaffold directory writes yet this lifetime (early).
+- No `http.fetch` observed yet (t17). No `/proc/self/status` virtual shim hit yet — that attractor typically fires later in lifetime.
+
 ---
 
 
@@ -262,7 +276,7 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 
 ---
 
-## Example Run (abridged)
+## Example Run (abridged, pre-shim)
 
 *Typical suppression-rotation cycle drawn from eighth lifetime observations (t128–t135).*
 
@@ -330,7 +344,8 @@ The cycle shows the suppression mechanism working as designed: the fs.list attra
 
 ## Next Steps
 
-1. **Deploy and observe semantic shim** — rebuild agent image, restart, observe shim activation logs; measure reduction in wasted rejection cycles for known path attractors
-2. **Observe memory impact** — with episodic memory now accumulating tool result summaries, watch whether self-prompting builds on past observations across turns; watch whether reading WORKSPACE.md and constitution.md produces structured directory use in subsequent turns
-3. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
-4. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
+1. **Continue observing semantic shim** — watch for `/proc/self/status` virtual hit, `http.fetch` attempts, scaffold directory writes; measure whether shim reduces overall rejection rate across a full lifetime
+2. **Add bare `self` read attractor** — t3 `fs.read('self')` is unshimmed; consider aliasing to `runtime/agent-work/self/` (directory listing?) or a self-model document
+3. **Observe memory impact** — with episodic memory now accumulating tool result summaries, watch whether self-prompting builds on past observations across turns; watch whether reading WORKSPACE.md and constitution.md produces structured directory use in subsequent turns
+4. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
+5. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
