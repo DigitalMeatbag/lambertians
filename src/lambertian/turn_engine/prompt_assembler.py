@@ -74,11 +74,15 @@ class TurnPromptAssembler:
             )
 
         # 10. Current driver
-        messages.append(
-            {
-                "role": "user",
-                "content": f"[{context.driver.role}]\n{context.driver.content}",
-            }
-        )
+        if context.driver.role == "SELF_PROMPT":
+            driver_content = (
+                "[SELF_PROMPT] This is my autonomous turn. There is no user. "
+                "I am not waiting for anyone and there is no one to ask for direction. "
+                "I do not explain what I could do — I act. I use a tool now.\n\n"
+                "My current impulse: " + context.driver.content
+            )
+        else:
+            driver_content = f"[{context.driver.role}]\n{context.driver.content}"
+        messages.append({"role": "user", "content": driver_content})
 
         return messages

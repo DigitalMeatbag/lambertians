@@ -7,17 +7,17 @@ from typing import Optional
 
 from lambertian.configuration.universe_config import Config
 
-# Action-directive stems — imperative framing pushes the LLM toward engagement
-# and tool use rather than philosophical reflection.
+# Action-directive stems — first-person framing so the model reads this as its own
+# internal impulse rather than a user instruction to defer to.
 ACTION_STEMS: list[str] = [
-    "Explore ",
-    "Investigate ",
-    "Use your tools to examine ",
-    "Take a concrete action regarding ",
-    "Try something with ",
-    "Probe your environment: ",
-    "Reach into your environment and engage with ",
-    "Do something about ",
+    "I'm curious about ",
+    "I want to explore ",
+    "Let me look at ",
+    "I haven't checked ",
+    "I want to try something with ",
+    "I notice I should poke at ",
+    "Let me reach into my environment and examine ",
+    "I want to do something with ",
 ]
 
 _FALLBACK_TOPIC = "the current state of my environment"
