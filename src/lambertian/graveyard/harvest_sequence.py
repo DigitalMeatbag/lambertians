@@ -7,7 +7,7 @@ import logging
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Protocol
 
 from lambertian.configuration.universe_config import Config
 from lambertian.event_stream.event_log_writer import EventLogWriter
@@ -20,8 +20,14 @@ from lambertian.lifecycle.death_record_reader import DeathRecordReader
 _log = logging.getLogger(__name__)
 
 
+class EpisodicStoreClearer(Protocol):
+    """Minimal interface for clearing episodic memory. IS-12.3."""
+
+    def clear_collection(self) -> None: ...
+
+
 class HarvestSequence:
-    """Executes the 10-step harvest sequence. IS-12.3."""
+    """Executes the 11-step harvest sequence. IS-12.3."""
 
     def __init__(
         self,
@@ -34,6 +40,7 @@ class HarvestSequence:
         graveyard_output_base: Path,
         runtime_base: Path,
         workspace_reset: WorkspaceReset,
+        episodic_clearer: Optional[EpisodicStoreClearer] = None,
     ) -> None:
         self._config = config
         self._death_reader = death_reader
@@ -44,9 +51,10 @@ class HarvestSequence:
         self._graveyard_output_base = graveyard_output_base
         self._runtime_base = runtime_base
         self._workspace_reset = workspace_reset
+        self._episodic_clearer = episodic_clearer
 
     def execute(self) -> None:
-        """Run all 10 steps. IS-12.3."""
+        """Run all 11 steps. IS-12.3."""
         start_time = time.monotonic()
         start_timestamp = datetime.now(timezone.utc).isoformat()
 
@@ -119,7 +127,14 @@ class HarvestSequence:
             },
         )
 
-        # Step 8: write sentinel file
+        # Step 8: clear episodic memory (lifetime-scoped; harvest is the archival record)
+        if self._episodic_clearer is not None:
+            try:
+                self._episodic_clearer.clear_collection()
+            except Exception as e:
+                _log.warning("Episodic collection clear failed (non-fatal): %s", e)
+
+        # Step 9: write sentinel file
         sentinel = self._runtime_base / "graveyard" / "harvest_complete"
         sentinel.parent.mkdir(parents=True, exist_ok=True)
         sentinel.write_text(
@@ -134,6 +149,6 @@ class HarvestSequence:
             encoding="utf-8",
         )
 
-        # Step 9: return — caller handles process exit
-        # Step 10: lifecycle reset — prepare workspace for the next generation
+        # Step 10: return — caller handles process exit
+        # Step 11: lifecycle reset — prepare workspace for the next generation
         self._workspace_reset.execute()

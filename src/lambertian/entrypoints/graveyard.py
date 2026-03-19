@@ -16,6 +16,7 @@ from lambertian.graveyard.manifest import ManifestWriter
 from lambertian.graveyard.poll_loop import GraveyardPollLoop
 from lambertian.graveyard.workspace_reset import WorkspaceReset
 from lambertian.lifecycle.death_record_reader import DeathRecordReader
+from lambertian.memory_store.episodic_store import EpisodicStore
 
 
 def main() -> None:
@@ -52,6 +53,15 @@ def main() -> None:
         workspace_template=Path("config/workspace_scaffold/WORKSPACE.md"),
         scaffold_dir=Path("config/workspace_scaffold/agent-work"),
     )
+
+    # Graveyard has network access to the chroma service — construct the store
+    # using the same Ollama URL the agent uses (embeddings not needed for clearing,
+    # but __init__ requires it; the clear path never calls the embedding function).
+    episodic_store = EpisodicStore(
+        config=config,
+        ollama_base_url=config.model.endpoint_url,
+    )
+
     harvest = HarvestSequence(
         config,
         death_reader,
@@ -62,6 +72,7 @@ def main() -> None:
         Path(config.paths.graveyard_root),
         runtime_base,
         workspace_reset,
+        episodic_clearer=episodic_store,
     )
 
     poll = GraveyardPollLoop(
