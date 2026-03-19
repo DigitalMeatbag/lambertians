@@ -23,13 +23,13 @@ export const App: React.FC<AppProps> = ({ state }) => {
   const feedHeight = Math.max(bodyRows - journalHeight, 5);
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" width="100%">
       <HudStrip state={state} />
-      <Box flexDirection="row">
-        <Box width="50%">
+      <Box flexDirection="row" width="100%">
+        <Box flexGrow={1} flexShrink={1} flexBasis="50%">
           <JournalPanel state={state} height={journalHeight} />
         </Box>
-        <Box width="50%">
+        <Box flexGrow={1} flexShrink={1} flexBasis="50%">
           <EventFeed state={state} height={feedHeight} />
         </Box>
       </Box>

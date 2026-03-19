@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-import { parseLine } from "./log-parser.js";
+import { LogParser } from "./log-parser.js";
 import { pollState, readWorkspaceFile, readMaxAge } from "./docker-reader.js";
 import { reducer, initialState, type Action } from "./state.js";
 import { App } from "./components/App.js";
@@ -60,10 +60,11 @@ const Witness: React.FC = () => {
       stdio: ["ignore", "pipe", "pipe"],
     });
 
+    const parser = new LogParser();
     const rl = createInterface({ input: logProc.stdout! });
 
     rl.on("line", (line: string) => {
-      const event = parseLine(line);
+      const event = parser.push(line);
       if (event) {
         batchDispatch({ type: "LOG_EVENT", event });
 

@@ -203,7 +203,7 @@ function handleLogEvent(state: WitnessState, event: LogEvent): WitnessState {
             }
           : state.lastAction;
 
-      const feedDisplay = `${toolDisplay}  [OK]`;
+      const feedDisplay = toolDisplay;
       const isNoop = turnEvt.tools.length === 0 && !turnEvt.text;
 
       return {

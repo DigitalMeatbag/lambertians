@@ -12,6 +12,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = resolve(__dirname, "..", "..");
 
 // ---------------------------------------------------------------------------
 // Types
@@ -63,7 +64,7 @@ function dockerExecCat(containerPath: string): Promise<string | null> {
     execFile(
       "docker",
       ["compose", "exec", "-T", "agent", "cat", containerPath],
-      { timeout: 5000 },
+      { timeout: 5000, cwd: PROJECT_ROOT },
       (err: Error | null, stdout: string) => {
         if (err) {
           resolve(null);
