@@ -25,6 +25,7 @@ from lambertian.lifecycle.death_record_reader import DeathRecordReader
 from lambertian.mcp_gateway.gateway import McpGateway
 from lambertian.pain_monitor.death_guard import DeathGuard
 from lambertian.memory_store.querier import MemoryQuerier
+from lambertian.memory_store.retrieval_result import MemoryWriteRequest
 from lambertian.model_runtime.ollama_client import OllamaClient, OllamaInferenceError
 from lambertian.self_model.prompt_block_assembler import PromptBlockAssembler
 from lambertian.turn_engine.adaptation_detector import detect_adaptation
@@ -504,23 +505,53 @@ class TurnEngine:
             )
 
         # Step 14: Episodic memory write.
+        # When response_text is empty (silent tool calls), synthesize a structured
+        # summary from tool results so episodic memory receives meaningful content.
+        # All paths go through the worthiness checker to block repetitive writes.
         memory_writes = 0
-        if (
-            self._config.memory.episodic_enabled
-            and response_text
-            and len(response_text) >= _NOOP_MIN_CHARS
-            and memory_writes < self._config.memory.episodic_max_writes_per_turn
-        ):
-            doc_id = self._memory_querier.write_episodic(
-                response_text[:500], {"turn": str(turn_number)}
-            )
-            self._event_log.write_event(
-                "MEMORY_WRITE",
-                turn_number,
-                "agent",
-                {"doc_id": doc_id, "memory_type": "episodic"},
-            )
-            memory_writes += 1
+        if self._config.memory.episodic_enabled:
+            # Determine what content and document type to write.
+            write_content: str = ""
+            doc_type: str = "model_response"
+            if response_text and len(response_text) >= _NOOP_MIN_CHARS:
+                write_content = response_text[:500]
+                doc_type = "model_response"
+            elif tool_call_records:
+                # Silent-call model path: synthesize a compact turn summary.
+                parts: list[str] = []
+                for r in tool_call_records:
+                    if r.executed and r.result_summary:
+                        parts.append(f"{r.tool_name}: {r.result_summary[:150]}")
+                    elif r.executed:
+                        parts.append(f"{r.tool_name}: (executed)")
+                if parts:
+                    write_content = f"[t{turn_number}] " + " | ".join(parts)
+                    doc_type = "tool_result"
+
+            if (
+                write_content
+                and len(write_content) >= _NOOP_MIN_CHARS
+                and memory_writes < self._config.memory.episodic_max_writes_per_turn
+            ):
+                request = MemoryWriteRequest(
+                    content=write_content,
+                    document_type=doc_type,
+                    turn_number=turn_number,
+                    write_index=memory_writes,
+                    tool_name=None,
+                    adaptation_class=None,
+                )
+                doc_id = self._memory_querier.write_episodic_worthy(
+                    request, self._config.universe.instance_id
+                )
+                if doc_id:
+                    self._event_log.write_event(
+                        "MEMORY_WRITE",
+                        turn_number,
+                        "agent",
+                        {"doc_id": doc_id, "memory_type": "episodic", "doc_type": doc_type},
+                    )
+                    memory_writes += 1
 
         # Step 15: Generate and write working memory summary.
         # Working memory is the primary feed for self-prompt topic extraction.

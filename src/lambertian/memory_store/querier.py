@@ -14,6 +14,9 @@ from lambertian.memory_store.worthiness import WorthinessChecker
 class MemoryQuerier(Protocol):
     def query_episodic(self, text: str, top_k: int) -> list[str]: ...
     def write_episodic(self, content: str, metadata: dict[str, str]) -> str: ...
+    def write_episodic_worthy(
+        self, request: MemoryWriteRequest, instance_id: str
+    ) -> str: ...
 
 
 class NoOpMemoryQuerier:
@@ -24,6 +27,11 @@ class NoOpMemoryQuerier:
 
     def write_episodic(self, content: str, metadata: dict[str, str]) -> str:
         return "noop-" + content[:8]
+
+    def write_episodic_worthy(
+        self, request: MemoryWriteRequest, instance_id: str
+    ) -> str:
+        return ""
 
 
 class ChromaMemoryQuerier:
@@ -65,12 +73,12 @@ class ChromaMemoryQuerier:
         instance_id = metadata.get("instance_id", "")
         return self._store.write(request, instance_id, self._stress_state_path)
 
-    def write_episodic_full(
+    def write_episodic_worthy(
         self,
         request: MemoryWriteRequest,
         instance_id: str,
     ) -> str:
-        """Full write with worthiness check. Returns document_id or '' if not worthy."""
+        """Write with worthiness check. Returns document_id or '' if not worthy."""
         checker = WorthinessChecker(
             self._store, self._config.memory.minimum_retrieval_score
         )
