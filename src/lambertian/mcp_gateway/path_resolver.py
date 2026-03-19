@@ -91,11 +91,11 @@ class PathResolver:
         """Resolve path. Normalizes common model path errors before boundary check.
 
         - Leading slash stripped: /runtime/X -> runtime/X (re-anchors to CWD /app).
-        - Bare '.' or '/' redirected to runtime/ (model's way of saying 'start here').
+        - Bare '.', './', or '/' redirected to runtime/ (model's 'start here' intent).
         """
         stripped = path.lstrip("/")
-        # '.' and '' (bare slash) both mean "start from the top" -- redirect to runtime/.
-        if stripped in (".", ""):
+        # '.', './', '' all mean "start from the top" -- redirect to runtime/.
+        if stripped in (".", "./", ""):
             return self._list_roots[0]  # runtime/ base
         return Path(stripped).resolve()
 
