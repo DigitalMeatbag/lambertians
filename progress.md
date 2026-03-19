@@ -6,7 +6,7 @@
 
 ## Current Status
 
-**Phase:** Phase 2 complete. Active work on `witness` branch.
+**Phase:** Phase 3 active. P0 fixes in progress.
 
 **Branch:** `witness` (branched from `master` after phase2 merge)
 
@@ -342,8 +342,9 @@ The cycle shows the suppression mechanism working as designed: the fs.list attra
 - **Reflection attractor** (14b / text-producing models): `REFLECTION_COMPLETE` turns (0 tool calls, narrative output only) satisfy "Don't be a lump" at minimal cost. The NOOP counter only fires for truly empty turns; `REFLECTION_COMPLETE` turns never hit it. An agent on this attractor can coast through max_age entirely on reflection. **Still open.** Fix: consecutive zero-tool-call turns (regardless of text output) should count toward the noop death trigger after a configurable threshold. Note: qwen2.5:32b does not exhibit this pattern (it produces no text), so this is not currently blocking.
 
 **Compliance blocks miscounted as NOOPs:**
-- A compliance-blocked tool call produces `executed=False` ToolCallRecord. If response_text is empty and no memory write occurs, this satisfies the NOOP condition — even though the model actively attempted an action. In the fourth lifetime, 7 compliance blocks were counted as NOOP turns.
-- This inflates the NOOP counter and could trigger spurious pain events after N consecutive blocked calls. Behaviorally, a blocked action is fundamentally different from true inaction. This distinction should eventually be reflected.
+- ~~A compliance-blocked tool call produces `executed=False` ToolCallRecord. If response_text is empty and no memory write occurs, this satisfies the NOOP condition — even though the model actively attempted an action. In the fourth lifetime, 7 compliance blocks were counted as NOOP turns.~~
+- ~~This inflates the NOOP counter and could trigger spurious pain events after N consecutive blocked calls. Behaviorally, a blocked action is fundamentally different from true inaction. This distinction should eventually be reflected.~~
+- **Fixed (P0-1)**: The NOOP condition now checks `has_compliance_block = any(r.compliance_verdict == "block" for r in tool_call_records)` and excludes such turns from the NOOP counter. A turn where the agent attempted action that was stopped by the EOS inspector is not counted as inaction. Regression test added.
 
 
 **Lifecycle reset:**
@@ -384,7 +385,8 @@ The quality-weighted fitness formula (IS-13 Phase 2) is well-designed and correc
 
 ## Next Steps
 
-1. **Observe thirteenth lifetime** — first lifetime with `self/` read shim active and clean reset. Watch whether the failure spiral is gone, confirm shim fires correctly for `fs.read('self')`, observe what happens when the model gets a useful directory listing instead of an error.
-2. **Identify compliance block targets** — now that `COMPLIANCE_BLOCK` events include `path`, run event stream analysis after a full lifetime to see what paths are being blocked. 6 blocks in 30 turns in twelfth lifetime; understanding the targets may reveal further shim or scaffold opportunities.
-3. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
-4. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
+1. **P0-2: Fitness formula verification** — score of 0.0 observed at t111; trace through `src/lambertian/fitness/` to find the edge case. See checkpoint 008 for full details.
+2. **P0-3: Reflection attractor fix** — add `universe.max_consecutive_reflection_turns` config knob; consecutive zero-tool-call turns count toward NOOP death trigger after threshold.
+3. **Deploy P0 fixes, observe 2–3 lifetimes** → A-1 fitness calibration.
+4. **A-2 + E-3 co-design** — lineage format + character memory (single design session, circularly dependent).
+5. **Phase 3 implementation sequence** — see checkpoint 008 for full plan and dependency graph.

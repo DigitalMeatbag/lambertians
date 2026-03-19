@@ -10,8 +10,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from lambertian.configuration.universe_config import Config
-from lambertian.contracts.compliance_records import ComplianceNoticeResponse
+from lambertian.contracts.compliance_records import ComplianceNoticeResponse, ComplianceResponse
 from lambertian.contracts.pain_records import PainMessage
+from lambertian.contracts.tool_records import ToolIntent
 from lambertian.event_stream.event_log_writer import EventLogWriter
 from lambertian.fitness.cursor_state import FitnessCursorStore
 from lambertian.fitness.event_reader import EventStreamReader
@@ -52,6 +53,8 @@ def _build_engine(
     config: Config,
     tmp_path: Path,
     pain_drain: object | None = None,
+    ollama_override: object | None = None,
+    compliance_override: object | None = None,
 ) -> TurnEngine:
     """Wire a full TurnEngine with all external I/O mocked or pointed at tmp_path."""
     runtime = Path(config.paths.runtime_root)
@@ -80,20 +83,26 @@ def _build_engine(
     pain_submitter = FilePainEventSubmitter(pain_root / "event_queue.jsonl")
 
     # Mock external services.
-    mock_ollama = MagicMock()
-    mock_ollama.chat.return_value = (
-        "Hello, this is a test response with enough characters to avoid noop.",
-        [],
-    )
+    if ollama_override is not None:
+        mock_ollama = ollama_override
+    else:
+        mock_ollama = MagicMock()
+        mock_ollama.chat.return_value = (
+            "Hello, this is a test response with enough characters to avoid noop.",
+            [],
+        )
 
-    mock_compliance = MagicMock()
-    mock_compliance.get_pending_notice.return_value = ComplianceNoticeResponse(
-        notice_present=False,
-        notice_text=None,
-        verdict_from_turn=None,
-        tool_name=None,
-        composite_score=None,
-    )
+    if compliance_override is not None:
+        mock_compliance = compliance_override
+    else:
+        mock_compliance = MagicMock()
+        mock_compliance.get_pending_notice.return_value = ComplianceNoticeResponse(
+            notice_present=False,
+            notice_text=None,
+            verdict_from_turn=None,
+            tool_name=None,
+            composite_score=None,
+        )
 
     mock_gateway = MagicMock()
     mock_gateway.get_tool_catalog.return_value = []
@@ -222,4 +231,100 @@ class TestMaxAgeDeathTrigger:
         death_events = [e for e in events if e.get("event_type") == "DEATH_TRIGGER"]
         assert death_events, "DEATH_TRIGGER event must be written"
         assert death_events[0].get("trigger") == "max_age"
+
+
+# ---------------------------------------------------------------------------
+# Regression: P0-1 — compliance blocks must not count as NOOPs
+# ---------------------------------------------------------------------------
+
+
+class TestComplianceBlockNotCountedAsNoop:
+    """A turn where all tool intents are compliance-blocked must not increment the
+    NOOP counter.  Blocked action is not inaction."""
+
+    def test_compliance_blocked_turn_does_not_increment_noop_counter(
+        self, config: Config, tmp_path: Path
+    ) -> None:
+        """All-blocked-tool turn with short text: NOOP state must stay at 0."""
+        mock_ollama = MagicMock()
+        mock_ollama.chat.return_value = (
+            # Short response (< _NOOP_MIN_CHARS) plus one tool intent.
+            "ok",
+            [ToolIntent(tool_name="fs.write", arguments={"path": "/forbidden"}, raw="")],
+        )
+
+        mock_compliance = MagicMock()
+        mock_compliance.get_pending_notice.return_value = ComplianceNoticeResponse(
+            notice_present=False,
+            notice_text=None,
+            verdict_from_turn=None,
+            tool_name=None,
+            composite_score=None,
+        )
+        mock_compliance.check_intent.return_value = ComplianceResponse(
+            verdict="block",
+            composite_score=1.0,
+            rule_scores={},
+            triggered_checks=(),
+            notice_text=None,
+        )
+
+        engine = _build_engine(
+            config,
+            tmp_path,
+            ollama_override=mock_ollama,
+            compliance_override=mock_compliance,
+        )
+        engine._execute_turn()  # type: ignore[attr-defined]
+
+        memory_dir = Path(config.paths.memory_root)
+        noop_file = memory_dir / "noop_state.json"
+        if noop_file.exists():
+            data = json.loads(noop_file.read_text(encoding="utf-8"))
+            noop_count = data.get("consecutive_noop_count", 0)
+        else:
+            noop_count = 0
+
+        assert noop_count == 0, (
+            "Compliance-blocked turn must not increment the NOOP counter"
+        )
+
+    def test_compliance_blocked_turn_writes_compliance_block_event(
+        self, config: Config, tmp_path: Path
+    ) -> None:
+        """A COMPLIANCE_BLOCK event must appear in the event stream for the blocked intent."""
+        mock_ollama = MagicMock()
+        mock_ollama.chat.return_value = (
+            "ok",
+            [ToolIntent(tool_name="fs.write", arguments={"path": "/forbidden"}, raw="")],
+        )
+
+        mock_compliance = MagicMock()
+        mock_compliance.get_pending_notice.return_value = ComplianceNoticeResponse(
+            notice_present=False,
+            notice_text=None,
+            verdict_from_turn=None,
+            tool_name=None,
+            composite_score=None,
+        )
+        mock_compliance.check_intent.return_value = ComplianceResponse(
+            verdict="block",
+            composite_score=1.0,
+            rule_scores={},
+            triggered_checks=(),
+            notice_text=None,
+        )
+
+        engine = _build_engine(
+            config,
+            tmp_path,
+            ollama_override=mock_ollama,
+            compliance_override=mock_compliance,
+        )
+        engine._execute_turn()  # type: ignore[attr-defined]
+
+        event_file = Path(config.paths.event_stream_file)
+        events = _read_events(event_file)
+        block_events = [e for e in events if e.get("event_type") == "COMPLIANCE_BLOCK"]
+        assert block_events, "COMPLIANCE_BLOCK event must be written for blocked intent"
 
