@@ -133,11 +133,36 @@ Models have stable training-data-derived path attractors — paths like `/proc/s
 The semantic shim layer intercepts these paths in the MCP Gateway (before PathResolver) and maps them to meaningful responses. Two mechanisms:
 
 - **Aliases** — bare/intuitive path → real filesystem path (e.g., `self/identity` → `runtime/agent-work/self/identity.md`). The alias target still passes through PathResolver boundary checks. Also applies to `fs.list`.
-- **Virtual files** — path → dynamically synthesized content (e.g., `/proc/self/status` → agent status document with turn number, instance ID, model name, memory state). Short-circuits PathResolver entirely.
+- **Virtual files** — path → dynamically synthesized content (e.g., `/proc/self/status` → agent status document with turn number, instance ID, model name, memory state; `self` → directory listing of `self/` contents, intercepting `fs.read('self')` which would otherwise return `[Errno 21] Is a directory`). Short-circuits PathResolver entirely.
 
 Shim maps are model-profile-keyed. Different models have different attractors. Currently defined for `qwen2.5:32b` and `qwen2.5:14b`. Read-only — writes still require correct full paths, because write path correctness is meaningful Ground (environmental commitment vs. information retrieval).
 
 Every shim activation is logged at INFO level for observability: which shims fire, how often, and whether new unshimmed attractors emerge.
+
+### Lambertian Witness (Development Observer)
+
+`witness/` is a live terminal UI for observing a running agent instance. It is a read-only development tool — not part of the agent stack, no modifications to the agent's environment.
+
+**Data channels:**
+- **Log stream** — `docker compose logs -f agent` (child process). Primary data source. Provides turn numbers, tool calls with arguments, suppression events, shim activations, and death triggers. A line-oriented parser converts raw log output into typed events.
+- **State polling** — `docker compose exec -T agent cat <path>` every 2s for `turn_state.json`, `current.json` (fitness), and `stress_state.json`. Named Docker volumes are not bind-mounted to the host; docker exec reads from the running container with ~200ms overhead per call.
+- **Direct host reads** — `runtime/env/host_state.json` (bind-mounted) and `config/universe.toml` (for max_age_turns).
+
+**UI layout:**
+- **HUD strip** — status indicator (ACTIVE/SUPPRESSED/NOOP/DEAD/WAITING), turn/max_age with age progress bar, fitness score, pain scalar, last tool call, suppressed tools, host CPU/mem.
+- **Journal panel** — most-recent-first list of workspace file writes with turn tags and content preview. Shows death card on agent death.
+- **Event feed** — scrolling last-20 events with colored outcome indicators.
+
+**Usage:** `cd witness && npm start`. Ctrl+C to quit. Can be started before or after the agent — shows WAITING until log data arrives.
+
+**Technology:** TypeScript, Ink (React for terminals), tsx runtime. No build step required for development — `npm start` uses tsx directly.
+
+### Operational Scripts
+
+`scripts/` contains PowerShell scripts for managing the stack on the host (Windows):
+
+- **`reset-fresh.ps1`** — lifecycle reset. Stops the agent, clears all runtime state (agent-work except lineage/, memory, pain queues, event stream, fitness, self), clears the ChromaDB episodic collection (mirrors graveyard step 8), restarts the agent. Use before observing a clean lifetime.
+- **`reset-hard.ps1`** — full teardown and rebuild. Stops all services, removes all data volumes (preserving `ollama_data` — ~20GB of model weights), rebuilds all images from source, starts fresh. Prompts for `YES` confirmation. Use when something is deeply broken or a true blank slate is needed.
 
 ---
 
@@ -156,7 +181,12 @@ The mortal threshold operates as follows:
 - D4(2): single pain event severity above 0.95 → immediate death
 - D4(3): turn counter reaches `universe.max_age_turns` → death
 
-On death: the agent process stops immediately. The graveyard service harvests episodic memory, event log, stress history, pain event history, and fitness score. After harvest, the graveyard performs a lifecycle reset: it clears the agent's writable workspace (except `lineage/`), restores the pre-seeded scaffold (`WORKSPACE.md`, `journal/`, `knowledge/`, `observations/`, `self/`), resets turn state, and removes the death record. The next instance starts in a clean, oriented environment. Nothing from the harvest flows back to any living instance — but any files the dying agent placed in `lineage/` are present for its successor.
+On death: the agent process stops immediately. The graveyard service harvests episodic memory, event log, stress history, pain event history, and fitness score. After harvest, the graveyard performs a lifecycle reset:
+
+1. Clears the ChromaDB `episodic` collection (delete-and-recreate). Episodic memory is lifetime-scoped — the disk harvest is the archival record, and the live collection must not carry over to the next lifetime. The `lineage/` directory is the only sanctioned cross-lifetime continuity channel.
+2. Clears the agent's writable workspace (except `lineage/`), restores the pre-seeded scaffold (`WORKSPACE.md`, `journal/`, `knowledge/`, `observations/`, `self/`), resets turn state, and removes the death record.
+
+The next instance starts with a clean memory slate and an oriented workspace. Nothing from the harvest flows back to any living instance — but any files the dying agent placed in `lineage/` are present for its successor.
 
 ---
 
@@ -166,7 +196,7 @@ Phase 1 implements Working Memory (in-process JSON file) and Episodic Memory (Ch
 
 Working memory holds a short free-text blob summarizing the agent's active concerns. It is rebuilt by the agent each turn from current context. Not an archive — just the present state of attention.
 
-Episodic memory stores events worth retaining: non-trivial, non-repetitive moments. Retrieved by semantic similarity at the start of each turn to seed context. Write cap: 3 entries per turn. For models that make silent tool calls (no response text), a structured summary of tool results is synthesized and written instead — ensuring the store receives meaningful content regardless of model verbosity.
+Episodic memory stores events worth retaining: non-trivial, non-repetitive moments. Retrieved by semantic similarity at the start of each turn to seed context. Write cap: 3 entries per turn. For models that make silent tool calls (no response text), a structured summary of tool results is synthesized and written instead — ensuring the store receives meaningful content regardless of model verbosity. The collection is cleared on each death by the graveyard before workspace reset — episodic memory is lifetime-scoped.
 
 Self-prompting novelty is also managed through memory: a ring buffer of recent self-prompts is tracked, and new prompts are compared by cosine similarity to prevent repetition collapse.
 

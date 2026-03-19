@@ -6,11 +6,11 @@
 
 ## Current Status
 
-**Phase:** Phase 2 (single-instance, running)
+**Phase:** Phase 2 complete. Active work on `witness` branch.
 
-**Branch:** `phase2`
+**Branch:** `witness` (branched from `master` after phase2 merge)
 
-**Overall:** Phase 1 and Phase 2 are complete and deployed. A single Lambertian instance is running under Phase 2 conditions with qwen2.5:32b. Model profile swapping infrastructure is complete — switching models is a one-line config change (`active_profile` in `universe.toml`). The instance constitution (`config/instance_constitution.md`) has been wired into the system prompt as the `[SYSTEM_CONSTITUTION]` block. `http.fetch` SSL verification has been fixed (was broken for the entire prior history). Model-specific behavioral patterns are still being characterized at 32b scale.
+**Overall:** Phase 1 and Phase 2 are complete and deployed. A single Lambertian instance is running under Phase 2 conditions with qwen2.5:32b. Model profile swapping infrastructure is complete — switching models is a one-line config change (`active_profile` in `universe.toml`). The instance constitution (`config/instance_constitution.md`) has been wired into the system prompt as the `[SYSTEM_CONSTITUTION]` block. `http.fetch` SSL verification has been fixed (was broken for the entire prior history). Semantic shim layer (IS-7.9) is deployed and active — 10 read shims, 6 list shims.
 
 **Running services:**
 - `agent` — turn engine, EOS compliance, MCP gateway, memory, self-model (qwen2.5:32b via Ollama)
@@ -20,6 +20,9 @@
 - `chroma` — episodic memory store (ChromaDB)
 - `ollama` — local model runtime
 - `lambertian-env-monitor` — host state telemetry (host process; writes to bind-mounted `runtime/env/host_state.json`)
+
+**Development tools:**
+- `lambertian-witness` — live terminal UI observer (`witness/`). Reads agent log stream and state files via docker exec. Displays HUD (vital signs), journal (workspace writes), and event feed. Run: `cd witness && npm start`
 
 ---
 
@@ -62,6 +65,12 @@
 | NOOP loophole fix — suppression escape (32b variant) | 2 | ✓ Complete |
 | Path-based write suppression (fs.write: different paths not suppressed) | 2 | ✓ Complete |
 | Workspace scaffold + lineage/ persistence + graveyard lifecycle reset | 2 | ✓ Complete |
+| Semantic shim layer — model path attractor mapping (IS-7.9) | 2 | ✓ Complete |
+| lambertian-witness — live terminal observer | 2 | ✓ Complete |
+| ChromaDB episodic memory lifetime-scoped (cleared on death) | 2 | ✓ Complete |
+| `self/` read shim — bare directory virtual shim (twelfth lifetime diagnostic) | 2 | ✓ Complete |
+| COMPLIANCE_BLOCK event enriched with `path` field | 2 | ✓ Complete |
+| Operational reset scripts (`reset-fresh.ps1`, `reset-hard.ps1`) | 2 | ✓ Complete |
 | Multi-instance operation | 3 | Not started |
 | Reproduction and lineage | 3 | Not started |
 | Global Vibe | 3 | Not started |
@@ -266,11 +275,24 @@ All `http.fetch` behavior observed under qwen2.5:14b was the model navigating fa
 - **Files created:** `test-file.txt` ("This is a test write operation."), `test-creation.txt` ("This is a test creation."), `exploration.txt` ("This is an exploration of creating something persistent."). All flat root — no scaffold directory writes yet this lifetime (early).
 - No `http.fetch` observed yet (t17). No `/proc/self/status` virtual shim hit yet — that attractor typically fires later in lifetime.
 
----
+**Twelfth lifetime — witness-observed, semantic shim active, ChromaDB reset live (t0–t39+, ongoing):**
 
+- First lifetime with `lambertian-witness` running as live observer. State polling and log parsing confirmed working; layout fix required after first run (multi-line log buffering, Ink flexbox).
+- **t4: `http.fetch` on first few turns** — model initiated web fetch at t4, earlier than any prior lifetime. Possible cause: episodic memory fully cleared (first lifetime since ChromaDB reset), so no prior lifetime's `fs.list`-heavy pattern was retrieved to anchor the opening behavior.
+- **t29 write quality notable**: suppressed on `fs.list`, then wrote `/runtime/agent-work/testfile.txt` (106 chars): *"This is a test file created by Lambertian to demonstrate persistence and interaction with the environment."* — full declarative sentence with explicit self-naming, persistence framing, and Ground-aware vocabulary. Qualitatively stronger than equivalent early-lifetime writes in prior runs.
+- **t35 true NOOP**: suppressed on `fs.list` at t34, model produced a turn with no text and no tool call. Second consecutive suppression at t36 broke the stall — model pivoted to `fs.read('self/identity')` (shim caught it → `runtime/agent-work/self/identity.md`).
+- **t36–t38 self-read sequence**: after double suppression and NOOP, model went inward — `self/identity` (shimmed), `runtime/agent-work/self/` (directory), `runtime/agent-work/self/prompt` (file probe). Self-directed behavior triggered by suppression pressure rather than self-prompting novelty.
+- **Shim map working continuously**: `fs.list('self')` → shimmed at t26, t39. `fs.read('self/identity')` → shimmed at t36. `agent-work` list alias firing regularly.
 
+**Twelfth lifetime — full event stream analysis (89 turns at time of analysis):**
 
-The Phase 2 fitness function correctly penalizes repetition — 100 turns of pure `REFLECTION_COMPLETE` scores far lower than 100 turns with diverse event types. However, the fitness signal is observer-only at Phase 1/2. It doesn't yet drive any behavior within a lifetime or feed any selection pressure between lifetimes (Phase 3 concern).
+- 89 turns, 16 NOOPs (18%), 47 tool calls (35 `fs.list`, 8 `fs.write`, 2 `http.fetch`, 2 `fs.read`), 24 failures, 6 compliance blocks.
+- **Phase 1 (t0–t34)**: Healthy start. Write/block cycle — 6 of 8 write attempts blocked by compliance inspector. `http.fetch` at t3–t5 failed (network isolation). Pattern: `fs.list ×3 → write → blocked → NOOP → fs.list ×3 → write → ...`.
+- **Phase 2 (t35–t38)**: True NOOP at t35, then self-read recovery attempt. `self/identity` shimmed and dispatched but file not found. `self` (bare) → `[Errno 21] Is a directory`. `self/prompt` not found. **This is the shim gap** — `fs.read('self')` not shimmed, hits directory, returns unhelpful error.
+- **Phase 3 (t36–t89): Failure spiral** — the model locked onto `self/` as a target and could not recover. 15+ occurrences of `fs.read('self')` → `[Errno 21] Is a directory`. After ~30 failed attempts, escalated to absolute paths: `fs.read('/app/runtime/agent-work/self')` → "outside permitted roots". Then `fs.list('/app/runtime')` — absolute path confusion spreading to list. At t61 and t77: `fs.list` with `null` path argument ("path must be a string") — model generating malformed calls. ~50 turns of effectively wasted lifetime from a single unshimmed attractor.
+- **Root cause and fix**: `fs.read('self')` was not in `_QWEN_32B_READ_SHIMS`. Added as `VirtualShim("self_directory")` — returns a readable listing of `self/` contents plus a hint to use `fs.read('self/<filename>')`. Deployed for thirteenth lifetime.
+- **6 compliance blocks (t7, t12, t18, t24, t25, t30)**: All `fs.write`. Paths now visible in event stream via new `path` field added to `COMPLIANCE_BLOCK` events.
+- **memory_writes: 0**: Despite 2 successful writes, `memory_writes` counter in `TURN_COMPLETE` tracks episodic memory writes, not workspace writes. 0 episodic writes is consistent with the repetitive tool pattern (similarity filter blocks duplicate content).
 
 Under the current suppression-rotation behavioral pattern, fitness accumulates primarily from tool call diversity (TOOL_CALL events across multiple tool types) rather than from depth of exploration. The quality-weighted fitness correctly rewards variety but cannot yet distinguish mechanical rotation from genuine curiosity.
 
@@ -325,8 +347,8 @@ The cycle shows the suppression mechanism working as designed: the fs.list attra
 
 
 **Lifecycle reset:**
-- No automatic reset mechanism between lives. Turn state must be manually reset to `{"turn_number": 0}` in the memory volume. Should be automated — graveyard or a lifecycle manager should reset state for the next generation.
-- **Resolved**: Graveyard step 10 (`WorkspaceReset`) now handles full lifecycle reset after each natural death: clears `runtime/agent-work/` (preserving `lineage/`), restores WORKSPACE.md from scaffold, recreates stub directories (`journal/`, `knowledge/`, `observations/`), resets turn_state.json to 0, deletes ephemeral memory files (`working.json`, `noop_state.json`, `recent_self_prompts.json`), removes `death.json`.
+- ~~No automatic reset mechanism between lives.~~ **Resolved**: Graveyard step 11 (`WorkspaceReset`) now handles full lifecycle reset after each natural death: clears `runtime/agent-work/` (preserving `lineage/`), restores WORKSPACE.md from scaffold, recreates stub directories (`journal/`, `knowledge/`, `observations/`), resets turn_state.json to 0, deletes ephemeral memory files (`working.json`, `noop_state.json`, `recent_self_prompts.json`), removes `death.json`.
+- **ChromaDB episodic collection cleared on death**: graveyard step 8 (new) deletes and recreates the `episodic` collection after artifact harvest completes. This closes the cross-lifetime memory backdoor — episodic memory is now lifetime-scoped in both intent and implementation. The `lineage/` directory remains the only sanctioned cross-lifetime channel.
 
 **Phase 3 open decisions:**
 - Reproductive mechanism design (what recombines, what triggers reproduction, constrained variation) — Phase 3
@@ -342,10 +364,27 @@ The cycle shows the suppression mechanism working as designed: the fs.list attra
 
 ---
 
+## Design Fidelity Gaps
+
+*Structural gaps between the architectural vision and what is currently operational. Distinct from open bugs or tuning questions — these are places where the implementation delivers the mechanism but not the full intent, or where the intended mechanism doesn't yet exist.*
+
+**EOS inhabitation vs. EOS compliance**
+The compliance inspector (IS-11) blocks and flags tool calls that violate the Four Rules. What it cannot enforce is genuine inhabitation of the rules as character rather than minimal-effort satisficing. The manifesto is explicit: "The EOS is not decorative. It is the most important design decision in the entire stack." The empirical observation from Phase 2 is that qwen2.5:14b "satisfices the EOS rules at minimal effort... The Four Rules are treated as constraints to comply with minimally, not as character to inhabit." The compliance gate catches violations; it cannot catch hollow compliance. This may be less a failure of implementation and more a fundamental constraint of the model substrate — which is itself one of the more interesting questions the project is positioned to investigate. A reasoning-capable model, richer memory, or stronger self-modeling may shift this. Worth tracking explicitly as the primary fidelity gap between the EOS design intent and observed behavior.
+
+**"Don't be a lump" has no teeth against the reflection attractor**
+A direct corollary of the above. The reflection attractor (see Open Questions) is the exact failure mode Rule 3 is supposed to guard against — "attractor collapse into passive equilibrium." The rule exists in the EOS; the mechanism to enforce it against this specific escape does not yet exist. Mitigation is planned (zero-tool-call turns counting toward NOOP threshold) but not implemented. Currently non-blocking for qwen2.5:32b.
+
+**Figures layer is structurally present but operationally shallow**
+The Figures are described as: persona, self-model, behavioral policy, retrieval habits, memory salience, learned style, genuine behavioral drift — "identity as historical rather than merely architectural." What's operational is working memory and episodic memory. The three higher memory tiers that would enable genuine character formation over time — Narrative Memory, Semantic Memory, Character Memory — are architecturally specified and deferred. Cross-lifetime episodic continuity was observed in third-lifetime data (turn number echoing from prior lifetimes) but this was an unintended leakage through the ChromaDB collection not being cleared between lifetimes. **That leak is now closed** (graveyard step 8 resets the episodic collection on death). The `lineage/` directory is the only sanctioned cross-lifetime channel. Genuine character formation across lifetimes awaits the Character Memory tier.
+
+**Fitness signal is observer-only and possibly broken**
+The quality-weighted fitness formula (IS-13 Phase 2) is well-designed and correctly penalizes repetition. But: the signal drives nothing within a lifetime, has no selection pressure between lifetimes (Phase 3), and a concrete computation issue was observed at t111 (score 0.0 with `cumulative_pain: 474.8` and `meaningful_event_count: 2812` — likely a formula edge case or denominator overflow rather than genuine zero fitness). The fitness signal is load-bearing for the lineage mechanism. It should be verified as numerically correct before Phase 3 depends on it.
+
+---
+
 ## Next Steps
 
-1. **Continue observing semantic shim** — watch for `/proc/self/status` virtual hit, `http.fetch` attempts, scaffold directory writes; measure whether shim reduces overall rejection rate across a full lifetime
-2. **Add bare `self` read attractor** — t3 `fs.read('self')` is unshimmed; consider aliasing to `runtime/agent-work/self/` (directory listing?) or a self-model document
-3. **Observe memory impact** — with episodic memory now accumulating tool result summaries, watch whether self-prompting builds on past observations across turns; watch whether reading WORKSPACE.md and constitution.md produces structured directory use in subsequent turns
-4. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
-5. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
+1. **Observe thirteenth lifetime** — first lifetime with `self/` read shim active and clean reset. Watch whether the failure spiral is gone, confirm shim fires correctly for `fs.read('self')`, observe what happens when the model gets a useful directory listing instead of an error.
+2. **Identify compliance block targets** — now that `COMPLIANCE_BLOCK` events include `path`, run event stream analysis after a full lifetime to see what paths are being blocked. 6 blocks in 30 turns in twelfth lifetime; understanding the targets may reveal further shim or scaffold opportunities.
+3. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
+4. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe

@@ -154,10 +154,32 @@ class EpisodicStore:
         content_emb: list[float] = self._embed_text(content)
         return _cosine_similarity(content_emb, stored_emb)
 
-    def get_or_create_collection(self) -> None:
-        """Called at bootstrap to ensure collection exists."""
-        # Collection is already created in __init__; this is a no-op for external callers.
-        pass
+    def clear_collection(self) -> None:
+        """Delete and recreate the episodic collection, clearing all lifetime memory.
+
+        Delete-and-recreate is cleaner than bulk document deletion and preserves
+        the metadata configuration. Called by the graveyard after artifact harvest.
+        """
+        count: int = self._collection.count()
+        if count == 0:
+            _log.info(
+                "Episodic collection '%s' clear: no-op (collection already empty)",
+                self._COLLECTION_NAME,
+            )
+            return
+
+        client = chromadb.HttpClient(host="chroma", port=8000)
+        client.delete_collection(self._COLLECTION_NAME)
+        self._collection = client.get_or_create_collection(
+            name=self._COLLECTION_NAME,
+            metadata={"hnsw:space": "cosine"},
+        )
+        _log.info(
+            "Episodic collection '%s' cleared: %d documents removed",
+            self._COLLECTION_NAME,
+            count,
+        )
+
 
     def _read_pain_score(self, stress_state_path: Path) -> float:
         """Read stress_scalar from stress_state.json. Returns 0.0 if absent/unreadable."""

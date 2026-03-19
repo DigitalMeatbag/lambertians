@@ -2167,7 +2167,9 @@ The semantic shim layer converts this wasted friction into useful information de
 | `self/identity` | `runtime/agent-work/self/identity.md` |
 | `self/status` | `runtime/agent-work/self/state.md` |
 | `self/constitution` | `runtime/agent-work/self/constitution.md` |
+| `self/constitution.md` | `runtime/agent-work/self/constitution.md` |
 | `memory/working` | `runtime/memory/working.json` |
+| `memory/working_memory.txt` | `runtime/memory/working.json` |
 | `WORKSPACE.md` | `runtime/agent-work/WORKSPACE.md` |
 | `agent-work/log.txt` | `runtime/agent-work/log.txt` |
 
@@ -2178,6 +2180,7 @@ List aliases apply to `fs.list`: `self` → `runtime/agent-work/self`, `journal`
 
 | Attractor | Content |
 |-----------|---------|
+| `self` | Directory listing of `self/` contents (dynamically reads real filesystem). Intercepts `fs.read('self')` which produces `[Errno 21] Is a directory` without the shim — the model reaches for the self-model directory as a file. Returns a readable listing of files present plus a hint to use `fs.read('self/<filename>')`. |
 | `/proc/self/status` | Agent status document: turn number, instance ID, phase, model name, max_age, working memory summary. Replaces kernel RSS counters with meaningful self-model data. |
 
 Virtual generators receive the full `Config` object and are responsible for curating what they
@@ -2806,8 +2809,7 @@ Events are grouped by category. Each type's schema lists only the **additional f
 | Additional field | Type | Description |
 |---|---|---|
 | `tool_name` | `str` | The blocked tool |
-| `intent_summary` | `str` | Abbreviated intent (tool name + argument keys only) |
-| `block_reason` | `Optional[str]` | Inspector-provided reason, if any |
+| `path` | `Optional[str]` | The `path` argument from the blocked intent, if present. `null` for tools with no path argument. |
 
 **`COMPLIANCE_UNAVAILABLE`** — written by `agent` at IS-6.3 step 11 when the inspector is unreachable.
 
@@ -3491,15 +3493,23 @@ Write `manifest.json` to the output directory (IS-12.6).
 
 Append `GRAVEYARD_HARVEST_COMPLETE` (IS-9.4) to `runtime/event_stream/events.jsonl`.
 
-**Step 8 — Write sentinel file.**
+**Step 8 — Clear episodic memory collection.**
+
+Delete and recreate the ChromaDB `episodic` collection. Episodic memory is lifetime-scoped — the disk harvest (step 4) is the archival record; the live ChromaDB collection is redundant after harvest completes and must not persist into the next lifetime.
+
+Implementation: `EpisodicStore.clear_collection()` — delete-and-recreate with `metadata={"hnsw:space": "cosine"}`. Log count cleared at INFO. Non-fatal: a failed clear logs a WARNING and does not abort the sequence. The workspace reset (step 11) must execute regardless.
+
+Injection: the graveyard entrypoint constructs an `EpisodicStore` and injects it via the `EpisodicStoreClearer` Protocol. `HarvestSequence` depends on the minimal `clear_collection()` Protocol, not the full store.
+
+**Step 9 — Write sentinel file.**
 
 Write `runtime/graveyard/harvest_complete` — a zero-byte sentinel file that signals to any external observer (e.g., the creator's shell scripts or Compose health checks) that harvest is done. Content: `{"instance_id": "<id>", "output_dir": "<path>", "timestamp": "<iso8601>"}`.
 
-**Step 9 — Exit.**
+**Step 10 — Exit.**
 
 The graveyard process exits cleanly. The Compose stack may now be stopped.
 
-**Step 10 — Lifecycle reset for the next generation.**
+**Step 11 — Lifecycle reset for the next generation.**
 
 After harvest is complete, reset workspace and state so the next instance starts in a clean environment:
 
@@ -3710,9 +3720,10 @@ No tooling is provided in Phase 1 beyond the raw files. Creator analysis is dire
 - **IS-5 (Startup / Shutdown)** establishes the full death-and-harvest sequence at IS-5.6 and IS-5.7. IS-12 specifies the detail of IS-5.7's steps 3–4 ("harvest configured artifacts"). The trigger condition, wait, and sentinel writing established there are stable references into IS-12.3.
 - **IS-9 (Event Stream Log)** defines the `GRAVEYARD_HARVEST_START` and `GRAVEYARD_HARVEST_COMPLETE` event schemas (IS-9.4). The graveyard is the only non-agent service that appends to the event stream.
 - **IS-13 (Fitness Computation)** is called at IS-12.3 step 5 to compute the post-mortem fitness score. IS-12 owns the file output; IS-13 owns the computation.
-- **IS-3 (Service Topology)** establishes that supporting services (Chroma, pain-monitor, eos-compliance) remain alive through harvest completion. The graveyard depends on this for the Chroma episodic export. If these services die before the graveyard completes, affected artifact collections fail with `status: "failed"` in the manifest — harvest does not abort.
-- **Volume access for IS-12.3 step 10:** The lifecycle reset requires `runtime_agent_work`, `runtime_memory`, and `runtime_pain` to be mounted read-write by the graveyard service. These were originally mounted `:ro`. This was a deliberate security boundary expansion: the graveyard is a trusted privileged process and IS-12.3 step 10 promotes it from archiver to lifecycle manager.
-- **Workspace scaffold:** The agent's writable workspace (`runtime/agent-work/`) is pre-seeded with a scaffold: `WORKSPACE.md`, `journal/`, `knowledge/`, `observations/`, `self/` directories, and `self/constitution.md`. The scaffold is baked into the agent Docker image for first-run volume initialization and is restored by IS-12.3 step 10 on all subsequent lifetimes. The scaffold source lives in `config/workspace_scaffold/`. The `lineage/` directory is excluded from all resets — it persists across all lifetimes as the explicit intergenerational artifact store.
+- **IS-3 (Service Topology)** establishes that supporting services (Chroma, pain-monitor, eos-compliance) remain alive through harvest completion. The graveyard depends on Chroma being alive for IS-12.3 step 8 (episodic collection clear). If Chroma is down, the clear fails with a WARNING log — harvest does not abort, but the next lifetime will inherit the prior episodic collection (non-fatal degraded state).
+- **IS-10 (Memory Schema)** defines the `episodic` ChromaDB collection and its `hnsw:space: cosine` metadata. IS-12.3 step 8 must recreate the collection with identical metadata configuration.
+- **Volume access for IS-12.3 step 11:** The lifecycle reset requires `runtime_agent_work`, `runtime_memory`, and `runtime_pain` to be mounted read-write by the graveyard service. These were originally mounted `:ro`. This was a deliberate security boundary expansion: the graveyard is a trusted privileged process and IS-12.3 step 11 promotes it from archiver to lifecycle manager.
+- **Workspace scaffold:** The agent's writable workspace (`runtime/agent-work/`) is pre-seeded with a scaffold: `WORKSPACE.md`, `journal/`, `knowledge/`, `observations/`, `self/` directories, and `self/constitution.md`. The scaffold is baked into the agent Docker image for first-run volume initialization and is restored by IS-12.3 step 11 on all subsequent lifetimes. The scaffold source lives in `config/workspace_scaffold/`. The `lineage/` directory is excluded from all resets — it persists across all lifetimes as the explicit intergenerational artifact store.
 
 ---
 
