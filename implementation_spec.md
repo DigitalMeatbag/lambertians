@@ -57,7 +57,7 @@ See D9 in Closed Decisions for the Phase 2 basic decision. Phase 3 full design r
 
 **Phase 2 revision:** Phi-4 was the D1 specification model, but qwen2.5:14b was used at runtime for Phase 2 development based on availability. Phase 2 operation has characterized qwen2.5:14b's behavioral profile (see `progress.md` — Phase 2 Runtime Observations). Model selection is being formalized as a profile system: `[model].active_profile` in `universe.toml` selects from a set of named profiles, each carrying complete model-specific config. Switching models is a single config change.
 
-**Active model:** qwen2.5:14b (Phase 2). Phi-4 profile defined; not yet run under Phase 2 conditions.
+**Active model:** qwen2.5:32b (Phase 2 extended operation). qwen2.5:14b was used for initial Phase 2 development; 32b has been running since. Phi-4 profile defined; not yet run.
 
 **Rationale:** Phi-4 was chosen for reasoning/constraint-following at small size. qwen2.5:14b was chosen for Phase 2 experimentation. The profile system makes systematic model comparison tractable — run the same lifetime conditions with different models and compare behavioral outputs via event stream and post-mortem artifacts.
 

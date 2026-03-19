@@ -161,19 +161,19 @@ sections reference earlier ones, never re-specify values inline.
 
 | Section | Topic | Status |
 |---|---|---|
-| IS-1 | Universe Config | `[ TO BE WRITTEN ]` |
-| IS-2 | Project Layout | `[ TO BE WRITTEN ]` |
-| IS-3 | Service Topology | `[ TO BE WRITTEN ]` |
-| IS-4 | System Prompt Architecture | `[ TO BE WRITTEN ]` |
-| IS-5 | Startup / Shutdown Sequence | `[ TO BE WRITTEN ]` |
-| IS-6 | The Turn | `[ TO BE WRITTEN ]` |
-| IS-7 | MCP Interface | `[ TO BE WRITTEN ]` |
-| IS-8 | Pain Channel Spec | `[ TO BE WRITTEN ]` |
-| IS-9 | Event Stream Log | `[ TO BE WRITTEN ]` |
-| IS-10 | Memory Schema | `[ TO BE WRITTEN ]` |
-| IS-11 | Seed Compliance Inspector | `[ TO BE WRITTEN ]` |
-| IS-12 | Graveyard Spec | `[ TO BE WRITTEN ]` |
-| IS-13 | Fitness Computation | `[ TO BE WRITTEN ]` |
+| IS-1 | Universe Config | `Implemented` |
+| IS-2 | Project Layout | `Implemented` |
+| IS-3 | Service Topology | `Implemented` |
+| IS-4 | System Prompt Architecture | `Implemented` |
+| IS-5 | Startup / Shutdown Sequence | `Implemented` |
+| IS-6 | The Turn | `Implemented` |
+| IS-7 | MCP Interface | `Implemented` |
+| IS-8 | Pain Channel Spec | `Implemented` |
+| IS-9 | Event Stream Log | `Implemented` |
+| IS-10 | Memory Schema | `Implemented` |
+| IS-11 | EOS Compliance Inspector | `Implemented` |
+| IS-12 | Graveyard Spec | `Implemented` |
+| IS-13 | Fitness Computation | `Implemented` |
 
 ---
 
@@ -195,6 +195,6 @@ These decisions are closed. Do not reopen without explicit owner instruction.
 
 ## Phase Scope
 
-Active phase is **Phase 1**. Do not design for Phase 2 or Phase 3 unless explicitly instructed.
+Active phase is **Phase 2**. Phase 1 and Phase 2 are complete and running. Do not design for Phase 3 unless explicitly instructed.
 Do not add hooks, extension points, or future-proofing beyond what the foundation specifies.
-Phase 2 and 3 concerns flagged in the foundation are noted for awareness only.
+Phase 3 concerns flagged in the foundation are noted for awareness only.

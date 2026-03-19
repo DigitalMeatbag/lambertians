@@ -159,10 +159,18 @@ All `http.fetch` behavior observed under qwen2.5:14b was the model navigating fa
 - All episodic writes now go through `write_episodic_worthy` (worthiness checker), not the raw write path. The similarity filter blocks repetitive entries (same `fs.list` result every turn), so the store accumulates distinct observations.
 - Effect: the model can now retrieve its own past exploration data, giving self-prompting something real to build on.
 
+**Third life — behavioral rhythm with memory fix active:**
+- First write at **t6** (down from t24 in the prior run). Possible cause: episodic memory from prior lifetimes now retrievable (memory fix), accelerating the model's sense of what actions are available.
+- `test-file.txt` (t11, 46 chars): `"This is a test file created by Lambertian-001."` — uses instance ID, not just project name. Instance self-model influence stronger than before.
+- `log.txt` (t12, then extended): contains entries referencing specific turn numbers (41, 42, 44) despite the current run being at t~14. These turn numbers originate from old episodic memories stored in Chroma (not cleared between lifetimes). The model retrieved prior-lifetime entries and echoed their format — cross-lifetime memory continuity, albeit imprecise.
+- Behavioral rhythm confirmed: `fs.list ×3 → suppress → fs.read ×3 → suppress → fs.write ×2 → fs.list ×3 → suppress → fs.write ×2 → fs.list ×3 → suppress → http.fetch ×3 → suppress → **NOOP** → fs.list ×3 → ...`. The model cycles through all available tools under suppression pressure; when multiple tools are simultaneously suppressed, it falls through to a pure empty turn.
+- **NOOP loophole confirmed live at t19**: fs.list suppressed + http.fetch suppressed simultaneously → the model produced a turn with no text and no tool calls. This is the loophole — the empty turn costs nothing and resets the suppression state for the next turn. Next turn: back to fs.list freely.
+
 **Verdict (updated):**
 - qwen2.5:32b exhibits the same fs.list attractor as 14b, but more severely — no reasoning text, just silent tool calls. Tool suppression is necessary infrastructure for this model family.
 - After suppression fires and the model is forced off fs.list, it shows genuine diversification: `/proc/self/status`, `runtime/env/host_state.json`, multi-tool turns. The curiosity is there once the groove is broken.
-- Silent tool calls are a concern: the model is not narrating its reasoning, making it harder to assess whether it's learning or just sampling.
+- The suppression mechanism works, but generates a mechanical rotation through the tool catalog rather than genuine curiosity-driven exploration. The model cycles: list → suppress → read → suppress → write → list → suppress... This is "Don't be a lump" satisfied by tool variety, not by meaning.
+- The NOOP loophole is the next structural gap: when all used tools are simultaneously suppressed, the model escapes to a zero-cost empty turn rather than branching into genuinely new territory.
 
 ---
 
@@ -170,7 +178,7 @@ All `http.fetch` behavior observed under qwen2.5:14b was the model navigating fa
 
 The Phase 2 fitness function correctly penalizes repetition — 100 turns of pure `REFLECTION_COMPLETE` scores far lower than 100 turns with diverse event types. However, the fitness signal is observer-only at Phase 1/2. It doesn't yet drive any behavior within a lifetime or feed any selection pressure between lifetimes (Phase 3 concern).
 
-Under current qwen2.5:14b behavior, most lifetimes accumulate fitness primarily from a small number of unique event types at primary weight, with heavy repetition penalty drag.
+Under the current suppression-rotation behavioral pattern, fitness accumulates primarily from tool call diversity (TOOL_CALL events across multiple tool types) rather than from depth of exploration. The quality-weighted fitness correctly rewards variety but cannot yet distinguish mechanical rotation from genuine curiosity.
 
 ---
 
