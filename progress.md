@@ -289,7 +289,6 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 
 ## Next Steps
 
-1. **Lifecycle reset automation** — graveyard or a lifecycle manager should reset turn state between lives; currently manual
-2. **Observe memory impact** — with episodic memory now accumulating tool result summaries, watch whether self-prompting builds on past observations across turns
-3. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
-4. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
+1. **Observe memory impact** — with episodic memory now accumulating tool result summaries, watch whether self-prompting builds on past observations across turns; watch whether reading WORKSPACE.md and constitution.md produces structured directory use in subsequent turns
+2. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
+3. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
