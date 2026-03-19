@@ -17,6 +17,7 @@ from lambertian.fitness.scorer import FitnessScorer
 from lambertian.lifecycle.death_record_reader import DeathRecordReader
 from lambertian.mcp_gateway.gateway import McpGateway
 from lambertian.mcp_gateway.path_resolver import PathResolver
+from lambertian.mcp_gateway.semantic_shim import build_shim_registry
 from lambertian.memory_store.episodic_store import EpisodicStore
 from lambertian.memory_store.querier import ChromaMemoryQuerier, MemoryQuerier, NoOpMemoryQuerier
 from lambertian.model_runtime.ollama_client import OllamaClient
@@ -57,6 +58,7 @@ class AgentBootstrap:
         self._mcp_gateway = McpGateway(
             config,
             PathResolver(runtime_root, Path("config")),
+            shim_registry=build_shim_registry(config),
         )
         self._compliance_client = ComplianceClient(config)
         constitution_text = Path(config.instance.constitution_path).read_text(encoding="utf-8")

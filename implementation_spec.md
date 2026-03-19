@@ -2143,6 +2143,63 @@ The ground block does not repeat information from prior turns' ground blocks. If
 - **IS-11 (EOS Compliance Inspector)** intercepts intents before they reach IS-7 dispatch. IS-7 never sees blocked intents.
 - **IS-2 (Project Layout)** assigns the `mcp_gateway` package as the implementation site. No other package implements MCP dispatch logic.
 
+#### IS-7.9 Semantic shim layer
+
+Models exhibit stable path attractors — paths like `/proc/self/status`, `self/identity`,
+`memory/working` that recur across lifetimes because they are semantically coherent in the model's
+training data. These paths produce rejections from which the model does not learn: 200+ turns of
+evidence show the same bare paths repeated across context resets.
+
+The semantic shim layer converts this wasted friction into useful information delivery.
+
+**Architecture.** The shim sits in the MCP Gateway, before PathResolver. For each `fs.read` or
+`fs.list` call:
+
+1. Check `SemanticShimRegistry` for the incoming path.
+2. If **alias** — rewrite path string, continue to PathResolver (boundary checks still apply).
+3. If **virtual** — synthesize content from a callable generator, return `ToolResult` immediately.
+4. If **no match** — proceed unchanged (existing behavior).
+
+**Alias entries** redirect bare/intuitive paths to their canonical full paths:
+
+| Attractor | Target |
+|-----------|--------|
+| `self/identity` | `runtime/agent-work/self/identity.md` |
+| `self/status` | `runtime/agent-work/self/state.md` |
+| `self/constitution` | `runtime/agent-work/self/constitution.md` |
+| `memory/working` | `runtime/memory/working.json` |
+| `WORKSPACE.md` | `runtime/agent-work/WORKSPACE.md` |
+| `agent-work/log.txt` | `runtime/agent-work/log.txt` |
+
+List aliases apply to `fs.list`: `self` → `runtime/agent-work/self`, `journal` →
+`runtime/agent-work/journal`, etc.
+
+**Virtual entries** generate synthetic content:
+
+| Attractor | Content |
+|-----------|---------|
+| `/proc/self/status` | Agent status document: turn number, instance ID, phase, model name, max_age, working memory summary. Replaces kernel RSS counters with meaningful self-model data. |
+
+Virtual generators receive the full `Config` object and are responsible for curating what they
+expose (same pattern as `build_self_model_data()` in IS-4).
+
+**Profile keying.** Shim maps are registered per model profile name. Currently defined:
+`qwen2.5:32b`, `qwen2.5:14b` (same map — shared architecture, shared attractors).
+
+**Read-only.** Writes are not shimmed. Write path correctness is meaningful Ground — the model
+needs to know where it is placing things. Reads are information retrieval; the shim converts
+unproductive retrieval failures into successful information delivery.
+
+**Observability.** Every shim activation is logged at INFO with original path, shim type, and
+target/generator. Allows tracking shim hit rates, identifying new unshimmed attractors, and
+verifying that shimming reduces wasted rejection cycles.
+
+**Construction.** `build_shim_registry(config)` is called at bootstrap and returns
+`Optional[SemanticShimRegistry]`. Returns `None` for unknown model profiles (no shim active).
+The registry is injected into `McpGateway.__init__`.
+
+**Implementation site.** `src/lambertian/mcp_gateway/semantic_shim.py`.
+
 ---
 
 ### IS-8: Pain Channel Spec

@@ -14,6 +14,7 @@ import httpx
 from lambertian.configuration.universe_config import Config
 from lambertian.contracts.tool_records import HttpFetchResult, ToolIntent, ToolResult
 from lambertian.mcp_gateway.path_resolver import PathBoundaryViolation, PathResolver
+from lambertian.mcp_gateway.semantic_shim import SemanticShimRegistry, ShimKind
 from lambertian.mcp_gateway.tool_definitions import get_tool_catalog
 
 _DEFAULT_AGENT_HEADERS: dict[str, str] = {
@@ -48,11 +49,13 @@ class McpGateway:
         config: Config,
         path_resolver: PathResolver,
         http_client: Optional[httpx.Client] = None,
+        shim_registry: Optional[SemanticShimRegistry] = None,
     ) -> None:
         self._config = config
         self._path_resolver = path_resolver
         # Injected for testability; production code constructs a fresh client per request.
         self._http_client: Optional[httpx.Client] = http_client
+        self._shim_registry: Optional[SemanticShimRegistry] = shim_registry
 
     # ------------------------------------------------------------------
     # Public interface
@@ -102,6 +105,25 @@ class McpGateway:
             return _make_failure(
                 intent.tool_name, call_id, start, "mcp_rejection", "path must be a string"
             )
+
+        # Semantic shim: check for model-specific path attractors before resolver.
+        if self._shim_registry is not None:
+            shim_result = self._shim_registry.resolve_read(path_val)
+            if shim_result is not None:
+                if shim_result.kind == ShimKind.VIRTUAL:
+                    return ToolResult(
+                        tool_name=intent.tool_name,
+                        call_id=call_id,
+                        success=True,
+                        result=shim_result.content,
+                        error_type=None,
+                        error_detail=None,
+                        duration_ms=int((time.monotonic() - start) * 1000),
+                        truncated=False,
+                    )
+                # ALIAS: rewrite path and continue to PathResolver.
+                path_val = shim_result.rewritten_path or path_val
+
         try:
             resolved = self._path_resolver.resolve_read(path_val)
         except PathBoundaryViolation as exc:
@@ -196,6 +218,13 @@ class McpGateway:
             return _make_failure(
                 intent.tool_name, call_id, start, "mcp_rejection", "path must be a string"
             )
+
+        # Semantic shim: check for model-specific list path attractors.
+        if self._shim_registry is not None:
+            shim_result = self._shim_registry.resolve_list(path_val)
+            if shim_result is not None and shim_result.rewritten_path is not None:
+                path_val = shim_result.rewritten_path
+
         try:
             resolved = self._path_resolver.resolve_list(path_val)
         except PathBoundaryViolation as exc:

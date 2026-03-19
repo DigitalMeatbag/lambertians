@@ -126,6 +126,19 @@ Tool failures generate pain events. Ground refusals (`mcp_rejection`) are the sh
 
 Host environment resource signals feed the stress scalar independently of the agent's actions — ambient ground changing for reasons entirely outside the agent's world.
 
+### Semantic Shim Layer
+
+Models have stable training-data-derived path attractors — paths like `/proc/self/status`, `self/identity`, `memory/working` that recur across lifetimes because they are semantically coherent to the model. These paths either hit unhelpful content or get rejected, and evidence across 200+ turns shows the model does not learn from these rejections.
+
+The semantic shim layer intercepts these paths in the MCP Gateway (before PathResolver) and maps them to meaningful responses. Two mechanisms:
+
+- **Aliases** — bare/intuitive path → real filesystem path (e.g., `self/identity` → `runtime/agent-work/self/identity.md`). The alias target still passes through PathResolver boundary checks. Also applies to `fs.list`.
+- **Virtual files** — path → dynamically synthesized content (e.g., `/proc/self/status` → agent status document with turn number, instance ID, model name, memory state). Short-circuits PathResolver entirely.
+
+Shim maps are model-profile-keyed. Different models have different attractors. Currently defined for `qwen2.5:32b` and `qwen2.5:14b`. Read-only — writes still require correct full paths, because write path correctness is meaningful Ground (environmental commitment vs. information retrieval).
+
+Every shim activation is logged at INFO level for observability: which shims fire, how often, and whether new unshimmed attractors emerge.
+
 ---
 
 ## Pain and Mortality

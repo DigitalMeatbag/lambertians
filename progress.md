@@ -330,6 +330,7 @@ The cycle shows the suppression mechanism working as designed: the fs.list attra
 
 ## Next Steps
 
-1. **Observe memory impact** — with episodic memory now accumulating tool result summaries, watch whether self-prompting builds on past observations across turns; watch whether reading WORKSPACE.md and constitution.md produces structured directory use in subsequent turns
-2. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
-3. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
+1. **Deploy and observe semantic shim** — rebuild agent image, restart, observe shim activation logs; measure reduction in wasted rejection cycles for known path attractors
+2. **Observe memory impact** — with episodic memory now accumulating tool result summaries, watch whether self-prompting builds on past observations across turns; watch whether reading WORKSPACE.md and constitution.md produces structured directory use in subsequent turns
+3. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
+4. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
