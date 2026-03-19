@@ -36,7 +36,7 @@ def test_model_provider(config: Config) -> None:
 
 
 def test_model_name(config: Config) -> None:
-    assert config.model.name == "qwen2.5:14b"
+    assert config.model.name == "qwen2.5:32b"
 
 
 def test_model_temperature(config: Config) -> None:
@@ -45,14 +45,14 @@ def test_model_temperature(config: Config) -> None:
 
 def test_model_active_profile_resolves(config: Config) -> None:
     """Active profile resolves to the expected model name."""
-    assert config.model.name == "qwen2.5:14b"
+    assert config.model.name == "qwen2.5:32b"
     assert config.model.provider == "ollama"
     assert config.model.context_window_tokens == 16384
 
 
 def test_model_unknown_profile_raises(tmp_path: Path) -> None:
     good = Path("config/universe.toml").read_bytes()
-    bad = good.replace(b'active_profile = "qwen2.5:14b"', b'active_profile = "nonexistent"')
+    bad = good.replace(b'active_profile = "qwen2.5:32b"', b'active_profile = "nonexistent"')
     toml_file = tmp_path / "bad.toml"
     toml_file.write_bytes(bad)
     with pytest.raises(ConfigurationError, match="nonexistent"):

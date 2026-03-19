@@ -17,7 +17,7 @@ normal_shutdown_grace_seconds = 5
 # active_profile: name of the model profile to use.
 # Must match a key in [model.profiles]. Change this single value to swap models —
 # all model-specific settings (context window, timeouts, temperature, etc.) come with the profile.
-active_profile = "qwen2.5:14b"
+active_profile = "qwen2.5:32b"
 
 [model.profiles."qwen2.5:14b"]
 provider                           = "ollama"
@@ -35,6 +35,21 @@ requires_mid_turn_system_injection = true
 # - Open-ended prompts produce minimal-effort EOS satisfaction, not genuine exploration.
 # - Leading-slash paths (/runtime/X) generated frequently; gateway normalizes these.
 # - Temperature not yet varied; reflection loop tendency may be temperature-sensitive.
+
+[model.profiles."qwen2.5:32b"]
+provider                           = "ollama"
+name                               = "qwen2.5:32b"
+endpoint_url                       = "http://ollama:11434"
+request_timeout_seconds            = 180
+context_window_tokens              = 16384
+max_output_tokens                  = 2048
+temperature                        = 0.6
+top_p                              = 0.9
+requires_mid_turn_system_injection = true
+# Same family as qwen2.5:14b; confirmed tool support.
+# ~20GB — mostly GPU-accelerated on BIGBEEF (~15-20 t/s with partial CPU offload).
+# Timeout bumped to 180s to accommodate slower generation vs 14b.
+# Behavioral notes: not yet run. Hypothesis: larger model may explore more genuinely.
 
 [model.profiles."phi4:latest"]
 provider                           = "ollama"
