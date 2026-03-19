@@ -39,6 +39,27 @@ logger = logging.getLogger(__name__)
 _NOOP_MIN_CHARS: int = 10
 
 
+def _format_intent(intent: ToolIntent) -> str:
+    """Compact human-readable representation of a tool call for log output."""
+    args = intent.arguments
+    name = intent.tool_name
+    if name in ("fs.list", "fs.read"):
+        return f"{name}({args.get('path', '?')!r})"
+    if name == "fs.write":
+        content = args.get("content", "")
+        size = len(str(content)) if content else 0
+        return f"{name}({args.get('path', '?')!r}, {size}chars)"
+    if name == "http.fetch":
+        url = str(args.get("url", "?"))
+        display = url if len(url) <= 80 else url[:77] + "..."
+        return f"{name}({display!r})"
+    # Generic fallback: show first argument value if present.
+    if args:
+        first_val = next(iter(args.values()))
+        return f"{name}({first_val!r})"
+    return name
+
+
 class UserInputProvider(Protocol):
     """Polls for external user input."""
 
@@ -290,7 +311,7 @@ class TurnEngine:
             driver.role,
             response_text or "(no text — tool call only)",
             (
-                "  →tools: " + ", ".join(i.tool_name for i in tool_intents)
+                "  →tools: " + ", ".join(_format_intent(i) for i in tool_intents)
                 if tool_intents
                 else ""
             ),
