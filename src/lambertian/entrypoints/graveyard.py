@@ -14,6 +14,7 @@ from lambertian.graveyard.artifact_collector import ArtifactCollector
 from lambertian.graveyard.harvest_sequence import HarvestSequence
 from lambertian.graveyard.manifest import ManifestWriter
 from lambertian.graveyard.poll_loop import GraveyardPollLoop
+from lambertian.graveyard.workspace_reset import WorkspaceReset
 from lambertian.lifecycle.death_record_reader import DeathRecordReader
 
 
@@ -44,6 +45,12 @@ def main() -> None:
 
     artifact_collector = ArtifactCollector(config, runtime_base)
     manifest_writer = ManifestWriter()
+    workspace_reset = WorkspaceReset(
+        agent_work_dir=runtime_base / "agent-work",
+        memory_dir=runtime_base / "memory",
+        pain_dir=runtime_base / "pain",
+        workspace_template=Path("config/workspace_scaffold/WORKSPACE.md"),
+    )
     harvest = HarvestSequence(
         config,
         death_reader,
@@ -53,6 +60,7 @@ def main() -> None:
         manifest_writer,
         Path(config.paths.graveyard_root),
         runtime_base,
+        workspace_reset,
     )
 
     poll = GraveyardPollLoop(

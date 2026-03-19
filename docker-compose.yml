@@ -12,12 +12,12 @@ networks:
     driver: bridge
 
 volumes:
-  runtime_event_stream:   # agent (rw), graveyard (append-only rw)
-  runtime_memory:         # agent (rw), graveyard (ro)
-  runtime_pain:           # pain-monitor (rw), agent (ro), graveyard (ro)
+  runtime_event_stream:   # agent (rw), graveyard (rw — lifecycle events)
+  runtime_memory:         # agent (rw), graveyard (rw — lifecycle reset)
+  runtime_pain:           # pain-monitor (rw), agent (ro), graveyard (rw — death.json cleanup)
   runtime_fitness:        # agent (rw), graveyard (ro)
   runtime_self:           # agent (rw)
-  runtime_agent_work:     # agent (rw), graveyard (ro) — agent-authored files
+  runtime_agent_work:     # agent (rw), graveyard (rw — lifecycle reset + workspace scaffold)
   chroma_data:            # chroma internal persistence
   ollama_data:            # model weights and caches
   graveyard_output:       # finalized post-mortem bundles
@@ -107,12 +107,12 @@ services:
       dockerfile: infra/docker/graveyard.Dockerfile
     networks: [lambertian-core]
     volumes:
-      # append-only write access for harvest lifecycle events (IS-3.7, IS-9.7)
+      # rw for lifecycle events and lifecycle reset (IS-3.7, IS-9.7, IS-12.3 step 10)
       - runtime_event_stream:/app/runtime/event_stream
-      - runtime_memory:/app/runtime/memory:ro
-      - runtime_pain:/app/runtime/pain:ro
+      - runtime_memory:/app/runtime/memory
+      - runtime_pain:/app/runtime/pain
       - runtime_fitness:/app/runtime/fitness:ro
-      - runtime_agent_work:/app/runtime/agent-work:ro
+      - runtime_agent_work:/app/runtime/agent-work
       - graveyard_output:/app/runtime/graveyard
       - ./config:/app/config:ro
     restart: unless-stopped

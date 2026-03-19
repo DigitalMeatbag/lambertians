@@ -59,6 +59,7 @@ def _make_sequence(
     fitness_scorer = MagicMock()
     fitness_scorer.compute_postmortem.return_value = fitness_score or _make_fitness_score()
     manifest_writer = MagicMock()
+    workspace_reset = MagicMock()
 
     runtime_base = tmp_path / "runtime"
     runtime_base.mkdir(parents=True, exist_ok=True)
@@ -73,6 +74,7 @@ def _make_sequence(
         manifest_writer=manifest_writer,
         graveyard_output_base=graveyard_base,
         runtime_base=runtime_base,
+        workspace_reset=workspace_reset,
     )
     return seq, death_reader, event_log, artifact_collector, fitness_scorer, manifest_writer
 
@@ -144,4 +146,11 @@ def test_execute_raises_on_missing_death_record(tmp_path: Path) -> None:
 
     with pytest.raises(RuntimeError, match="no death record"):
         seq.execute()
+
+
+def test_execute_calls_workspace_reset(tmp_path: Path) -> None:
+    """Step 10: workspace_reset.execute() is called after harvest completes."""
+    seq, *_ = _make_sequence(tmp_path)
+    seq.execute()
+    seq._workspace_reset.execute.assert_called_once()
 

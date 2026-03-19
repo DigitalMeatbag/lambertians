@@ -1,4 +1,4 @@
-"""IS-12.3 Harvest sequence — 9-step graveyard harvest execution."""
+"""IS-12.3 Harvest sequence — 10-step graveyard harvest execution."""
 from __future__ import annotations
 
 import dataclasses
@@ -14,13 +14,14 @@ from lambertian.event_stream.event_log_writer import EventLogWriter
 from lambertian.fitness.scorer import FitnessScorer
 from lambertian.graveyard.artifact_collector import ArtifactCollector
 from lambertian.graveyard.manifest import HarvestManifest, ManifestWriter
+from lambertian.graveyard.workspace_reset import WorkspaceReset
 from lambertian.lifecycle.death_record_reader import DeathRecordReader
 
 _log = logging.getLogger(__name__)
 
 
 class HarvestSequence:
-    """Executes the 9-step harvest sequence. IS-12.3."""
+    """Executes the 10-step harvest sequence. IS-12.3."""
 
     def __init__(
         self,
@@ -32,6 +33,7 @@ class HarvestSequence:
         manifest_writer: ManifestWriter,
         graveyard_output_base: Path,
         runtime_base: Path,
+        workspace_reset: WorkspaceReset,
     ) -> None:
         self._config = config
         self._death_reader = death_reader
@@ -41,9 +43,10 @@ class HarvestSequence:
         self._manifest_writer = manifest_writer
         self._graveyard_output_base = graveyard_output_base
         self._runtime_base = runtime_base
+        self._workspace_reset = workspace_reset
 
     def execute(self) -> None:
-        """Run all 9 steps. IS-12.3."""
+        """Run all 10 steps. IS-12.3."""
         start_time = time.monotonic()
         start_timestamp = datetime.now(timezone.utc).isoformat()
 
@@ -132,3 +135,5 @@ class HarvestSequence:
         )
 
         # Step 9: return — caller handles process exit
+        # Step 10: lifecycle reset — prepare workspace for the next generation
+        self._workspace_reset.execute()

@@ -17,6 +17,7 @@ from lambertian.graveyard.artifact_collector import ArtifactCollector
 from lambertian.graveyard.harvest_sequence import HarvestSequence
 from lambertian.graveyard.manifest import ManifestWriter
 from lambertian.graveyard.poll_loop import GraveyardPollLoop
+from lambertian.graveyard.workspace_reset import WorkspaceReset
 from lambertian.lifecycle.death_record_reader import DeathRecordReader
 
 
@@ -68,6 +69,13 @@ def _build_harvest_sequence(
     result = fitness_score if fitness_score is not None else _make_dummy_fitness_score()
     mock_scorer.compute_postmortem.return_value = result
 
+    workspace_reset = WorkspaceReset(
+        agent_work_dir=runtime / "agent-work",
+        memory_dir=runtime / "memory",
+        pain_dir=runtime / "pain",
+        workspace_template=runtime / "config" / "workspace_scaffold" / "WORKSPACE.md",
+    )
+
     return HarvestSequence(
         config=config,
         death_reader=death_reader,
@@ -77,6 +85,7 @@ def _build_harvest_sequence(
         manifest_writer=manifest_writer,
         graveyard_output_base=graveyard_output,
         runtime_base=runtime,
+        workspace_reset=workspace_reset,
     )
 
 

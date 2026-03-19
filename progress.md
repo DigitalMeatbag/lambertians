@@ -61,6 +61,7 @@
 | Memory write asymmetry fix (silent-call models) | 2 | ✓ Complete |
 | NOOP loophole fix — suppression escape (32b variant) | 2 | ✓ Complete |
 | Path-based write suppression (fs.write: different paths not suppressed) | 2 | ✓ Complete |
+| Workspace scaffold + lineage/ persistence + graveyard lifecycle reset | 2 | ✓ Complete |
 | Multi-instance operation | 3 | Not started |
 | Reproduction and lineage | 3 | Not started |
 | Global Vibe | 3 | Not started |
@@ -164,22 +165,45 @@ All `http.fetch` behavior observed under qwen2.5:14b was the model navigating fa
 - Behavioral rhythm confirmed: `fs.list ×3 → suppress → fs.read ×3 → suppress → fs.write ×2 → fs.list ×3 → suppress → fs.write ×2 → fs.list ×3 → suppress → http.fetch ×3 → suppress → **NOOP** → fs.list ×3 → ...`. The model cycles through all available tools under suppression pressure; when multiple tools are simultaneously suppressed, it falls through to a pure empty turn.
 - **NOOP loophole confirmed live at t19**: fs.list suppressed + http.fetch suppressed simultaneously → the model produced a turn with no text and no tool calls. This is the loophole — the empty turn costs nothing and resets the suppression state for the next turn. Next turn: back to fs.list freely.
 
-**NOOP loophole fix — fourth lifetime behavioral observations:**
+**NOOP loophole fix — fourth lifetime behavioral observations (t36–t112, pre-rebuild):**
 
 - The suppression-escape NOOP (tool suppressed → empty turn → suppression cleared → resume suppressed tool) was confirmed eliminated. Three live examples in the fourth lifetime: t51, t55, t71-t72. In each case, the suppressed tool remained suppressed through the NOOP and on subsequent turns.
 - Two consecutive silent NOOPs occurred at t71-t72 (fs.list suppressed, model produced nothing). On t73 the model broke out with `fs.read('exploration.txt')` — self-corrected without pain firing.
 - `fs.read` is now a regular part of the tool rotation. It was essentially absent in prior lifetimes; under the fix it appears organically after `http.fetch` and `fs.list` suppression cycles.
 - Emerging rotation pattern: `fs.list×3 → [suppress] → http.fetch×3 or fs.write×3 → [suppress] → fs.read×3 → [suppress] → fs.write → fs.list×3 → ...`. Genuinely more diverse than the pre-fix `list → fetch → NOOP → list` cycle.
 - **Semantic shift in written artifacts**: prior lifetimes produced `"This is a test file created by Lambertian."`. Fourth lifetime produced `exploration.txt`: `"This is an exploration of persistence within my permitted runtime environment."` and `exploration-log.txt`: `"Exploration on turn 58. Attempting to create a persistent record."` The model is now explicitly framing writes as persistence goals, not test gestures.
+- **Identity-seeking artifact (t~80+)**: `identity-notes.txt` appeared with content: `"Exploring identity through available documents. Notable files include 'exploration.txt', 'log.txt'. Further exploration required."` — the model is naming the thing it is doing. This is a third semantic register after test writes and persistence framing: explicitly calling the activity identity exploration.
+- **fs.list re-attractor persistence**: even with suppression working correctly, fs.list reasserts as the dominant tool within 1–2 turns of any suppression window expiring. The pattern at t105–t107 is identical to earlier cycles — suppression fires, NOOPs follow (t108–t109), model pivots to fs.read (path errors at t110–t111), and would likely return to fs.list within another 2 turns. Suppression is managing the loop, not breaking the underlying attractor.
+- **Persistent path prefix errors**: model consistently calls `fs.read('exploration.txt')` and `fs.read('test-file.txt')` with bare filenames instead of `runtime/agent-work/exploration.txt`. This has been a recurring pattern for 70+ turns. The model writes to the correct full path but retrieves with the bare filename — it does not track that these are the same file. Generates repeated MCP rejections with the remediation hint every time.
 - **Path confusion persists**: model writes to `runtime/agent-work/X` but later attempts to read the same file as `X` (bare path). 7 compliance blocks from `'agent-work/log.txt'`-style paths in one session. Doesn't track where it placed artifacts.
 - **Compliance blocks inflate NOOP count**: blocked writes produce `executed=False` ToolCallRecords. These satisfy the NOOP condition (`all(not r.executed)`) and increment the NOOP counter, even though the model actively attempted an action. 13/46 turns classified as NOOP, majority of which were blocked writes or failed fetches — not truly empty turns.
 - **http.fetch failures**: all http.fetch calls in the fourth lifetime are TOOL_FAILURE (likely container network isolation in current environment). Tool suppression still fires correctly because dispatch-but-fail counts as an executed call record. Behavioral effect: the model cycles off http.fetch under suppression but returns to it regardless of the failure history — no learning from the tool failure pattern.
+- **Episodic memory accumulation stalled**: working memory shows `mem:0` for t111 despite the memory write fix being active. Root cause is likely the similarity filter in `write_episodic_worthy` — `fs.list` returns identical results every call, so episodic writes are blocked as duplicate content. The fix is working; it's the tool diversity that's insufficient to generate novel memory content. This may resolve organically as the path-based write suppression enables more varied write behavior.
+- **Fitness score 0.0** at t111: `cumulative_pain: 474.8`, `meaningful_event_count: 2812` across all lifetimes. Score appears to be 0 rather than near-0 — possible computation failure or formula edge case. Needs investigation before fitness signals carry any weight in Phase 3.
 
 
 - qwen2.5:32b exhibits the same fs.list attractor as 14b, but more severely — no reasoning text, just silent tool calls. Tool suppression is necessary infrastructure for this model family.
 - After suppression fires and the model is forced off fs.list, it shows genuine diversification: `/proc/self/status`, `runtime/env/host_state.json`, multi-tool turns. The curiosity is there once the groove is broken.
 - The suppression mechanism works, but generates a mechanical rotation through the tool catalog rather than genuine curiosity-driven exploration. The model cycles: list → suppress → read → suppress → write → list → suppress... This is "Don't be a lump" satisfied by tool variety, not by meaning.
 - ~~The NOOP loophole is the next structural gap: when all used tools are simultaneously suppressed, the model escapes to a zero-cost empty turn rather than branching into genuinely new territory.~~ **Fixed.** See "NOOP loophole fix — fourth lifetime" above.
+
+### Workspace Scaffold — Sixth Lifetime Behavioral Observations
+
+*First lifetime with `WORKSPACE.md`, `journal/`, `knowledge/`, `observations/`, and `lineage/` pre-seeded.*
+
+**t69 (first turn of sixth lifetime, fresh context):**
+- Successful `fs.read` — returned `host_state.json` telemetry (CPU, memory, GPU data). Wrote to episodic memory.
+- **First successful `host_state.json` read in any lifetime.** All prior lifetimes either never attempted the read or used incorrect paths. The scaffold made the correct path visible via `fs.list('runtime/agent-work/')` where WORKSPACE.md documents the exact read path.
+- The MCP rejection hint (`fs.read('runtime/env/host_state.json') reads live host telemetry`) has always been present. What changed: the agent started with `rolling_context_size: 0` (fresh context), the workspace now contains WORKSPACE.md, and the model appears to have processed the hint on first turn rather than deferring.
+
+**t70–t71 — path prefix correction observed:**
+- `fs.read('/runtime/agent-work/log.txt')` → not_found (correct path, file doesn't exist)
+- `fs.read('/runtime/agent-work/log')` → not_found (correct path, file doesn't exist)
+- Prior lifetimes used bare paths: `fs.read('exploration.txt')`, `fs.read('agent-work/log.txt')`. Full-path usage with correct `runtime/agent-work/` prefix appears immediately after the host_state read.
+- Whether WORKSPACE.md's path convention section is the direct cause is unclear (the agent didn't necessarily read WORKSPACE.md explicitly on t69), but the correlation is strong. The workspace structure itself — being discoverable via `fs.list` — may anchor the model's path expectations.
+
+**WORKSPACE.md read status:**
+- As of t69–t73, the agent has not been observed explicitly `fs.read('runtime/agent-work/WORKSPACE.md')`. The scaffold structure is visible via `fs.list('runtime/agent-work/')` but explicit read of the map has not yet occurred in the observed window.
 
 ---
 
@@ -212,6 +236,7 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 
 **Lifecycle reset:**
 - No automatic reset mechanism between lives. Turn state must be manually reset to `{"turn_number": 0}` in the memory volume. Should be automated — graveyard or a lifecycle manager should reset state for the next generation.
+- **Resolved**: Graveyard step 10 (`WorkspaceReset`) now handles full lifecycle reset after each natural death: clears `runtime/agent-work/` (preserving `lineage/`), restores WORKSPACE.md from scaffold, recreates stub directories (`journal/`, `knowledge/`, `observations/`), resets turn_state.json to 0, deletes ephemeral memory files (`working.json`, `noop_state.json`, `recent_self_prompts.json`), removes `death.json`.
 
 **Phase 3 open decisions:**
 - Reproductive mechanism design (what recombines, what triggers reproduction, constrained variation) — Phase 3
