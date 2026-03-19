@@ -10,10 +10,10 @@
 
 **Branch:** `phase2`
 
-**Overall:** Phase 1 and Phase 2 are complete and deployed. A single Lambertian instance is running under Phase 2 conditions with qwen2.5:14b. Model-specific behavioral patterns have been characterized (see observations below). Model profile swapping infrastructure is in progress.
+**Overall:** Phase 1 and Phase 2 are complete and deployed. A single Lambertian instance is running under Phase 2 conditions with qwen2.5:32b. Model profile swapping infrastructure is complete — switching models is a one-line config change (`active_profile` in `universe.toml`). The instance constitution (`config/instance_constitution.md`) has been wired into the system prompt as the `[SYSTEM_CONSTITUTION]` block. `http.fetch` SSL verification has been fixed (was broken for the entire prior history). Model-specific behavioral patterns are still being characterized at 32b scale.
 
 **Running services:**
-- `agent` — turn engine, EOS compliance, MCP gateway, memory, self-model (qwen2.5:14b via Ollama)
+- `agent` — turn engine, EOS compliance, MCP gateway, memory, self-model (qwen2.5:32b via Ollama)
 - `pain-monitor` — stress scalar, pain event queue, death triggers, graveyard trigger
 - `eos-compliance` — Four Rules admissibility gate
 - `graveyard` — post-mortem artifact harvester on death
@@ -52,7 +52,9 @@
 | Post-mortem viewer (`lambertian-postmortem`) | 2 | ✓ Complete |
 | Host environment telemetry (`lambertian-env-monitor`) | 2 | ✓ Complete |
 | Path normalization hardening (MCP gateway) | 2 | ✓ Complete |
-| Model profile swapping infrastructure | 2 | In progress |
+| Instance constitution (`config/instance_constitution.md`) | 2 | ✓ Complete |
+| Model profile swapping infrastructure | 2 | ✓ Complete |
+| http.fetch SSL fix (ca-certificates in agent image) | 2 | ✓ Complete |
 | NOOP loophole fix (REFLECTION_COMPLETE vs NOOP) | 2 | Pending |
 | Multi-instance operation | 3 | Not started |
 | Reproduction and lineage | 3 | Not started |
@@ -96,7 +98,28 @@ qwen2.5:14b was substituted for Phi-4 (D1 original spec) based on availability a
 - Tool use, when it occurs, is performative rather than curious. The rolling context window (~32 events) means successful tool calls scroll out of view before they can compound into deeper investigation.
 - A larger or reasoning-capable model (e.g., qwen2.5:32b, llama3.1:70b) may exhibit qualitatively different exploratory behavior. Model comparison is the next investigation target.
 
-### Quality-Weighted Fitness
+### http.fetch — Historical Breakage and Fix
+
+`http.fetch` was broken for the entire qwen2.5:14b phase. Every attempt failed with `SSL: CERTIFICATE_VERIFY_FAILED` — `python:3.12-slim` does not include CA certificates by default, so Python's ssl module couldn't verify any HTTPS connection. The model would try `http.fetch`, get a `TOOL_FAILURE`, and retreat to silent `fs.list` calls for the remainder of the turn series.
+
+Fixed in Phase 2 by adding `ca-certificates` to the agent Dockerfile's apt install step. `httpx.get("https://httpbin.org/get")` now returns 200 from within the container.
+
+All `http.fetch` behavior observed under qwen2.5:14b was the model navigating failure, not exploring the web.
+
+### Model Behavioral Profile: qwen2.5:32b
+
+*Early observation — only a few hundred turns elapsed. This section will expand.*
+
+**Turn characteristics:**
+- Silent bare tool calls — "(no text — tool call only)" — no reasoning text whatsoever. Qualitatively different from qwen2.5:14b which at least generated reasoning text.
+- Turn time: ~25–40 seconds per turn (partial GPU offload, 12GB VRAM / 20GB model).
+- Pattern so far: `fs.list` every turn, no diversification, similar to qwen2.5:14b post-drift.
+
+**Context:** The http.fetch SSL fix and instance constitution wiring were both deployed within this instance's first ~335 turns. Behavioral effect, if any, is not yet visible in the event stream. Constitution may need several turns to influence self-prompting trajectory.
+
+---
+
+
 
 The Phase 2 fitness function correctly penalizes repetition — 100 turns of pure `REFLECTION_COMPLETE` scores far lower than 100 turns with diverse event types. However, the fitness signal is observer-only at Phase 1/2. It doesn't yet drive any behavior within a lifetime or feed any selection pressure between lifetimes (Phase 3 concern).
 
@@ -129,8 +152,7 @@ Under current qwen2.5:14b behavior, most lifetimes accumulate fitness primarily 
 
 ## Next Steps
 
-1. **Model profile swapping** (in progress) — formalize model profiles in `universe.toml` and `loader.py` so switching models is a one-line config change
-2. **Run with alternative models** — compare qwen2.5:32b, llama3.1:70b, phi4 against qwen2.5:14b for exploratory behavior
-3. **NOOP loophole fix** — consecutive reflection-only turns (0 tool calls) should count toward noop death trigger
-4. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
-5. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
+1. **Observe qwen2.5:32b** — with http.fetch now working and the instance constitution deployed, watch for behavioral change. Key signal: does it drill into fetch results rather than repeat fs.list?
+2. **NOOP loophole fix** — consecutive reflection-only turns (0 tool calls) should count toward noop death trigger
+3. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
+4. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
