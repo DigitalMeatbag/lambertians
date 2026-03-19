@@ -2167,7 +2167,9 @@ The semantic shim layer converts this wasted friction into useful information de
 | `self/identity` | `runtime/agent-work/self/identity.md` |
 | `self/status` | `runtime/agent-work/self/state.md` |
 | `self/constitution` | `runtime/agent-work/self/constitution.md` |
+| `self/constitution.md` | `runtime/agent-work/self/constitution.md` |
 | `memory/working` | `runtime/memory/working.json` |
+| `memory/working_memory.txt` | `runtime/memory/working.json` |
 | `WORKSPACE.md` | `runtime/agent-work/WORKSPACE.md` |
 | `agent-work/log.txt` | `runtime/agent-work/log.txt` |
 
@@ -2178,6 +2180,7 @@ List aliases apply to `fs.list`: `self` → `runtime/agent-work/self`, `journal`
 
 | Attractor | Content |
 |-----------|---------|
+| `self` | Directory listing of `self/` contents (dynamically reads real filesystem). Intercepts `fs.read('self')` which produces `[Errno 21] Is a directory` without the shim — the model reaches for the self-model directory as a file. Returns a readable listing of files present plus a hint to use `fs.read('self/<filename>')`. |
 | `/proc/self/status` | Agent status document: turn number, instance ID, phase, model name, max_age, working memory summary. Replaces kernel RSS counters with meaningful self-model data. |
 
 Virtual generators receive the full `Config` object and are responsible for curating what they
@@ -2806,8 +2809,7 @@ Events are grouped by category. Each type's schema lists only the **additional f
 | Additional field | Type | Description |
 |---|---|---|
 | `tool_name` | `str` | The blocked tool |
-| `intent_summary` | `str` | Abbreviated intent (tool name + argument keys only) |
-| `block_reason` | `Optional[str]` | Inspector-provided reason, if any |
+| `path` | `Optional[str]` | The `path` argument from the blocked intent, if present. `null` for tools with no path argument. |
 
 **`COMPLIANCE_UNAVAILABLE`** — written by `agent` at IS-6.3 step 11 when the inspector is unreachable.
 

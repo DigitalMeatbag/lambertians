@@ -133,7 +133,7 @@ Models have stable training-data-derived path attractors — paths like `/proc/s
 The semantic shim layer intercepts these paths in the MCP Gateway (before PathResolver) and maps them to meaningful responses. Two mechanisms:
 
 - **Aliases** — bare/intuitive path → real filesystem path (e.g., `self/identity` → `runtime/agent-work/self/identity.md`). The alias target still passes through PathResolver boundary checks. Also applies to `fs.list`.
-- **Virtual files** — path → dynamically synthesized content (e.g., `/proc/self/status` → agent status document with turn number, instance ID, model name, memory state). Short-circuits PathResolver entirely.
+- **Virtual files** — path → dynamically synthesized content (e.g., `/proc/self/status` → agent status document with turn number, instance ID, model name, memory state; `self` → directory listing of `self/` contents, intercepting `fs.read('self')` which would otherwise return `[Errno 21] Is a directory`). Short-circuits PathResolver entirely.
 
 Shim maps are model-profile-keyed. Different models have different attractors. Currently defined for `qwen2.5:32b` and `qwen2.5:14b`. Read-only — writes still require correct full paths, because write path correctness is meaningful Ground (environmental commitment vs. information retrieval).
 
@@ -156,6 +156,13 @@ Every shim activation is logged at INFO level for observability: which shims fir
 **Usage:** `cd witness && npm start`. Ctrl+C to quit. Can be started before or after the agent — shows WAITING until log data arrives.
 
 **Technology:** TypeScript, Ink (React for terminals), tsx runtime. No build step required for development — `npm start` uses tsx directly.
+
+### Operational Scripts
+
+`scripts/` contains PowerShell scripts for managing the stack on the host (Windows):
+
+- **`reset-fresh.ps1`** — lifecycle reset. Stops the agent, clears all runtime state (agent-work except lineage/, memory, pain queues, event stream, fitness, self), clears the ChromaDB episodic collection (mirrors graveyard step 8), restarts the agent. Use before observing a clean lifetime.
+- **`reset-hard.ps1`** — full teardown and rebuild. Stops all services, removes all data volumes (preserving `ollama_data` — ~20GB of model weights), rebuilds all images from source, starts fresh. Prompts for `YES` confirmation. Use when something is deeply broken or a true blank slate is needed.
 
 ---
 

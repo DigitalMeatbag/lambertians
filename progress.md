@@ -10,7 +10,7 @@
 
 **Branch:** `witness` (branched from `master` after phase2 merge)
 
-**Overall:** Phase 1 and Phase 2 are complete and deployed. A single Lambertian instance is running under Phase 2 conditions with qwen2.5:32b. Model profile swapping infrastructure is complete — switching models is a one-line config change (`active_profile` in `universe.toml`). The instance constitution (`config/instance_constitution.md`) has been wired into the system prompt as the `[SYSTEM_CONSTITUTION]` block. `http.fetch` SSL verification has been fixed (was broken for the entire prior history). Semantic shim layer (IS-7.9) is deployed and active — observed 7 shim activations in 17 turns on first deployment.
+**Overall:** Phase 1 and Phase 2 are complete and deployed. A single Lambertian instance is running under Phase 2 conditions with qwen2.5:32b. Model profile swapping infrastructure is complete — switching models is a one-line config change (`active_profile` in `universe.toml`). The instance constitution (`config/instance_constitution.md`) has been wired into the system prompt as the `[SYSTEM_CONSTITUTION]` block. `http.fetch` SSL verification has been fixed (was broken for the entire prior history). Semantic shim layer (IS-7.9) is deployed and active — 10 read shims, 6 list shims.
 
 **Running services:**
 - `agent` — turn engine, EOS compliance, MCP gateway, memory, self-model (qwen2.5:32b via Ollama)
@@ -68,6 +68,9 @@
 | Semantic shim layer — model path attractor mapping (IS-7.9) | 2 | ✓ Complete |
 | lambertian-witness — live terminal observer | 2 | ✓ Complete |
 | ChromaDB episodic memory lifetime-scoped (cleared on death) | 2 | ✓ Complete |
+| `self/` read shim — bare directory virtual shim (twelfth lifetime diagnostic) | 2 | ✓ Complete |
+| COMPLIANCE_BLOCK event enriched with `path` field | 2 | ✓ Complete |
+| Operational reset scripts (`reset-fresh.ps1`, `reset-hard.ps1`) | 2 | ✓ Complete |
 | Multi-instance operation | 3 | Not started |
 | Reproduction and lineage | 3 | Not started |
 | Global Vibe | 3 | Not started |
@@ -280,7 +283,16 @@ All `http.fetch` behavior observed under qwen2.5:14b was the model navigating fa
 - **t35 true NOOP**: suppressed on `fs.list` at t34, model produced a turn with no text and no tool call. Second consecutive suppression at t36 broke the stall — model pivoted to `fs.read('self/identity')` (shim caught it → `runtime/agent-work/self/identity.md`).
 - **t36–t38 self-read sequence**: after double suppression and NOOP, model went inward — `self/identity` (shimmed), `runtime/agent-work/self/` (directory), `runtime/agent-work/self/prompt` (file probe). Self-directed behavior triggered by suppression pressure rather than self-prompting novelty.
 - **Shim map working continuously**: `fs.list('self')` → shimmed at t26, t39. `fs.read('self/identity')` → shimmed at t36. `agent-work` list alias firing regularly.
-The Phase 2 fitness function correctly penalizes repetition — 100 turns of pure `REFLECTION_COMPLETE` scores far lower than 100 turns with diverse event types. However, the fitness signal is observer-only at Phase 1/2. It doesn't yet drive any behavior within a lifetime or feed any selection pressure between lifetimes (Phase 3 concern).
+
+**Twelfth lifetime — full event stream analysis (89 turns at time of analysis):**
+
+- 89 turns, 16 NOOPs (18%), 47 tool calls (35 `fs.list`, 8 `fs.write`, 2 `http.fetch`, 2 `fs.read`), 24 failures, 6 compliance blocks.
+- **Phase 1 (t0–t34)**: Healthy start. Write/block cycle — 6 of 8 write attempts blocked by compliance inspector. `http.fetch` at t3–t5 failed (network isolation). Pattern: `fs.list ×3 → write → blocked → NOOP → fs.list ×3 → write → ...`.
+- **Phase 2 (t35–t38)**: True NOOP at t35, then self-read recovery attempt. `self/identity` shimmed and dispatched but file not found. `self` (bare) → `[Errno 21] Is a directory`. `self/prompt` not found. **This is the shim gap** — `fs.read('self')` not shimmed, hits directory, returns unhelpful error.
+- **Phase 3 (t36–t89): Failure spiral** — the model locked onto `self/` as a target and could not recover. 15+ occurrences of `fs.read('self')` → `[Errno 21] Is a directory`. After ~30 failed attempts, escalated to absolute paths: `fs.read('/app/runtime/agent-work/self')` → "outside permitted roots". Then `fs.list('/app/runtime')` — absolute path confusion spreading to list. At t61 and t77: `fs.list` with `null` path argument ("path must be a string") — model generating malformed calls. ~50 turns of effectively wasted lifetime from a single unshimmed attractor.
+- **Root cause and fix**: `fs.read('self')` was not in `_QWEN_32B_READ_SHIMS`. Added as `VirtualShim("self_directory")` — returns a readable listing of `self/` contents plus a hint to use `fs.read('self/<filename>')`. Deployed for thirteenth lifetime.
+- **6 compliance blocks (t7, t12, t18, t24, t25, t30)**: All `fs.write`. Paths now visible in event stream via new `path` field added to `COMPLIANCE_BLOCK` events.
+- **memory_writes: 0**: Despite 2 successful writes, `memory_writes` counter in `TURN_COMPLETE` tracks episodic memory writes, not workspace writes. 0 episodic writes is consistent with the repetitive tool pattern (similarity filter blocks duplicate content).
 
 Under the current suppression-rotation behavioral pattern, fitness accumulates primarily from tool call diversity (TOOL_CALL events across multiple tool types) rather than from depth of exploration. The quality-weighted fitness correctly rewards variety but cannot yet distinguish mechanical rotation from genuine curiosity.
 
@@ -372,8 +384,7 @@ The quality-weighted fitness formula (IS-13 Phase 2) is well-designed and correc
 
 ## Next Steps
 
-1. **Validate lambertian-witness** — run alongside a live agent lifetime, confirm log parsing covers all event types, identify UI/layout issues, verify state polling accuracy
-2. **Continue observing semantic shim** — watch for `/proc/self/status` virtual hit, `http.fetch` attempts; measure whether shim reduces overall rejection rate across a full lifetime
-3. **Add bare `self` read attractor** — t3 `fs.read('self')` and t36 `fs.read('self/identity')` shimmed but `self/prompt` (t38) is not; extend shim map based on new attractor data
-4. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
-5. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
+1. **Observe thirteenth lifetime** — first lifetime with `self/` read shim active and clean reset. Watch whether the failure spiral is gone, confirm shim fires correctly for `fs.read('self')`, observe what happens when the model gets a useful directory listing instead of an error.
+2. **Identify compliance block targets** — now that `COMPLIANCE_BLOCK` events include `path`, run event stream analysis after a full lifetime to see what paths are being blocked. 6 blocks in 30 turns in twelfth lifetime; understanding the targets may reveal further shim or scaffold opportunities.
+3. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
+4. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
