@@ -434,6 +434,26 @@ class TestHttpFetch:
         assert result.success is False
         assert result.error_type == "mcp_rejection"
 
+    def test_default_user_agent_sent(self, config: Config, resolver: PathResolver) -> None:
+        """Gateway sets a default User-Agent on all http.fetch requests."""
+        mock_response = MagicMock(spec=httpx.Response)
+        mock_response.status_code = 200
+        mock_response.text = "ok"
+        mock_response.headers = httpx.Headers({"content-type": "text/plain"})
+
+        mock_instance = MagicMock()
+        mock_instance.__enter__ = MagicMock(return_value=mock_instance)
+        mock_instance.__exit__ = MagicMock(return_value=False)
+        mock_instance.get.return_value = mock_response
+
+        with patch("lambertian.mcp_gateway.gateway.httpx.Client", return_value=mock_instance) as mock_cls:
+            gw = McpGateway(config, resolver)  # no injected client
+            gw.dispatch(make_intent("http.fetch", {"url": "https://example.com"}))
+
+            headers = mock_cls.call_args.kwargs.get("headers", {})
+            assert "User-Agent" in headers
+            assert "lambertian" in headers["User-Agent"].lower()
+
 
 # ---------------------------------------------------------------------------
 # Unknown tool

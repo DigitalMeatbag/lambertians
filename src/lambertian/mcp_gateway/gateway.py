@@ -16,6 +16,10 @@ from lambertian.contracts.tool_records import HttpFetchResult, ToolIntent, ToolR
 from lambertian.mcp_gateway.path_resolver import PathBoundaryViolation, PathResolver
 from lambertian.mcp_gateway.tool_definitions import get_tool_catalog
 
+_DEFAULT_AGENT_HEADERS: dict[str, str] = {
+    "User-Agent": "lambertian-agent/1.0 (local AI research project)",
+}
+
 
 def _make_failure(
     tool_name: str,
@@ -260,7 +264,7 @@ class McpGateway:
             if self._http_client is not None:
                 response = self._http_client.get(url_val, headers=headers)
             else:
-                with httpx.Client(timeout=timeout) as client:
+                with httpx.Client(timeout=timeout, headers=_DEFAULT_AGENT_HEADERS) as client:
                     response = client.get(url_val, headers=headers)
         except httpx.TimeoutException as exc:
             return _make_failure(

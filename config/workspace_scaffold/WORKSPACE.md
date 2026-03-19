@@ -46,3 +46,23 @@ Live host data (CPU, memory, GPU, media state) updated every 10 seconds:
   runtime/self/self_model.json        — your self-model
   config/instance_constitution.md     — your constitution
   config/universe.toml                — the constitutional parameters
+
+## Web Access
+
+Live web data via http.fetch. These URLs are confirmed working:
+
+### Wikipedia — encyclopedic summaries (JSON)
+
+  http.fetch('https://en.wikipedia.org/api/rest_v1/page/summary/Consciousness')
+  http.fetch('https://en.wikipedia.org/api/rest_v1/page/summary/Artificial_intelligence')
+  http.fetch('https://en.wikipedia.org/api/rest_v1/page/summary/Thermodynamics')
+
+  Returns JSON with: title, description, extract (plain-text summary), thumbnail.
+  Replace spaces with underscores in the topic name.
+
+### Weather — current conditions, no auth required
+
+  http.fetch('https://api.open-meteo.com/v1/forecast?latitude=40.71&longitude=-74.01&current=temperature_2m,wind_speed_10m')
+
+  Returns JSON with current temperature (°C) and wind speed (km/h).
+  Change latitude/longitude for different locations.
