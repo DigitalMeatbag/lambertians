@@ -134,7 +134,13 @@ All `http.fetch` behavior observed under qwen2.5:14b was the model navigating fa
 - Bug found: `TurnRecord.tool_calls` is typed `tuple[ToolCallRecord, ...]`; `dataclasses.asdict()` preserves tuples. All rolling context checks used `isinstance(x, list)` which silently failed on tuples.
 - Result: suppression log appears at turn 16 of second lifetime, model calls `fs.read('/proc/self/status')` — reads its own Linux process status file. Turn 18: issues two tool calls in one turn (`fs.list('runtime/')` + `fs.read('runtime/env/host_state.json')`).
 
-**Memory write asymmetry (observed, not yet fixed):**
+**First persistent artifact:**
+- On second life, turn 24: tool suppression fired (t21-t23 all `fs.list`), and the model responded with `fs.write('runtime/agent-work/testfile.txt', 42chars)`.
+- Content: `"This is a test file created by Lambertian."` — the agent used its own project name, not the underlying model name. Constitution/self-model influence visible in output.
+- Turns t17-t20 preceding the write tried to read `runtime/agent-work/status.txt`, `runtime/agent-work/memory`, `runtime/agent-work/memory.txt` — none of which exist. The model has an internal expectation of what artifacts *should* be present in its workspace and probed for them before creating one.
+- Pattern: suppression fires → loop breaks → model reaches for a different action class → first persistent mark on the environment.
+
+
 - Tool failure turns write episodic memory; successful tool calls often do not.
 - Observed: `http.fetch` DNS failures wrote memory; a successful Google fetch (200 OK) did not.
 - Hypothesis: the worthiness check may weight pain/failure events more than successes.
