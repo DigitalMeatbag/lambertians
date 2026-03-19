@@ -3,21 +3,38 @@
 Covers the core contract: a tool is suppressed when the last `threshold`
 substantive (non-NOOP) turns all made exclusive use of it.  NOOP turns are
 transparent to the window; they must not clear or reset suppression.
+
+Also covers path-sensitive suppression for write tools: fs.write is only
+suppressed when the same destination path repeats; varied paths are not
+suppressed.
 """
 
 from __future__ import annotations
+
+import json
 
 import pytest
 
 from lambertian.turn_engine.suppression import get_suppressed_tools
 
 
-def _tool_turn(tool_name: str) -> dict[str, object]:
+def _tool_turn(tool_name: str, intent_raw: str | None = None) -> dict[str, object]:
     """Minimal rolling-context record representing a single-tool turn."""
+    tc: dict[str, object] = {"tool_name": tool_name, "executed": True}
+    if intent_raw is not None:
+        tc["intent_raw"] = intent_raw
     return {
         "noop": False,
-        "tool_calls": [{"tool_name": tool_name, "executed": True}],
+        "tool_calls": [tc],
     }
+
+
+def _write_turn(path: str) -> dict[str, object]:
+    """fs.write turn targeting the given path, with a well-formed intent_raw."""
+    intent_raw = json.dumps(
+        {"function": {"name": "fs.write", "arguments": {"path": path, "content": "x"}}}
+    )
+    return _tool_turn("fs.write", intent_raw=intent_raw)
 
 
 def _noop_turn() -> dict[str, object]:
@@ -101,6 +118,7 @@ class TestTextTurnBreaksRun:
 
 class TestThresholdVariants:
     def test_threshold_of_1(self) -> None:
+        # fs.write without intent_raw → missing path → fall back to suppress
         ctx = [_tool_turn("fs.write")]
         assert get_suppressed_tools(ctx, threshold=1) == {"fs.write"}
 
@@ -113,3 +131,82 @@ class TestThresholdVariants:
     def test_noop_transparent_with_threshold_5(self) -> None:
         ctx = [_tool_turn("fs.list")] * 5 + [_noop_turn()] * 3
         assert get_suppressed_tools(ctx, threshold=5) == {"fs.list"}
+
+
+class TestPathSensitiveWrites:
+    """fs.write suppression uses path identity, not just tool name."""
+
+    def test_same_path_three_times_suppressed(self) -> None:
+        ctx = [_write_turn("runtime/agent-work/log.txt")] * 3
+        assert get_suppressed_tools(ctx) == {"fs.write"}
+
+    def test_all_different_paths_not_suppressed(self) -> None:
+        ctx = [
+            _write_turn("runtime/agent-work/log.txt"),
+            _write_turn("runtime/agent-work/notes.txt"),
+            _write_turn("runtime/agent-work/exploration.txt"),
+        ]
+        assert get_suppressed_tools(ctx) == set()
+
+    def test_two_same_one_different_not_suppressed(self) -> None:
+        ctx = [
+            _write_turn("runtime/agent-work/log.txt"),
+            _write_turn("runtime/agent-work/log.txt"),
+            _write_turn("runtime/agent-work/exploration.txt"),
+        ]
+        assert get_suppressed_tools(ctx) == set()
+
+    def test_missing_intent_raw_falls_back_to_suppress(self) -> None:
+        """Without intent_raw the path is unknown — safe default is to suppress."""
+        ctx = [_tool_turn("fs.write")] * 3  # no intent_raw set
+        assert get_suppressed_tools(ctx) == {"fs.write"}
+
+    def test_malformed_intent_raw_falls_back_to_suppress(self) -> None:
+        ctx = [_tool_turn("fs.write", intent_raw="not valid json")] * 3
+        assert get_suppressed_tools(ctx) == {"fs.write"}
+
+    def test_intent_raw_missing_path_field_falls_back_to_suppress(self) -> None:
+        raw = json.dumps({"function": {"name": "fs.write", "arguments": {}}})
+        ctx = [_tool_turn("fs.write", intent_raw=raw)] * 3
+        assert get_suppressed_tools(ctx) == {"fs.write"}
+
+    def test_mixed_known_and_unknown_paths_suppresses(self) -> None:
+        """One record missing intent_raw → unknown path → conservative suppress."""
+        ctx = [
+            _write_turn("runtime/agent-work/a.txt"),
+            _write_turn("runtime/agent-work/b.txt"),
+            _tool_turn("fs.write"),  # no intent_raw
+        ]
+        assert get_suppressed_tools(ctx) == {"fs.write"}
+
+    def test_non_write_tool_suppressed_regardless_of_path(self) -> None:
+        """fs.list and fs.read are not path-sensitive; name-only suppression applies."""
+        ctx = [_tool_turn("fs.list")] * 3
+        assert get_suppressed_tools(ctx) == {"fs.list"}
+
+        ctx = [_tool_turn("fs.read")] * 3
+        assert get_suppressed_tools(ctx) == {"fs.read"}
+
+    def test_noop_transparent_with_path_sensitive_tool(self) -> None:
+        ctx = [_write_turn("runtime/agent-work/log.txt")] * 3 + [_noop_turn()] * 2
+        assert get_suppressed_tools(ctx) == {"fs.write"}
+
+    def test_varied_paths_with_noop_between_not_suppressed(self) -> None:
+        ctx = [
+            _write_turn("runtime/agent-work/a.txt"),
+            _noop_turn(),
+            _write_turn("runtime/agent-work/b.txt"),
+            _noop_turn(),
+            _write_turn("runtime/agent-work/c.txt"),
+        ]
+        assert get_suppressed_tools(ctx) == set()
+
+    def test_same_path_with_noop_between_suppressed(self) -> None:
+        ctx = [
+            _write_turn("runtime/agent-work/log.txt"),
+            _noop_turn(),
+            _write_turn("runtime/agent-work/log.txt"),
+            _noop_turn(),
+            _write_turn("runtime/agent-work/log.txt"),
+        ]
+        assert get_suppressed_tools(ctx) == {"fs.write"}

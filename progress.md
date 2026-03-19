@@ -60,6 +60,7 @@
 | First complete lifecycle (500 turns, max_age death) | 2 | ✓ Complete |
 | Memory write asymmetry fix (silent-call models) | 2 | ✓ Complete |
 | NOOP loophole fix — suppression escape (32b variant) | 2 | ✓ Complete |
+| Path-based write suppression (fs.write: different paths not suppressed) | 2 | ✓ Complete |
 | Multi-instance operation | 3 | Not started |
 | Reproduction and lineage | 3 | Not started |
 | Global Vibe | 3 | Not started |
@@ -142,10 +143,7 @@ All `http.fetch` behavior observed under qwen2.5:14b was the model navigating fa
 - Pattern: suppression fires → loop breaks → model reaches for a different action class → first persistent mark on the environment.
 
 
-- Tool failure turns write episodic memory; successful tool calls often do not.
-- Observed: `http.fetch` DNS failures wrote memory; a successful Google fetch (200 OK) did not.
-- Hypothesis: the worthiness check may weight pain/failure events more than successes.
-- **Resolved — see Memory Write Asymmetry section below.**
+- Tool suppression fires after 3 consecutive exclusive uses of the same tool. For **write tools** (`fs.write`), suppression is path-aware: only fires when the same destination path repeats. Three writes to three different files are not suppressed — that's exploration. Three writes to the same file are suppressed — that's a loop. `fs.list`, `fs.read`, and `http.fetch` use name-only suppression (no path logic needed for read tools).
 
 **First complete lifecycle:**
 - Second instance ran 500 turns (max_age = 500) and died cleanly via `max_age` death trigger.
