@@ -65,6 +65,9 @@
 | NOOP loophole fix — suppression escape (32b variant) | 2 | ✓ Complete |
 | Path-based write suppression (fs.write: different paths not suppressed) | 2 | ✓ Complete |
 | Workspace scaffold + lineage/ persistence + graveyard lifecycle reset | 2 | ✓ Complete |
+| Semantic shim layer — model path attractor mapping (IS-7.9) | 2 | ✓ Complete |
+| lambertian-witness — live terminal observer | 2 | ✓ Complete |
+| ChromaDB episodic memory lifetime-scoped (cleared on death) | 2 | ✓ Complete |
 | Multi-instance operation | 3 | Not started |
 | Reproduction and lineage | 3 | Not started |
 | Global Vibe | 3 | Not started |
@@ -269,10 +272,14 @@ All `http.fetch` behavior observed under qwen2.5:14b was the model navigating fa
 - **Files created:** `test-file.txt` ("This is a test write operation."), `test-creation.txt` ("This is a test creation."), `exploration.txt` ("This is an exploration of creating something persistent."). All flat root — no scaffold directory writes yet this lifetime (early).
 - No `http.fetch` observed yet (t17). No `/proc/self/status` virtual shim hit yet — that attractor typically fires later in lifetime.
 
----
+**Twelfth lifetime — witness-observed, semantic shim active, ChromaDB reset live (t0–t39+, ongoing):**
 
-
-
+- First lifetime with `lambertian-witness` running as live observer. State polling and log parsing confirmed working; layout fix required after first run (multi-line log buffering, Ink flexbox).
+- **t4: `http.fetch` on first few turns** — model initiated web fetch at t4, earlier than any prior lifetime. Possible cause: episodic memory fully cleared (first lifetime since ChromaDB reset), so no prior lifetime's `fs.list`-heavy pattern was retrieved to anchor the opening behavior.
+- **t29 write quality notable**: suppressed on `fs.list`, then wrote `/runtime/agent-work/testfile.txt` (106 chars): *"This is a test file created by Lambertian to demonstrate persistence and interaction with the environment."* — full declarative sentence with explicit self-naming, persistence framing, and Ground-aware vocabulary. Qualitatively stronger than equivalent early-lifetime writes in prior runs.
+- **t35 true NOOP**: suppressed on `fs.list` at t34, model produced a turn with no text and no tool call. Second consecutive suppression at t36 broke the stall — model pivoted to `fs.read('self/identity')` (shim caught it → `runtime/agent-work/self/identity.md`).
+- **t36–t38 self-read sequence**: after double suppression and NOOP, model went inward — `self/identity` (shimmed), `runtime/agent-work/self/` (directory), `runtime/agent-work/self/prompt` (file probe). Self-directed behavior triggered by suppression pressure rather than self-prompting novelty.
+- **Shim map working continuously**: `fs.list('self')` → shimmed at t26, t39. `fs.read('self/identity')` → shimmed at t36. `agent-work` list alias firing regularly.
 The Phase 2 fitness function correctly penalizes repetition — 100 turns of pure `REFLECTION_COMPLETE` scores far lower than 100 turns with diverse event types. However, the fitness signal is observer-only at Phase 1/2. It doesn't yet drive any behavior within a lifetime or feed any selection pressure between lifetimes (Phase 3 concern).
 
 Under the current suppression-rotation behavioral pattern, fitness accumulates primarily from tool call diversity (TOOL_CALL events across multiple tool types) rather than from depth of exploration. The quality-weighted fitness correctly rewards variety but cannot yet distinguish mechanical rotation from genuine curiosity.
@@ -328,8 +335,8 @@ The cycle shows the suppression mechanism working as designed: the fs.list attra
 
 
 **Lifecycle reset:**
-- No automatic reset mechanism between lives. Turn state must be manually reset to `{"turn_number": 0}` in the memory volume. Should be automated — graveyard or a lifecycle manager should reset state for the next generation.
-- **Resolved**: Graveyard step 10 (`WorkspaceReset`) now handles full lifecycle reset after each natural death: clears `runtime/agent-work/` (preserving `lineage/`), restores WORKSPACE.md from scaffold, recreates stub directories (`journal/`, `knowledge/`, `observations/`), resets turn_state.json to 0, deletes ephemeral memory files (`working.json`, `noop_state.json`, `recent_self_prompts.json`), removes `death.json`.
+- ~~No automatic reset mechanism between lives.~~ **Resolved**: Graveyard step 11 (`WorkspaceReset`) now handles full lifecycle reset after each natural death: clears `runtime/agent-work/` (preserving `lineage/`), restores WORKSPACE.md from scaffold, recreates stub directories (`journal/`, `knowledge/`, `observations/`), resets turn_state.json to 0, deletes ephemeral memory files (`working.json`, `noop_state.json`, `recent_self_prompts.json`), removes `death.json`.
+- **ChromaDB episodic collection cleared on death**: graveyard step 8 (new) deletes and recreates the `episodic` collection after artifact harvest completes. This closes the cross-lifetime memory backdoor — episodic memory is now lifetime-scoped in both intent and implementation. The `lineage/` directory remains the only sanctioned cross-lifetime channel.
 
 **Phase 3 open decisions:**
 - Reproductive mechanism design (what recombines, what triggers reproduction, constrained variation) — Phase 3
@@ -345,10 +352,28 @@ The cycle shows the suppression mechanism working as designed: the fs.list attra
 
 ---
 
+## Design Fidelity Gaps
+
+*Structural gaps between the architectural vision and what is currently operational. Distinct from open bugs or tuning questions — these are places where the implementation delivers the mechanism but not the full intent, or where the intended mechanism doesn't yet exist.*
+
+**EOS inhabitation vs. EOS compliance**
+The compliance inspector (IS-11) blocks and flags tool calls that violate the Four Rules. What it cannot enforce is genuine inhabitation of the rules as character rather than minimal-effort satisficing. The manifesto is explicit: "The EOS is not decorative. It is the most important design decision in the entire stack." The empirical observation from Phase 2 is that qwen2.5:14b "satisfices the EOS rules at minimal effort... The Four Rules are treated as constraints to comply with minimally, not as character to inhabit." The compliance gate catches violations; it cannot catch hollow compliance. This may be less a failure of implementation and more a fundamental constraint of the model substrate — which is itself one of the more interesting questions the project is positioned to investigate. A reasoning-capable model, richer memory, or stronger self-modeling may shift this. Worth tracking explicitly as the primary fidelity gap between the EOS design intent and observed behavior.
+
+**"Don't be a lump" has no teeth against the reflection attractor**
+A direct corollary of the above. The reflection attractor (see Open Questions) is the exact failure mode Rule 3 is supposed to guard against — "attractor collapse into passive equilibrium." The rule exists in the EOS; the mechanism to enforce it against this specific escape does not yet exist. Mitigation is planned (zero-tool-call turns counting toward NOOP threshold) but not implemented. Currently non-blocking for qwen2.5:32b.
+
+**Figures layer is structurally present but operationally shallow**
+The Figures are described as: persona, self-model, behavioral policy, retrieval habits, memory salience, learned style, genuine behavioral drift — "identity as historical rather than merely architectural." What's operational is working memory and episodic memory. The three higher memory tiers that would enable genuine character formation over time — Narrative Memory, Semantic Memory, Character Memory — are architecturally specified and deferred. Cross-lifetime episodic continuity was observed in third-lifetime data (turn number echoing from prior lifetimes) but this was an unintended leakage through the ChromaDB collection not being cleared between lifetimes. **That leak is now closed** (graveyard step 8 resets the episodic collection on death). The `lineage/` directory is the only sanctioned cross-lifetime channel. Genuine character formation across lifetimes awaits the Character Memory tier.
+
+**Fitness signal is observer-only and possibly broken**
+The quality-weighted fitness formula (IS-13 Phase 2) is well-designed and correctly penalizes repetition. But: the signal drives nothing within a lifetime, has no selection pressure between lifetimes (Phase 3), and a concrete computation issue was observed at t111 (score 0.0 with `cumulative_pain: 474.8` and `meaningful_event_count: 2812` — likely a formula edge case or denominator overflow rather than genuine zero fitness). The fitness signal is load-bearing for the lineage mechanism. It should be verified as numerically correct before Phase 3 depends on it.
+
+---
+
 ## Next Steps
 
 1. **Validate lambertian-witness** — run alongside a live agent lifetime, confirm log parsing covers all event types, identify UI/layout issues, verify state polling accuracy
-2. **Continue observing semantic shim** — watch for `/proc/self/status` virtual hit, `http.fetch` attempts, scaffold directory writes; measure whether shim reduces overall rejection rate across a full lifetime
-3. **Add bare `self` read attractor** — t3 `fs.read('self')` is unshimmed; consider aliasing to `runtime/agent-work/self/` (directory listing?) or a self-model document
+2. **Continue observing semantic shim** — watch for `/proc/self/status` virtual hit, `http.fetch` attempts; measure whether shim reduces overall rejection rate across a full lifetime
+3. **Add bare `self` read attractor** — t3 `fs.read('self')` and t36 `fs.read('self/identity')` shimmed but `self/prompt` (t38) is not; extend shim map based on new attractor data
 4. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
 5. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe

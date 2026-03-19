@@ -174,7 +174,12 @@ The mortal threshold operates as follows:
 - D4(2): single pain event severity above 0.95 → immediate death
 - D4(3): turn counter reaches `universe.max_age_turns` → death
 
-On death: the agent process stops immediately. The graveyard service harvests episodic memory, event log, stress history, pain event history, and fitness score. After harvest, the graveyard performs a lifecycle reset: it clears the agent's writable workspace (except `lineage/`), restores the pre-seeded scaffold (`WORKSPACE.md`, `journal/`, `knowledge/`, `observations/`, `self/`), resets turn state, and removes the death record. The next instance starts in a clean, oriented environment. Nothing from the harvest flows back to any living instance — but any files the dying agent placed in `lineage/` are present for its successor.
+On death: the agent process stops immediately. The graveyard service harvests episodic memory, event log, stress history, pain event history, and fitness score. After harvest, the graveyard performs a lifecycle reset:
+
+1. Clears the ChromaDB `episodic` collection (delete-and-recreate). Episodic memory is lifetime-scoped — the disk harvest is the archival record, and the live collection must not carry over to the next lifetime. The `lineage/` directory is the only sanctioned cross-lifetime continuity channel.
+2. Clears the agent's writable workspace (except `lineage/`), restores the pre-seeded scaffold (`WORKSPACE.md`, `journal/`, `knowledge/`, `observations/`, `self/`), resets turn state, and removes the death record.
+
+The next instance starts with a clean memory slate and an oriented workspace. Nothing from the harvest flows back to any living instance — but any files the dying agent placed in `lineage/` are present for its successor.
 
 ---
 
@@ -184,7 +189,7 @@ Phase 1 implements Working Memory (in-process JSON file) and Episodic Memory (Ch
 
 Working memory holds a short free-text blob summarizing the agent's active concerns. It is rebuilt by the agent each turn from current context. Not an archive — just the present state of attention.
 
-Episodic memory stores events worth retaining: non-trivial, non-repetitive moments. Retrieved by semantic similarity at the start of each turn to seed context. Write cap: 3 entries per turn. For models that make silent tool calls (no response text), a structured summary of tool results is synthesized and written instead — ensuring the store receives meaningful content regardless of model verbosity.
+Episodic memory stores events worth retaining: non-trivial, non-repetitive moments. Retrieved by semantic similarity at the start of each turn to seed context. Write cap: 3 entries per turn. For models that make silent tool calls (no response text), a structured summary of tool results is synthesized and written instead — ensuring the store receives meaningful content regardless of model verbosity. The collection is cleared on each death by the graveyard before workspace reset — episodic memory is lifetime-scoped.
 
 Self-prompting novelty is also managed through memory: a ring buffer of recent self-prompts is tracked, and new prompts are compared by cosine similarity to prevent repetition collapse.
 
