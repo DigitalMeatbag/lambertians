@@ -169,13 +169,13 @@ class TestLeadingSlashNormalization:
         self, resolver: PathResolver, tmp_path: Path
     ) -> None:
         # Boundary violation error should include the path hint.
-        with pytest.raises(PathBoundaryViolation, match="Paths must be relative"):
+        with pytest.raises(PathBoundaryViolation, match="Tools work"):
             resolver.resolve_list(str(tmp_path / "hidden"))
 
     def test_write_boundary_violation_message_contains_hint(
         self, resolver: PathResolver, tmp_path: Path
     ) -> None:
         target = tmp_path / "runtime" / "memory" / "file.txt"
-        with pytest.raises(PathBoundaryViolation, match="Paths must be relative"):
+        with pytest.raises(PathBoundaryViolation, match="Tools work"):
             resolver.resolve_write(str(target))
 

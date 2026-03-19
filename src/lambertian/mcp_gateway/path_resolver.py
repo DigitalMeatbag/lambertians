@@ -10,10 +10,10 @@ class PathBoundaryViolation(Exception):
 
 
 _PATH_HINT = (
-    "Paths must be relative (no leading slash). "
-    "Try: fs.list('runtime/') to discover, "
-    "fs.read('runtime/env/host_state.json'), "
-    "fs.write('runtime/agent-work/notes.txt', ...)."
+    "Tools work — use a valid path. "
+    "fs.list('runtime/') lists all subdirectories. "
+    "fs.read('runtime/env/host_state.json') reads live host telemetry. "
+    "fs.write('runtime/agent-work/notes.txt', content) saves to your workspace."
 )
 
 
