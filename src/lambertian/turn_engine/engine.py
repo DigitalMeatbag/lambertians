@@ -32,6 +32,7 @@ from lambertian.turn_engine.adaptation_detector import detect_adaptation
 from lambertian.turn_engine.compliance_client import ComplianceClient, ComplianceUnavailableError
 from lambertian.turn_engine.prompt_assembler import TurnPromptAssembler
 from lambertian.turn_engine.self_prompt import SelfPromptGenerator
+from lambertian.turn_engine.suppression import get_suppressed_tools
 from lambertian.turn_engine.turn_state import TurnStateStore
 
 logger = logging.getLogger(__name__)
@@ -287,7 +288,8 @@ class TurnEngine:
 
         # Step 9: Model inference.
         # Suppress tools called exclusively for the last N turns to break repetition loops.
-        suppressed_tools = self._get_suppressed_tools()
+        # NOOP turns are transparent to the suppression window (see suppression.py).
+        suppressed_tools = get_suppressed_tools(list(self._rolling_context))
         full_catalog = self._mcp_gateway.get_tool_catalog()
         if suppressed_tools:
             filtered_catalog = [
@@ -736,26 +738,3 @@ class TurnEngine:
 
     def _format_episodic_block(self, episodes: list[str]) -> str:
         return "[SYSTEM_MEMORY_EPISODIC]\n\n" + "\n---\n".join(episodes)
-
-    def _get_suppressed_tools(self, threshold: int = 3) -> set[str]:
-        """Return tool names to suppress due to N consecutive turns of exclusive use.
-
-        If the last `threshold` turns all called exactly the same single tool and
-        nothing else, that tool is suppressed for this turn to force diversification.
-        Returns empty set when no suppression is warranted.
-        """
-        if (
-            len(self._rolling_context) < threshold
-        ):
-            return set()
-        recent = list(self._rolling_context)[-threshold:]
-        tool_names_seen: list[str] = []
-        for record in recent:
-            tool_calls = record.get("tool_calls", ())
-            if not isinstance(tool_calls, (list, tuple)) or not tool_calls:
-                return set()  # A NOOP turn breaks the run — no suppression
-            for tc in tool_calls:
-                if isinstance(tc, dict) and tc.get("tool_name"):
-                    tool_names_seen.append(str(tc["tool_name"]))
-        unique = set(tool_names_seen)
-        return unique if len(unique) == 1 else set()
