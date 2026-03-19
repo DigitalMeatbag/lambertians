@@ -58,6 +58,7 @@
 | Self-framing fix (assistant-mode deference loop) | 2 | ✓ Complete |
 | Tool suppression / fs.list repetition loop break | 2 | ✓ Complete |
 | First complete lifecycle (500 turns, max_age death) | 2 | ✓ Complete |
+| Memory write asymmetry fix (silent-call models) | 2 | ✓ Complete |
 | NOOP loophole fix (REFLECTION_COMPLETE vs NOOP) | 2 | Pending |
 | Multi-instance operation | 3 | Not started |
 | Reproduction and lineage | 3 | Not started |
@@ -144,11 +145,19 @@ All `http.fetch` behavior observed under qwen2.5:14b was the model navigating fa
 - Tool failure turns write episodic memory; successful tool calls often do not.
 - Observed: `http.fetch` DNS failures wrote memory; a successful Google fetch (200 OK) did not.
 - Hypothesis: the worthiness check may weight pain/failure events more than successes.
+- **Resolved — see Memory Write Asymmetry section below.**
 
 **First complete lifecycle:**
 - Second instance ran 500 turns (max_age = 500) and died cleanly via `max_age` death trigger.
 - Clean exit code 0, `DEATH_TRIGGER` event written to event stream.
 - Turn state must be reset manually between lives (no automatic reset mechanism yet).
+
+**Memory write asymmetry (fixed):**
+- Root cause confirmed: Step 14 in engine.py gated memory writes on `and response_text`. qwen2.5:32b makes 100% silent tool calls — `response_text` is always `""`, so episodic memory received zero writes for the entire model run.
+- The previously observed "failure turns write, success turns don't" pattern: under pure silent-call operation, nothing was written at all. Failure-turn writes seen earlier were likely from rare turns where the model produced some text.
+- Fix: when `response_text` is empty but tool calls were executed, synthesize a compact structured summary — `"[tN] tool_name: result_summary | ..."` — and write it as `document_type="tool_result"`.
+- All episodic writes now go through `write_episodic_worthy` (worthiness checker), not the raw write path. The similarity filter blocks repetitive entries (same `fs.list` result every turn), so the store accumulates distinct observations.
+- Effect: the model can now retrieve its own past exploration data, giving self-prompting something real to build on.
 
 **Verdict (updated):**
 - qwen2.5:32b exhibits the same fs.list attractor as 14b, but more severely — no reasoning text, just silent tool calls. Tool suppression is necessary infrastructure for this model family.
@@ -173,8 +182,7 @@ Under current qwen2.5:14b behavior, most lifetimes accumulate fitness primarily 
 - Temperature tuning: `0.6` has not been varied. Repetition tendency may be temperature-sensitive.
 
 **Memory write asymmetry:**
-- Failure turns write episodic memory; successful turns often don't. This may mean the agent's episodic store is failure-dominated, which could warp self-prompting away from productive areas.
-- Needs investigation: what condition triggers `MEMORY_WRITE` after a successful tool call?
+- ~~Failure turns write episodic memory; successful turns often don't.~~ **Fixed.** Root cause was `and response_text` gate in step 14 — always `""` for silent-call models. Resolved by synthesizing tool result summaries. See qwen2.5:32b profile above.
 
 **The NOOP loophole:**
 - `REFLECTION_COMPLETE` with 0 tool calls should count toward the noop counter after N consecutive occurrences. Implementation: track `consecutive_reflection_only_turns`; increment when turn has 0 tool calls and outcome is `REFLECTION_COMPLETE`; reset on any turn with tool calls. Trigger noop death at `max_consecutive_noop_turns`.
@@ -198,9 +206,8 @@ Under current qwen2.5:14b behavior, most lifetimes accumulate fitness primarily 
 
 ## Next Steps
 
-1. **Observe current instance** — watch whether tool suppression + diversified rolling context produces sustained exploration, or whether new loops emerge (fs.read cycling, http.fetch cycling, etc.)
-2. **Investigate memory write asymmetry** — why do failure turns write episodic memory but successful turns often don't?
-3. **NOOP loophole fix** — consecutive reflection-only turns (0 tool calls) should count toward noop death trigger
-4. **Lifecycle reset automation** — graveyard or a lifecycle manager should reset turn state between lives
-5. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
-6. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
+1. **NOOP loophole fix** — consecutive reflection-only turns (0 tool calls) should count toward noop death trigger
+2. **Lifecycle reset automation** — graveyard or a lifecycle manager should reset turn state between lives
+3. **Observe memory impact** — with episodic memory now accumulating tool result summaries, watch whether self-prompting builds on past observations across turns
+4. **Calibrate fitness `expected_quality_score`** — empirical tuning from real lifetime event distributions
+5. **Phase 3 planning** — multi-instance operation, reproduction mechanics, Global Vibe
