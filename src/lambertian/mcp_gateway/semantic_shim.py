@@ -141,6 +141,34 @@ class SemanticShimRegistry:
 # ---------------------------------------------------------------------------
 
 
+def generate_self_directory(config: Config) -> str:
+    """Directory listing for fs.read('self') — model reaches for self/ as a file.
+
+    Returns a readable listing of files present in self/ so the model knows what
+    exists to read. Prevents repeated [Errno 21] Is a directory failure loops.
+    """
+    self_path = Path(config.paths.runtime_root) / "agent-work" / "self"
+    if not self_path.exists():
+        return (
+            "self/ — directory does not exist yet.\n"
+            "Use fs.write('runtime/agent-work/self/<filename>', ...) to create files here."
+        )
+
+    files = sorted(p.name for p in self_path.iterdir() if p.is_file())
+    if not files:
+        return (
+            "self/ — directory exists but contains no files.\n"
+            "Use fs.write('runtime/agent-work/self/<filename>', ...) to create files here."
+        )
+
+    lines = ["self/ contains:"]
+    for f in files:
+        lines.append(f"  self/{f}")
+    lines.append("")
+    lines.append("Use fs.read('self/<filename>') to read a specific file.")
+    return "\n".join(lines)
+
+
 def generate_agent_status(config: Config) -> str:
     """Synthesize a meaningful agent status document.
 
@@ -187,6 +215,7 @@ def generate_agent_status(config: Config) -> str:
 # Observed qwen2.5:32b attractors across lifetimes 1–10 (200+ turns).
 _QWEN_32B_READ_SHIMS: dict[str, ShimEntry] = {
     # Self-model attractors — model reaches for identity/state/constitution
+    "self": VirtualShim("self_directory"),
     "self/identity": AliasShim("runtime/agent-work/self/identity.md"),
     "self/status": AliasShim("runtime/agent-work/self/state.md"),
     "self/constitution": AliasShim("runtime/agent-work/self/constitution.md"),
@@ -212,6 +241,7 @@ _QWEN_32B_LIST_SHIMS: dict[str, AliasShim] = {
 }
 
 _VIRTUAL_GENERATORS: dict[str, VirtualGenerator] = {
+    "self_directory": generate_self_directory,
     "agent_status": generate_agent_status,
 }
 

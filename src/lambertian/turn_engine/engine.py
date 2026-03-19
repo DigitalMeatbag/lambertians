@@ -390,7 +390,10 @@ class TurnEngine:
                     "COMPLIANCE_BLOCK",
                     turn_number,
                     "agent",
-                    {"tool_name": intent.tool_name},
+                    {
+                        "tool_name": intent.tool_name,
+                        "path": intent.arguments.get("path"),
+                    },
                 )
                 tool_call_records.append(
                     ToolCallRecord(
