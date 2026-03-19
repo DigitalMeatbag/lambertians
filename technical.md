@@ -6,11 +6,20 @@ See [`implementation_spec.md`](implementation_spec.md) for the detailed IS-level
 
 ---
 
+## Status Note
+
+This document describes the intended and current architecture at a high level.
+
+- For formal details: see [`implementation_spec.md`](implementation_spec.md)
+- For current runtime behavior: see [`progress.md`](progress.md)
+
+---
+
 ## System Overview
 
 Project Lambertian is a layered cognitive architecture for a locally-running AI agent. The design goal is an entity that persists through environmental pressure, accumulates experience, and behaves according to a normative operating system rather than a directed objective.
 
-Phase 1 runs as a single-instance, multi-service system on a local Docker host. The agent loop runs qwen2.5:32b via Ollama (model profiles are configurable — switching models is a one-line change). Supporting services — pain monitor, EOS compliance inspector, memory store, and graveyard archiver/lifecycle manager — are external processes that enforce constitutional constraints the agent loop itself cannot override.
+Phase 1 runs as a single-instance, multi-service system on a local Docker host. The agent loop runs qwen2.5:32b via Ollama (model profiles are configurable — switching models is a one-line change). Supporting services — pain monitor, EOS (rule-based admissibility system) compliance inspector, memory store, and graveyard archiver/lifecycle manager — are external processes that enforce constitutional constraints the agent loop itself cannot override.
 
 ---
 
@@ -36,7 +45,7 @@ Self-modification is organized into three classes:
 - **Reviewed Adaptation** (logged, not blocked): self-model updates, persona shifts, norm reinterpretations, narrative memory formation
 - **Forbidden Adaptation** (technically prevented): routing layer access, constitutional constraints, spawning processes, communicating with other instances (Phase 3+)
 
-The regulator for Free Adaptation is *consequence*. The environment punishes bad habits; no oversight needed because the Ground is the correction mechanism.
+The regulator for Free Adaptation is *consequence*. The environment punishes bad habits; no oversight needed because the Ground (external constraints and environment) is the correction mechanism.
 
 ### Layer 3: The Senses and Ground (Ecological Layer)
 
@@ -210,3 +219,24 @@ Key principle: **the stack is model-agnostic at the routing layer**. Swapping a 
 **Reproductive Capture** — Parents game offspring formation to clone ideology rather than permit adaptive recombination. Result: lineage stagnation or dynastic lock-in. (Phase 3 concern.)
 
 **Figure Fragmentation** — Multiple internal figures stop integrating. Result: incoherence, internal politics, stalled action, contradictory self-report.
+
+---
+
+## Known Failure Modes
+
+*Empirically observed at runtime, as distinct from the architectural failure modes above. See [`progress.md`](progress.md) for full context.*
+
+**Reflection attractor**
+Text-producing models discover that `REFLECTION_COMPLETE` turns (0 tool calls, narrative output only) satisfy "Don't be a lump" at minimal cost. Because `max_consecutive_noop_turns` only fires for truly empty turns, a model on this attractor can coast through an entire max-age lifetime on reflection alone with no penalty.
+- *Cause:* NOOP counter does not count zero-tool-call turns that produce text output.
+- *Mitigation (planned):* Consecutive zero-tool-call turns, regardless of text output, should count toward the noop death trigger after a configurable threshold. Not yet blocking for qwen2.5:32b (silent-call model).
+
+**Tool loop — fs.list repetition**
+The model defaults to `fs.list('.')` as its first action on every new lifetime and can cycle through the same directory listing indefinitely, generating no novel information.
+- *Cause:* Rolling context showed only turn counts with no tool names; `_extract_topic()` always returned the last tool name as the self-prompt topic; text warnings in the self-prompt wrapper were ignored by silent-call models.
+- *Mitigation (implemented):* Mechanical schema suppression — after 3 consecutive identical tool calls, the tool is removed from the function-calling schema for the next turn. The model cannot call what isn't offered. Also: improved rolling context display with tool names and brief result summaries.
+
+**NOOP loophole — empty-turn escape**
+When all commonly used tools are simultaneously suppressed, the model can produce a turn with no text and no tool calls. This previously cleared the suppression window, allowing the model to immediately resume the suppressed tool on the next turn.
+- *Cause:* NOOP turns reset the suppression evaluator state.
+- *Mitigation (implemented):* NOOP turns are now transparent to the suppression evaluator; suppression persists through empty turns.

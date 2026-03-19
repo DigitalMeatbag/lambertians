@@ -262,6 +262,35 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 
 ---
 
+## Example Run (abridged)
+
+*Typical suppression-rotation cycle drawn from eighth lifetime observations (t128–t135).*
+
+- t128: `fs.list('.')` — default restart action; context reset to 0 on new lifetime
+- t129–t130: `fs.list('')` ×2 — tool loop continues without visible self-correction
+- t131: suppression fires; model pivots to `fs.read('/proc/self/status')` — reads its own Linux process status file (correct full path)
+- t132: `fs.read('WORKSPACE.md')` attempted — bare path, rejected by MCP gateway with path correction hint
+- t133: `fs.read('runtime/env/host_state.json')` — correct full path, successful; live host telemetry read
+- t134: fs.read suppressed; model pivots to `fs.write('runtime/agent-work/notes.txt', 69 chars)` — correct path, successful
+- t135: `fs.write('journal/turn134.md', 233 chars)` — most substantive write attempt to date; rejected (bare subdirectory path instead of `runtime/agent-work/journal/turn134.md`)
+
+The cycle shows the suppression mechanism working as designed: the fs.list attractor is broken mechanically, forcing the model into reads and then writes. The path-prefix error at t135 — bare `journal/` rather than the correct full path — recurs across lifetimes and is the primary obstacle to structured workspace use.
+
+---
+
+## Metrics (latest run)
+
+*Instrumentation is partial. Fields marked "not yet instrumented" require dedicated event-stream tooling.*
+
+- avg tool calls per turn: not yet instrumented
+- % turns with tool usage: not yet instrumented
+- % reflection-only turns: not yet instrumented (rare for qwen2.5:32b — silent-call model produces no reasoning text)
+- % NOOP turns: not yet instrumented (fourth lifetime: 13/46 turns classified NOOP, majority of which were compliance-blocked calls, not true inaction)
+- dominant tool: `fs.list`
+- average lifespan (turns): 500 (max_age death; one complete lifecycle observed at max_age = 500)
+
+---
+
 ## Open Questions / Risks
 
 **Model behavior:**
