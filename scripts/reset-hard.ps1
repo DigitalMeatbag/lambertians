@@ -27,6 +27,14 @@ Write-Host ""
 Write-Host "==> Stopping all services..." -ForegroundColor Cyan
 docker compose down
 
+# Graveyard runs as a one-shot `docker run` (not compose), so compose down misses it.
+# Force-remove any lingering graveyard-run containers before deleting volumes.
+Write-Host "==> Removing orphan graveyard-run containers..." -ForegroundColor Cyan
+$graveyardContainers = docker ps -aq --filter "name=lambertians-graveyard-run"
+if ($graveyardContainers) {
+    docker rm -f $graveyardContainers 2>$null | Out-Null
+}
+
 Write-Host "==> Removing data volumes (preserving ollama_data)..." -ForegroundColor Cyan
 $volumesToRemove = @(
     "lambertians_runtime_agent_work",
@@ -40,7 +48,7 @@ $volumesToRemove = @(
 )
 foreach ($vol in $volumesToRemove) {
     Write-Host "  Removing $vol..." -ForegroundColor DarkGray
-    docker volume rm $vol --force 2>$null | Out-Null
+    docker volume rm $vol --force
 }
 
 Write-Host "==> Rebuilding all images..." -ForegroundColor Cyan
