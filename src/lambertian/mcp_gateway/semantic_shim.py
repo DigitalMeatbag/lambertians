@@ -288,10 +288,17 @@ _VIRTUAL_GENERATORS: dict[str, VirtualGenerator] = {
     "instance_id": generate_instance_id,
 }
 
-# Write prefix alias map — normalises bare agent-work/X paths to runtime/agent-work/X.
+# Write prefix alias map — normalises bare/short paths to runtime/agent-work/ equivalents.
 # Applied in gateway._fs_write() before PathResolver sees the path.
+# Entries without a trailing slash act as effective exact-match rewrites
+# (startswith matches the full filename, remainder is "").
 _QWEN_32B_WRITE_PREFIX_ALIASES: dict[str, str] = {
     "agent-work/": "runtime/agent-work/",
+    "journal/": "runtime/agent-work/journal/",
+    "knowledge/": "runtime/agent-work/knowledge/",
+    "observations/": "runtime/agent-work/observations/",
+    "self/": "runtime/agent-work/self/",
+    "WORKSPACE.md": "runtime/agent-work/WORKSPACE.md",
 }
 
 # Registry of all known model profiles and their shim maps.
