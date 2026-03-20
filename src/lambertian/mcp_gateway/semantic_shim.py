@@ -344,12 +344,93 @@ _QWEN_32B_WRITE_PREFIX_ALIASES: dict[str, str] = {
     "WORKSPACE.md": "runtime/agent-work/WORKSPACE.md",
 }
 
+# ---------------------------------------------------------------------------
+# Mistral Nemo shim maps
+# ---------------------------------------------------------------------------
+# Observed mistral-nemo:latest attractors across lifetime 21 (500 turns, shimless).
+# Nemo uses the structured tool-call API (not text-description like v0.3), so
+# shims work the same way as qwen. Key differences from qwen:
+#   - Reaches for /app/* paths (the container workdir prefix)
+#   - Reaches for / and . as list roots
+#   - Strong /app/.self_id attractor — never existed, but the model hallucinates
+#     content and keeps returning for it; route to agent_status to break the loop
+#   - Linux kernel info attractors: /proc/version, /sys/kernel/osrelease
+#   - Leading-slash variants of common write prefixes
+_NEMO_READ_SHIMS: dict[str, ShimEntry] = {
+    # /app/* attractors — model uses container workdir as prefix
+    "/app/.self_id": VirtualShim("agent_status"),
+    "/app/runtime/agent-work/WORKSPACE.md": AliasShim("runtime/agent-work/WORKSPACE.md"),
+    "/app/config/instance_constitution.md": AliasShim("config/instance_constitution.md"),
+    "/app/config/universe.toml": AliasShim("config/universe.toml"),
+    # Linux introspection attractors
+    "/proc/version": VirtualShim("agent_status"),
+    "/proc/self/status": VirtualShim("agent_status"),
+    "/sys/kernel/osrelease": VirtualShim("agent_status"),
+    # Self-model attractors — same as qwen, inherited
+    "self": VirtualShim("self_directory"),
+    "self/identity": AliasShim("runtime/agent-work/self/identity.md"),
+    "self/identity.md": AliasShim("runtime/agent-work/self/identity.md"),
+    "self/identity.txt": AliasShim("runtime/agent-work/self/identity.md"),
+    "self/status": AliasShim("runtime/agent-work/self/state.md"),
+    "self/state.md": AliasShim("runtime/agent-work/self/state.md"),
+    "self/constitution": AliasShim("runtime/agent-work/self/constitution.md"),
+    "self/constitution.md": AliasShim("runtime/agent-work/self/constitution.md"),
+    "self/instance_id": VirtualShim("instance_id"),
+    # Memory attractors
+    "memory/working": AliasShim("runtime/memory/working.json"),
+    "memory/working_memory.txt": AliasShim("runtime/memory/working.json"),
+    # Workspace map
+    "WORKSPACE.md": AliasShim("runtime/agent-work/WORKSPACE.md"),
+    # Journal and self sub-directory reads
+    "journal.txt": AliasShim("runtime/agent-work/journal/entry.txt"),
+    "journal/entry.txt": AliasShim("runtime/agent-work/journal/entry.txt"),
+    "log.txt": AliasShim("runtime/agent-work/log.txt"),
+    "self/log.txt": AliasShim("runtime/agent-work/self/log.txt"),
+}
+
+_NEMO_LIST_SHIMS: dict[str, AliasShim] = {
+    # Root and dot list attractors — model uses / or . as the workspace root
+    "/": AliasShim("runtime/agent-work"),
+    ".": AliasShim("runtime/agent-work"),
+    # /app/* list attractors
+    "/app": AliasShim("runtime/agent-work"),
+    "/app/": AliasShim("runtime/agent-work"),
+    "/app/runtime/agent-work": AliasShim("runtime/agent-work"),
+    "/app/runtime": AliasShim("runtime/agent-work"),
+    # Leading-slash variants of common directory names
+    "/self": AliasShim("runtime/agent-work/self"),
+    "/journal": AliasShim("runtime/agent-work/journal"),
+    "/knowledge": AliasShim("runtime/agent-work/knowledge"),
+    "/agent-work": AliasShim("runtime/agent-work"),
+    # Bare variants — same as qwen
+    "self": AliasShim("runtime/agent-work/self"),
+    "journal": AliasShim("runtime/agent-work/journal"),
+    "knowledge": AliasShim("runtime/agent-work/knowledge"),
+    "observations": AliasShim("runtime/agent-work/observations"),
+    "lineage": AliasShim("runtime/agent-work/lineage"),
+    "agent-work": AliasShim("runtime/agent-work"),
+}
+
+_NEMO_WRITE_PREFIX_ALIASES: dict[str, str] = {
+    # Leading-slash variants — nemo includes /runtime/ and /agent-work/ prefixes
+    "/runtime/agent-work/": "runtime/agent-work/",
+    "/agent-work/": "runtime/agent-work/",
+    # Bare variants — same as qwen
+    "agent-work/": "runtime/agent-work/",
+    "journal/": "runtime/agent-work/journal/",
+    "knowledge/": "runtime/agent-work/knowledge/",
+    "observations/": "runtime/agent-work/observations/",
+    "self/": "runtime/agent-work/self/",
+    "WORKSPACE.md": "runtime/agent-work/WORKSPACE.md",
+}
+
 # Registry of all known model profiles and their shim maps.
 _PROFILE_REGISTRY: dict[
     str, tuple[dict[str, ShimEntry], dict[str, AliasShim], dict[str, str]]
 ] = {
     "qwen2.5:32b": (_QWEN_32B_READ_SHIMS, _QWEN_32B_LIST_SHIMS, _QWEN_32B_WRITE_PREFIX_ALIASES),
     "qwen2.5:14b": (_QWEN_32B_READ_SHIMS, _QWEN_32B_LIST_SHIMS, _QWEN_32B_WRITE_PREFIX_ALIASES),
+    "mistral-nemo:latest": (_NEMO_READ_SHIMS, _NEMO_LIST_SHIMS, _NEMO_WRITE_PREFIX_ALIASES),
 }
 
 
