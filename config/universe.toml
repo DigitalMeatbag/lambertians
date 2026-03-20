@@ -87,7 +87,7 @@ requires_mid_turn_system_injection = true
 provider                           = "ollama"
 name                               = "mistral:v0.3"
 endpoint_url                       = "http://ollama:11434"
-request_timeout_seconds            = 60
+request_timeout_seconds            = 120
 # [ASSUMED: 32768 — Mistral 7B v0.3 supports 32K context]
 context_window_tokens              = 32768
 max_output_tokens                  = 2048

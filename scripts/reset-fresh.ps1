@@ -23,7 +23,7 @@ docker run --rm -v lambertians_runtime_agent_work:/work alpine sh -c `
 
 Write-Host "==> Resetting memory (turn_state → 0)..." -ForegroundColor Cyan
 docker run --rm -v lambertians_runtime_memory:/mem alpine sh -c `
-    'printf "{\"turn_number\": 0}" > /mem/turn_state.json && rm -f /mem/working.json /mem/narrative.json'
+    'printf "{\"turn_number\": 0}" > /mem/turn_state.json && printf "{\"consecutive_reflection_count\": 0}" > /mem/reflection_state.json && rm -f /mem/working.json /mem/narrative.json'
 
 Write-Host "==> Clearing pain queues..." -ForegroundColor Cyan
 docker run --rm -v lambertians_runtime_pain:/pain alpine sh -c `
