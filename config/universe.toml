@@ -23,7 +23,7 @@ normal_shutdown_grace_seconds = 5
 # active_profile: name of the model profile to use.
 # Must match a key in [model.profiles]. Change this single value to swap models —
 # all model-specific settings (context window, timeouts, temperature, etc.) come with the profile.
-active_profile = "qwen2.5:32b"
+active_profile = "novaforgeai/novaforge-mistral:7b-q4km"
 
 [model.profiles."qwen2.5:14b"]
 provider                           = "ollama"
@@ -69,6 +69,24 @@ top_p                              = 0.9
 requires_mid_turn_system_injection = true
 # D1 original specification model. Not yet run under Phase 2 conditions.
 # Pull command: ollama pull phi4:latest
+
+[model.profiles."novaforgeai/novaforge-mistral:7b-q4km"]
+provider                           = "ollama"
+name                               = "novaforgeai/novaforge-mistral:7b-q4km"
+endpoint_url                       = "http://ollama:11434"
+request_timeout_seconds            = 60
+# [ASSUMED: 8192 — Mistral 7B default context window; may be 32K for this derivative]
+context_window_tokens              = 8192
+max_output_tokens                  = 2048
+temperature                        = 0.6
+top_p                              = 0.9
+# [ASSUMED: true — safe default for instruct-tuned models; verify against observed behavior]
+requires_mid_turn_system_injection = true
+# Mistral 7B Instruct Q4_KM quantization (community model via novaforgeai).
+# First run: no shim map registered. Will run shimless — observe path attractors across
+# first lifetime, then build shim entries for this profile.
+# Tool call support: present in Mistral 7B Instruct family; verify in first lifetime.
+# Pull command: ollama pull novaforgeai/novaforge-mistral:7b-q4km
 
 [eos]
 label                    = "Four Rules"
