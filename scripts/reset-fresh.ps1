@@ -33,7 +33,7 @@ Write-Host "==> Clearing event stream..." -ForegroundColor Cyan
 docker run --rm -v lambertians_runtime_event_stream:/es alpine sh -c "rm -f /es/events.jsonl"
 
 Write-Host "==> Clearing fitness..." -ForegroundColor Cyan
-docker run --rm -v lambertians_runtime_fitness:/fit alpine sh -c "rm -f /fit/current.json"
+docker run --rm -v lambertians_runtime_fitness:/fit alpine sh -c "rm -f /fit/current.json /fit/state.json"
 
 Write-Host "==> Clearing self volume..." -ForegroundColor Cyan
 docker run --rm -v lambertians_runtime_self:/self alpine sh -c "find /self -mindepth 1 -delete"
