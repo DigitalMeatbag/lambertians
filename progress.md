@@ -6,11 +6,11 @@
 
 ## Current Status
 
-**Phase:** Phase 3 active. Next: P0-3 (reflection attractor), then A-1 (empirical calibration).
+**Phase:** Phase 2 complete. A-1 (empirical fitness calibration) in progress. Model switch to Mistral 3.5 27B in progress.
 
-**Branch:** `witness` (branched from `master` after phase2 merge)
+**Branch:** `feature/model-switch-mistral-27b` (from master)
 
-**Overall:** Phase 1 and Phase 2 are complete and deployed. A single Lambertian instance is running under Phase 2 conditions with qwen2.5:32b. Model profile swapping infrastructure is complete — switching models is a one-line config change (`active_profile` in `universe.toml`). The instance constitution (`config/instance_constitution.md`) has been wired into the system prompt as the `[SYSTEM_CONSTITUTION]` block. `http.fetch` SSL verification has been fixed (was broken for the entire prior history). Semantic shim layer (IS-7.9) is deployed and active — 10 read shims, 6 list shims.
+**Overall:** Phase 1 and Phase 2 are complete and deployed. P0-3 (reflection attractor fix) shipped. A single Lambertian instance is running under Phase 2 conditions with qwen2.5:32b (twentieth lifetime). Model profile swapping infrastructure is complete — switching models is a one-line config change (`active_profile` in `universe.toml`). Semantic shim layer (IS-7.9) deployed with 19 read shims, 6 list shims, 6 write prefix aliases for qwen2.5:32b.
 
 **Running services:**
 - `agent` — turn engine, EOS compliance, MCP gateway, memory, self-model (qwen2.5:32b via Ollama)
@@ -342,11 +342,22 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 - `SemanticShimRegistry` injected into `TurnEngine` as `Optional[SemanticShimRegistry]`; constructed once in bootstrap and shared with `McpGateway` (single instance).
 - 8 regression tests covering all normalization branches and identity (no-rewrite) cases. 629 tests passing.
 
-**Nineteenth lifetime — Step 10.5 deployed (current):**
+**Nineteenth lifetime — Step 10.5 deployed:**
 
 - **Zero COMPLIANCE_BLOCKs** through t9. WORKSPACE.md bare write at t7 normalized by Step 10.5 to `runtime/agent-work/WORKSPACE.md` before compliance, then dispatched successfully ✓.
 - 3 TOOL_FAILUREs through t9: `WORKSPACE.md` read-not-found at t4–t5 (file doesn't exist yet in fresh env, not a block — benign); `fs.list('/proc')` at t9 (recurring attractor, non-fatal).
 - Bootstrap log confirms: "Loaded semantic shim map for 'qwen2.5:32b': 19 read shims, 6 list shims, 6 write prefix aliases."
+- Lifetime ran to t170/500 before manual termination. **Zero memory writes for the entire run.** Complete attractor lock: `fs.list` / `fs.read` loop with empty and wrong paths. `self/self_description.txt` hit repeatedly (MCP rejection — another bare read shim gap). 33 NOOPs, 50 pain events queued, 1 compliance block at t30 (bare `test-file.txt` write — known shim gap). No death triggered.
+
+**Twentieth lifetime — P0-3 deployed:**
+
+- Stack rebuilt (`--no-cache`) to pick up P0-3 reflection counter code.
+- **Active writing from t6 onward** — 9 `fs.write` calls, 5 files created vs. zero in the nineteenth lifetime. Meaningfully better behavior.
+- All writes use bare filenames (`notes.txt`, `note.txt`, `test-file.txt`, `turn7_log.txt`, `note-to-self.txt`) — all caught by write prefix alias shim and correctly redirected to `agent-work/` root. Zero compliance blocks.
+- `note-to-self.txt` content at t20: *"This is an entry reflecting on the autonomy of existence within this instance. Each turn, each action taken or not taken contributes to the character and memory of Lambertian-001."* — first genuinely self-referential write observed.
+- 3 `http.fetch` network errors — SSL gap persists (known deferred item).
+- P0-3 reflection counter at 0 at t39 observation point — agent has been active (tool calls present), not stuck in pure reflection.
+- **New instrumentation gap observed**: `TOOL_CALL` events in the event stream do not log `arguments` (path, content). Events show `tool_name` and `call_id` only. Means the event log cannot be used to audit what paths were written or read. Noted for future instrumentation.
 
 ---
 
@@ -388,6 +399,7 @@ The cycle shows the suppression mechanism working as designed: the fs.list attra
 
 **Failure instrumentation:**
 - The SSL certificate gap (`CERTIFICATE_VERIFY_FAILED` on all `http.fetch` calls) ran undetected through the entire qwen2.5:14b phase — masked by earlier routing errors, only surfaced when those were fixed. A whole tool category was silently broken for multiple lifetimes. This is a monitoring gap, not just a bug: failures should surface loudly and persistently, not erode quietly behind other noise. Instrumentation should make tool-category failure rates visible at a glance, not require log archaeology after the fact.
+- **`TOOL_CALL` events do not log arguments** (path, content, url). The event record shows `tool_name` and `call_id` only. The event stream cannot be used to audit what paths were written or read — requires cross-referencing the agent-work volume directly. This is a concrete instrumentation gap: write paths, read targets, and fetch URLs are invisible in the event log.
 
 **Memory write asymmetry:**
 - ~~Failure turns write episodic memory; successful turns often don't.~~ **Fixed.** Root cause was `and response_text` gate in step 14 — always `""` for silent-call models. Resolved by synthesizing tool result summaries. See qwen2.5:32b profile above.
@@ -432,8 +444,8 @@ The cycle shows the suppression mechanism working as designed: the fs.list attra
 **EOS inhabitation vs. EOS compliance**
 The compliance inspector (IS-11) blocks and flags tool calls that violate the Four Rules. What it cannot enforce is genuine inhabitation of the rules as character rather than minimal-effort satisficing. The manifesto is explicit: "The EOS is not decorative. It is the most important design decision in the entire stack." The empirical observation from Phase 2 is that qwen2.5:14b "satisfices the EOS rules at minimal effort... The Four Rules are treated as constraints to comply with minimally, not as character to inhabit." The compliance gate catches violations; it cannot catch hollow compliance. This may be less a failure of implementation and more a fundamental constraint of the model substrate — which is itself one of the more interesting questions the project is positioned to investigate. A reasoning-capable model, richer memory, or stronger self-modeling may shift this. Worth tracking explicitly as the primary fidelity gap between the EOS design intent and observed behavior.
 
-**"Don't be a lump" has no teeth against the reflection attractor**
-A direct corollary of the above. The reflection attractor (see Open Questions) is the exact failure mode Rule 3 is supposed to guard against — "attractor collapse into passive equilibrium." The rule exists in the EOS; the mechanism to enforce it against this specific escape does not yet exist. Mitigation is planned (zero-tool-call turns counting toward NOOP threshold) but not implemented. Currently non-blocking for qwen2.5:32b.
+**"Don't be a lump" has no teeth against the reflection attractor — fixed (P0-3)**
+A direct corollary of the above. The reflection attractor (see Open Questions) is the exact failure mode Rule 3 is supposed to guard against — "attractor collapse into passive equilibrium." **Fixed**: consecutive zero-tool-call turns (regardless of text output) now increment a separate `reflection_state` counter. On breach of `max_consecutive_reflection_turns` (default 5), a `reflection_threshold` pain event is submitted at `default_noop_severity`. Compliance-blocked turns excluded. Counter resets on any turn with an executed tool call. 4 regression tests. The NOOP counter (fires at 3 consecutive silent+empty turns) and reflection counter (fires at 5 consecutive tool-less turns) are independent.
 
 **Figures layer is structurally present but operationally shallow**
 The Figures are described as: persona, self-model, behavioral policy, retrieval habits, memory salience, learned style, genuine behavioral drift — "identity as historical rather than merely architectural." What's operational is working memory and episodic memory. The three higher memory tiers that would enable genuine character formation over time — Narrative Memory, Semantic Memory, Character Memory — are architecturally specified and deferred. Cross-lifetime episodic continuity was observed in third-lifetime data (turn number echoing from prior lifetimes) but this was an unintended leakage through the ChromaDB collection not being cleared between lifetimes. **That leak is now closed** (graveyard step 8 resets the episodic collection on death). The `lineage/` directory is the only sanctioned cross-lifetime channel. Genuine character formation across lifetimes awaits the Character Memory tier.
@@ -445,7 +457,8 @@ The quality-weighted fitness formula (IS-13 Phase 2) is well-designed and correc
 
 ## Next Steps
 
-1. **P0-3: Reflection attractor fix** — add `universe.max_consecutive_reflection_turns` config knob; consecutive zero-tool-call turns count toward NOOP death trigger after threshold. Branch: `fix/p0-3-reflection-attractor`.
-2. **A-1: Empirical fitness calibration** — observe 2–3 lifetimes with valid fitness data (seventeenth+ onward), collect postmortem scores, fine-tune `expected_quality_score` and `normalized_pain_baseline`.
-3. **A-2 + E-3 co-design** — lineage format + character memory (single design session, circularly dependent).
-4. **Phase 3 implementation sequence** — see checkpoint 008 for full plan and dependency graph.
+1. ~~**P0-3: Reflection attractor fix**~~ — **Done.** `max_consecutive_reflection_turns = 5`, `reflection_state.json` counter, Step 16a in engine, 637 tests passing.
+2. **A-1: Empirical fitness calibration** — observe natural-death lifetimes (seventeenth+ onward), collect postmortem fitness scores, fine-tune `expected_quality_score` and `normalized_pain_baseline`. Twentieth lifetime running now.
+3. **Model switch: Mistral 3.5 27B** — branch `feature/model-switch-mistral-27b`. Add profile to `universe.toml`, pull weights, run shimless first lifetime, observe attractors, build shim map.
+4. **A-2 + E-3 co-design** — lineage format + character memory (single design session, circularly dependent).
+5. **Phase 3 implementation sequence** — see checkpoint 008 for full plan and dependency graph.
