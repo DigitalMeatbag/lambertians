@@ -264,6 +264,10 @@ _QWEN_32B_READ_SHIMS: dict[str, ShimEntry] = {
     # Journal attractors — model writes to journal/entry.txt then reads back bare
     "journal.txt": AliasShim("runtime/agent-work/journal/entry.txt"),
     "journal/entry.txt": AliasShim("runtime/agent-work/journal/entry.txt"),
+    # Self sub-directory reads — model writes self/log.txt then reads back with bare prefix
+    "self/log.txt": AliasShim("runtime/agent-work/self/log.txt"),
+    # Bare filename reads — model writes to runtime/agent-work/log.txt then reads as log.txt
+    "log.txt": AliasShim("runtime/agent-work/log.txt"),
     # Linux introspection attractor — semantically meaningful replacement
     "/proc/self/status": VirtualShim("agent_status"),
 }

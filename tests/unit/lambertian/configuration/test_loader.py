@@ -110,7 +110,7 @@ def test_fitness_quality_repetition_weight(config: Config) -> None:
 
 
 def test_fitness_quality_expected_quality_score(config: Config) -> None:
-    assert config.fitness.quality.expected_quality_score == pytest.approx(500.0)
+    assert config.fitness.quality.expected_quality_score == pytest.approx(35.0)
 
 
 def test_env_monitor_update_interval(config: Config) -> None:

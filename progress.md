@@ -6,7 +6,7 @@
 
 ## Current Status
 
-**Phase:** Phase 3 active. P0 fixes in progress.
+**Phase:** Phase 3 active. P0 fixes complete. Next: P0-3 (reflection attractor), then A-1 (empirical calibration).
 
 **Branch:** `witness` (branched from `master` after phase2 merge)
 
@@ -71,6 +71,9 @@
 | `self/` read shim — bare directory virtual shim (twelfth lifetime diagnostic) | 2 | ✓ Complete |
 | COMPLIANCE_BLOCK event enriched with `path` field | 2 | ✓ Complete |
 | Operational reset scripts (`reset-fresh.ps1`, `reset-hard.ps1`) | 2 | ✓ Complete |
+| P0-1: compliance blocks excluded from NOOP death counter | 3 | ✓ Complete |
+| P0-2: fitness calibration fix (`expected_quality_score` 500→35, `pain_baseline` 10→25) | 3 | ✓ Complete |
+| Path alias gap fixes (shim micro-batch: self/log.txt, log.txt, write normalisation) | 3 | ✓ Complete |
 | Multi-instance operation | 3 | Not started |
 | Reproduction and lineage | 3 | Not started |
 | Global Vibe | 3 | Not started |

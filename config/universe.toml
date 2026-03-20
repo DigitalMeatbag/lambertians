@@ -171,7 +171,13 @@ active_function              = "phase2_quality_weighted"
 compute_running_score        = true
 compute_postmortem_score     = true
 expected_events_per_100_turns = 25.0
-normalized_pain_baseline     = 10.0
+# normalized_pain_baseline: expected cumulative pain for a healthy lifetime.
+# At tool_failure_severity=0.55, a healthy 500-turn lifetime accumulates ~20-25 pain units
+# (e.g. ~30-40 failures × 0.55 = 16-22, plus minor compliance/rejection events).
+# Raised from 10.0 — the prior value produced normalized_pain=6.8 for the fifteenth lifetime
+# (104 failures drove cumulative_pain=68.45), which correctly penalised that lifetime but
+# left normalized_pain=1.0 unreachable for any realistic healthy lifetime. Tune in A-1.
+normalized_pain_baseline     = 25.0
 minimum_denominator          = 0.10
 
 [fitness.quality]
@@ -179,11 +185,15 @@ minimum_denominator          = 0.10
 # primary_weight: full credit for the first occurrence of each event type per instance lifetime.
 # repetition_weight: fractional credit for each repeated occurrence of the same event type.
 # expected_quality_score: normalization target; score/expected gives the quality engagement term.
-# [ASSUMED: 500.0 for expected_quality_score — calibrated for ~25 unique event types * 20 turns
-#           each at primary_weight=1.0; tune empirically after first Phase 2 runs.]
+# Phase 3 initial calibration: IS-13.4 meaningful event types are TOOL_CALL, MEMORY_WRITE,
+# REVIEWED_ADAPTATION, ADAPTATION_FORBIDDEN — only 4 types. With primary_weight=1.0 and
+# repetition_weight=0.1, a healthy 500-turn lifetime accumulates quality_score ≈ 35-40
+# (e.g. ~300 TOOL_CALLs → 30.9, ~50 MEMORY_WRITEs → 5.9, rare adaptations → 2.1).
+# Target: quality_term ≈ 1.0 for a good lifetime. Prior value of 500.0 was 15× too high,
+# producing near-zero fitness scores regardless of behavior. Tune empirically in A-1.
 primary_weight               = 1.0
 repetition_weight            = 0.1
-expected_quality_score       = 500.0
+expected_quality_score       = 35.0
 
 [paths]
 runtime_root       = "runtime"

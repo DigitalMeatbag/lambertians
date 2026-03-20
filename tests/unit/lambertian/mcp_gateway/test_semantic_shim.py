@@ -470,3 +470,21 @@ class TestNewReadShims:
         assert result is not None
         assert result.kind == ShimKind.ALIAS
         assert result.rewritten_path == "runtime/agent-work/journal/entry.txt"
+
+    def test_self_log_txt_resolves(self, config: Config) -> None:
+        # Agent writes runtime/agent-work/self/log.txt then reads back as self/log.txt
+        registry = build_shim_registry(config)
+        assert registry is not None
+        result = registry.resolve_read("self/log.txt")
+        assert result is not None
+        assert result.kind == ShimKind.ALIAS
+        assert result.rewritten_path == "runtime/agent-work/self/log.txt"
+
+    def test_bare_log_txt_resolves(self, config: Config) -> None:
+        # Agent writes runtime/agent-work/log.txt then reads back as bare log.txt
+        registry = build_shim_registry(config)
+        assert registry is not None
+        result = registry.resolve_read("log.txt")
+        assert result is not None
+        assert result.kind == ShimKind.ALIAS
+        assert result.rewritten_path == "runtime/agent-work/log.txt"
