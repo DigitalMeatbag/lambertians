@@ -154,6 +154,49 @@ class SemanticShimRegistry:
                 return rewritten
         return None
 
+    def normalize_intent(self, intent: "ToolIntent") -> "ToolIntent":
+        """Rewrite model path attractors in a ToolIntent before compliance sees it.
+
+        Returns a new ToolIntent with a normalized path argument if a shim alias
+        applies, or the original intent unchanged if no normalization is needed.
+
+        Virtual shims are intentionally excluded — they produce synthesized content
+        with no real filesystem path, so there is nothing meaningful to give the
+        compliance checker. The gateway handles virtual shims at dispatch (Step 12).
+
+        The ``raw`` field is preserved verbatim — it is the audit record of what
+        the model actually sent. Only ``arguments`` is rewritten.
+        """
+        from lambertian.contracts.tool_records import ToolIntent
+
+        path_val = intent.arguments.get("path")
+        if not isinstance(path_val, str):
+            return intent
+
+        rewritten: Optional[str] = None
+
+        if intent.tool_name == "fs.write":
+            rewritten = self.resolve_write(path_val)
+        elif intent.tool_name == "fs.read":
+            result = self.resolve_read(path_val)
+            if result is not None and result.kind == ShimKind.ALIAS and result.rewritten_path:
+                rewritten = result.rewritten_path
+        elif intent.tool_name == "fs.list":
+            result = self.resolve_list(path_val)
+            if result is not None and result.rewritten_path:
+                rewritten = result.rewritten_path
+
+        if rewritten is None:
+            return intent
+
+        new_args = dict(intent.arguments)
+        new_args["path"] = rewritten
+        return ToolIntent(
+            tool_name=intent.tool_name,
+            arguments=new_args,
+            raw=intent.raw,
+        )
+
 
 # ---------------------------------------------------------------------------
 # Virtual file generators

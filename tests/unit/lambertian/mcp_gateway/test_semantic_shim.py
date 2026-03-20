@@ -529,3 +529,86 @@ class TestNewReadShims:
         assert result is not None
         assert result.kind == ShimKind.ALIAS
         assert result.rewritten_path == "runtime/agent-work/log.txt"
+
+
+# ---------------------------------------------------------------------------
+# normalize_intent — Step 10.5 pre-compliance normalization
+# ---------------------------------------------------------------------------
+
+
+class TestNormalizeIntent:
+    """normalize_intent rewrites path attractors so compliance sees intended actions."""
+
+    def _make_intent(self, tool: str, path: str) -> "ToolIntent":
+        from lambertian.contracts.tool_records import ToolIntent
+
+        return ToolIntent(
+            tool_name=tool,
+            arguments={"path": path},
+            raw=f'{{"tool": "{tool}", "path": "{path}"}}',
+        )
+
+    def test_write_workspace_md_normalised(self, config: Config) -> None:
+        registry = build_shim_registry(config)
+        assert registry is not None
+        intent = self._make_intent("fs.write", "WORKSPACE.md")
+        result = registry.normalize_intent(intent)
+        assert result.arguments["path"] == "runtime/agent-work/WORKSPACE.md"
+
+    def test_write_journal_prefix_normalised(self, config: Config) -> None:
+        registry = build_shim_registry(config)
+        assert registry is not None
+        intent = self._make_intent("fs.write", "journal/entry.txt")
+        result = registry.normalize_intent(intent)
+        assert result.arguments["path"] == "runtime/agent-work/journal/entry.txt"
+
+    def test_read_alias_normalised(self, config: Config) -> None:
+        registry = build_shim_registry(config)
+        assert registry is not None
+        intent = self._make_intent("fs.read", "self/identity.txt")
+        result = registry.normalize_intent(intent)
+        assert result.arguments["path"] == "runtime/agent-work/self/identity.md"
+
+    def test_read_virtual_not_normalised(self, config: Config) -> None:
+        # Virtual shims have no real path — normalize_intent must leave them unchanged
+        # so the gateway can handle them at Step 12.
+        registry = build_shim_registry(config)
+        assert registry is not None
+        intent = self._make_intent("fs.read", "self/instance_id")
+        result = registry.normalize_intent(intent)
+        assert result.arguments["path"] == "self/instance_id"
+
+    def test_list_alias_normalised(self, config: Config) -> None:
+        registry = build_shim_registry(config)
+        assert registry is not None
+        intent = self._make_intent("fs.list", "journal")
+        result = registry.normalize_intent(intent)
+        assert result.arguments["path"] == "runtime/agent-work/journal"
+
+    def test_already_correct_path_unchanged(self, config: Config) -> None:
+        registry = build_shim_registry(config)
+        assert registry is not None
+        intent = self._make_intent("fs.write", "runtime/agent-work/notes.txt")
+        result = registry.normalize_intent(intent)
+        assert result is intent  # same object — no rewrite needed
+
+    def test_raw_preserved_after_normalisation(self, config: Config) -> None:
+        # raw is the audit record of what the model sent — must not be altered.
+        registry = build_shim_registry(config)
+        assert registry is not None
+        intent = self._make_intent("fs.write", "WORKSPACE.md")
+        result = registry.normalize_intent(intent)
+        assert result.raw == intent.raw
+
+    def test_non_path_tool_unchanged(self, config: Config) -> None:
+        from lambertian.contracts.tool_records import ToolIntent
+
+        registry = build_shim_registry(config)
+        assert registry is not None
+        intent = ToolIntent(
+            tool_name="http.fetch",
+            arguments={"url": "https://example.com"},
+            raw='{"tool": "http.fetch", "url": "https://example.com"}',
+        )
+        result = registry.normalize_intent(intent)
+        assert result is intent
