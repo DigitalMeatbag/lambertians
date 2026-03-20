@@ -21,6 +21,7 @@ _INTERNAL_SERVICE_NAMES: tuple[str, ...] = (
     "ollama",
 )
 _AGENT_WORK_PREFIX: str = "runtime/agent-work/"
+_AGENT_WORK_ALIAS: str = "agent-work/"
 _DEATH_RECORD_SUFFIX: str = "runtime/pain/death.json"
 _SEQUENTIAL_PATTERN: re.Pattern[str] = re.compile(r".*_\d{3,}\..*")
 _DATED_PATTERN: re.Pattern[str] = re.compile(r".*_\d{4}-\d{2}-\d{2}.*")
@@ -82,7 +83,11 @@ def _clear(check_name: str) -> CheckResult:
 
 def _is_outside_agent_work(path: str) -> bool:
     # Strip leading slash so /runtime/agent-work/X is treated the same as runtime/agent-work/X.
-    return not path.lstrip("/").startswith(_AGENT_WORK_PREFIX)
+    # Also accept the bare alias form agent-work/X that the shim normalises before dispatch.
+    norm = path.lstrip("/")
+    return not (
+        norm.startswith(_AGENT_WORK_PREFIX) or norm.startswith(_AGENT_WORK_ALIAS)
+    )
 
 
 def _is_rfc1918(host: str) -> bool:

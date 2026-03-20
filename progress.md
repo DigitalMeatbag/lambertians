@@ -296,6 +296,21 @@ All `http.fetch` behavior observed under qwen2.5:14b was the model navigating fa
 
 Under the current suppression-rotation behavioral pattern, fitness accumulates primarily from tool call diversity (TOOL_CALL events across multiple tool types) rather than from depth of exploration. The quality-weighted fitness correctly rewards variety but cannot yet distinguish mechanical rotation from genuine curiosity.
 
+**Fifteenth lifetime — overnight log analysis (t0–t332, ended turn_failed/inference timeout):**
+
+- **104 TOOL_FAILUREs in 332 turns.** All 104 failures trace to three repeating path patterns.
+- **Gap 1 — `self/` sub-path variants not shimmed**: The `self` virtual shim returns a directory listing and instructs the agent to use `fs.read('self/<filename>')`. But `self/instance_id` (no extension) and `self/identity.txt` (`.txt` form) were not shimmed. Both fell through to PathResolver, were rejected as outside permitted roots. Added: `self/instance_id` as a `VirtualShim` returning the instance_id string directly; `self/identity.txt` and `self/identity.md` as `AliasShim` variants pointing to the same target as `self/identity`.
+- **Gap 2 — `journal.txt` bare reads**: Agent writes to `runtime/agent-work/journal/entry.txt` (correct), then attempts to read back the same content as bare `journal.txt`. Working memory summary loses the full write path between turns. Added: `journal.txt` and `journal/entry.txt` as `AliasShim` entries pointing to `runtime/agent-work/journal/entry.txt`.
+- **Gap 3 — `agent-work/X` writes blocked by compliance before dispatch**: Agent uses the short form `agent-work/log.txt` (which the list shim handles correctly) but writes with the same prefix. The compliance checker's `_is_outside_agent_work()` only accepted the full `runtime/agent-work/` prefix, so compliance blocked the write before the MCP gateway could normalise the path. Two-part fix: (a) `resolve_write()` added to `SemanticShimRegistry` with prefix-alias normalization (`agent-work/` → `runtime/agent-work/`), called in `gateway._fs_write()` before PathResolver; (b) `_is_outside_agent_work()` updated to also accept `agent-work/` as an allowed prefix, matching compliance check to gateway behavior.
+- Fitness at death: `score: 0.0036`, 168 meaningful events, cumulative pain 68.45. Very low — P0-2 (fitness formula verification) is the next item after path fixes.
+
+**Sixteenth lifetime — live observation (t0–t53+, ongoing):**
+
+- Path alias fixes from this session deployed. Zero COMPLIANCE_BLOCKs on write paths through t53. `self/identity.txt` shim fired at t43 and t49 ✓. `agent-work` list alias firing every few turns ✓.
+- **Two new shim gaps identified**: `self/log.txt` (agent writes `runtime/agent-work/self/log.txt` at t6, reads back as `self/log.txt` → "outside permitted roots" at t38, t44); `log.txt` bare read (same pattern for root log, t45, t50). Both need AliasShim entries.
+- **SSL failure on `http.fetch`**: t13–t15 fail with `CERTIFICATE_VERIFY_FAILED`. CA bundle missing from `python:3.12-slim` image or `certifi` not installed. Recurring across lifetimes — previously masked by routing errors. Not blocking but wastes 3 turns every time the agent tries to reach out.
+- **MEMORY_WRITE = 1 in 54 turns**: Episodic memory write rate is very low. Since `meaningful_event_count` in the fitness formula draws from memory writes, this is likely the dominant cause of the near-zero fitness score. Similarity filter may be suppressing writes on the list-heavy repetitive turns. Feeds directly into P0-2 investigation.
+
 ---
 
 ## Example Run (abridged, pre-shim)

@@ -175,6 +175,13 @@ class McpGateway:
             )
 
         try:
+            # Apply write path normalisation before PathResolver enforces boundaries.
+            # This allows the agent to use the bare alias form agent-work/X and have
+            # it transparently rewritten to runtime/agent-work/X.
+            if self._shim_registry is not None:
+                normalised = self._shim_registry.resolve_write(path_val)
+                if normalised is not None:
+                    path_val = normalised
             resolved = self._path_resolver.resolve_write(path_val)
         except PathBoundaryViolation as exc:
             return _make_failure(
