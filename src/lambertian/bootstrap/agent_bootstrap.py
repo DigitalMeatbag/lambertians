@@ -55,10 +55,11 @@ class AgentBootstrap:
         self._death_reader = DeathRecordReader(pain_root / "death.json")
         self._death_guard = DeathGuard(config, pain_root / "death.json")
         self._model_client = OllamaClient(config)
+        self._shim_registry = build_shim_registry(config)
         self._mcp_gateway = McpGateway(
             config,
             PathResolver(runtime_root, Path("config")),
-            shim_registry=build_shim_registry(config),
+            shim_registry=self._shim_registry,
         )
         self._compliance_client = ComplianceClient(config)
         constitution_text = Path(config.instance.constitution_path).read_text(encoding="utf-8")
@@ -143,6 +144,7 @@ class AgentBootstrap:
             user_input_provider=StdinUserInputProvider(),
             pain_submitter=self._pain_submitter,
             fitness_scorer=self._fitness_scorer,
+            shim_registry=self._shim_registry,
         )
 
     def _compute_config_hash(self) -> str:

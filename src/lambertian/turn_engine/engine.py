@@ -23,6 +23,7 @@ from lambertian.event_stream.event_log_writer import EventLogWriter
 from lambertian.fitness.scorer import FitnessScorer
 from lambertian.lifecycle.death_record_reader import DeathRecordReader
 from lambertian.mcp_gateway.gateway import McpGateway
+from lambertian.mcp_gateway.semantic_shim import SemanticShimRegistry
 from lambertian.pain_monitor.death_guard import DeathGuard
 from lambertian.memory_store.querier import MemoryQuerier
 from lambertian.memory_store.retrieval_result import MemoryWriteRequest
@@ -108,6 +109,7 @@ class TurnEngine:
         user_input_provider: UserInputProvider,
         pain_submitter: PainEventSubmitter,
         fitness_scorer: Optional[FitnessScorer] = None,
+        shim_registry: Optional[SemanticShimRegistry] = None,
     ) -> None:
         self._config = config
         self._event_log = event_log
@@ -124,6 +126,7 @@ class TurnEngine:
         self._user_input_provider = user_input_provider
         self._pain_submitter = pain_submitter
         self._fitness_scorer = fitness_scorer
+        self._shim_registry = shim_registry
         self._prompt_assembler = TurnPromptAssembler()
         self._rolling_context: deque[dict[str, object]] = deque(
             maxlen=config.turn.max_context_events
@@ -349,6 +352,14 @@ class TurnEngine:
         for intent in tool_intents:
             # Narrow verdict to the Literal type before constructing ToolCallRecord.
             verdict_typed: Literal["allow", "flag", "block"]
+
+            # Step 10.5: Normalise intent paths via shim before compliance sees them.
+            # Compliance judges intended actions, not path syntax errors. Virtual shims
+            # are excluded here — the gateway handles them at dispatch (Step 12).
+            # The EOS boundary begins at Step 11; normalisation is upstream of it so
+            # swapping EOS implementations does not require knowledge of shim aliases.
+            if self._shim_registry is not None:
+                intent = self._shim_registry.normalize_intent(intent)
 
             # Step 11: Compliance check.
             raw_verdict: str = "allow"
