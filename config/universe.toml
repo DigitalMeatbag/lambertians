@@ -23,7 +23,7 @@ normal_shutdown_grace_seconds = 5
 # active_profile: name of the model profile to use.
 # Must match a key in [model.profiles]. Change this single value to swap models —
 # all model-specific settings (context window, timeouts, temperature, etc.) come with the profile.
-active_profile = "mistral:v0.3"
+active_profile = "mistral-nemo:latest"
 
 [model.profiles."qwen2.5:14b"]
 provider                           = "ollama"
@@ -70,35 +70,20 @@ requires_mid_turn_system_injection = true
 # D1 original specification model. Not yet run under Phase 2 conditions.
 # Pull command: ollama pull phi4:latest
 
-[model.profiles."novaforgeai/novaforge-mistral:7b-q4km"]
+[model.profiles."mistral-nemo:latest"]
 provider                           = "ollama"
-name                               = "novaforgeai/novaforge-mistral:7b-q4km"
-endpoint_url                       = "http://ollama:11434"
-request_timeout_seconds            = 60
-context_window_tokens              = 8192
-max_output_tokens                  = 2048
-temperature                        = 0.6
-top_p                              = 0.9
-requires_mid_turn_system_injection = true
-# DOES NOT SUPPORT TOOLS — HTTP 400 on every turn. Not usable.
-# Pull command: ollama pull novaforgeai/novaforge-mistral:7b-q4km
-
-[model.profiles."mistral:v0.3"]
-provider                           = "ollama"
-name                               = "mistral:v0.3"
+name                               = "mistral-nemo:latest"
 endpoint_url                       = "http://ollama:11434"
 request_timeout_seconds            = 120
-# [ASSUMED: 32768 — Mistral 7B v0.3 supports 32K context]
+# Mistral Nemo 12B — 128K context window (tekken tokenizer).
 context_window_tokens              = 32768
 max_output_tokens                  = 2048
 temperature                        = 0.6
 top_p                              = 0.9
 # [ASSUMED: true — safe default; verify against observed behavior]
 requires_mid_turn_system_injection = true
-# Mistral 7B Instruct v0.3 — first version with native tool-call support.
-# First run: no shim map registered. Runs shimless — observe path attractors
-# across first lifetime, then build shim entries for this profile.
-# Pull command: ollama pull mistral:v0.3
+# First run: no shim map registered. Runs shimless — observe path attractors.
+# Pull command: ollama pull mistral-nemo:latest
 
 [eos]
 label                    = "Four Rules"
