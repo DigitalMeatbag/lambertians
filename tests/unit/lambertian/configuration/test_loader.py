@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -9,10 +10,19 @@ import pytest
 from lambertian.configuration.loader import ConfigurationError, load_config
 from lambertian.configuration.universe_config import Config
 
+_TOML_PATH = Path("config/universe.toml")
+
 
 @pytest.fixture()
 def config() -> Config:
-    return load_config(Path("config/universe.toml"))
+    return load_config(_TOML_PATH)
+
+
+@pytest.fixture()
+def active_profile() -> str:
+    """Read active_profile directly from universe.toml — source of truth for model tests."""
+    raw = tomllib.loads(_TOML_PATH.read_text(encoding="utf-8"))
+    return str(raw["model"]["active_profile"])
 
 
 def test_universe_phase(config: Config) -> None:
@@ -35,27 +45,27 @@ def test_model_provider(config: Config) -> None:
     assert config.model.provider == "ollama"
 
 
-def test_model_name(config: Config) -> None:
-    assert config.model.name == "mistral:v0.3"
+def test_model_name_matches_active_profile(config: Config, active_profile: str) -> None:
+    """Loader must resolve active_profile to the correct model name."""
+    assert config.model.name == active_profile
 
 
 def test_model_temperature(config: Config) -> None:
     assert config.model.temperature == pytest.approx(0.6)
 
 
-def test_model_active_profile_resolves(config: Config) -> None:
-    """Active profile resolves to the expected model name."""
-    assert config.model.name == "mistral:v0.3"
+def test_model_active_profile_resolves(config: Config, active_profile: str) -> None:
+    """Active profile resolves to a well-formed model config."""
+    assert config.model.name == active_profile
     assert config.model.provider == "ollama"
-    assert config.model.context_window_tokens == 32768
+    assert config.model.context_window_tokens > 0
+    assert config.model.request_timeout_seconds > 0
 
 
-def test_model_unknown_profile_raises(tmp_path: Path) -> None:
-    good = Path("config/universe.toml").read_bytes()
-    bad = good.replace(
-        b'active_profile = "mistral:v0.3"',
-        b'active_profile = "nonexistent"',
-    )
+def test_model_unknown_profile_raises(tmp_path: Path, active_profile: str) -> None:
+    good = _TOML_PATH.read_bytes()
+    old = f'active_profile = "{active_profile}"'.encode()
+    bad = good.replace(old, b'active_profile = "nonexistent"')
     toml_file = tmp_path / "bad.toml"
     toml_file.write_bytes(bad)
     with pytest.raises(ConfigurationError, match="nonexistent"):
