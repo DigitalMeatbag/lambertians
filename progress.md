@@ -386,6 +386,9 @@ The cycle shows the suppression mechanism working as designed: the fs.list attra
 - Silent tool calls (no reasoning text) make it hard to assess whether the model is learning. A reasoning-capable model or higher temperature may produce more legible behavior.
 - Temperature tuning: `0.6` has not been varied. Repetition tendency may be temperature-sensitive.
 
+**Failure instrumentation:**
+- The SSL certificate gap (`CERTIFICATE_VERIFY_FAILED` on all `http.fetch` calls) ran undetected through the entire qwen2.5:14b phase — masked by earlier routing errors, only surfaced when those were fixed. A whole tool category was silently broken for multiple lifetimes. This is a monitoring gap, not just a bug: failures should surface loudly and persistently, not erode quietly behind other noise. Instrumentation should make tool-category failure rates visible at a glance, not require log archaeology after the fact.
+
 **Memory write asymmetry:**
 - ~~Failure turns write episodic memory; successful turns often don't.~~ **Fixed.** Root cause was `and response_text` gate in step 14 — always `""` for silent-call models. Resolved by synthesizing tool result summaries. See qwen2.5:32b profile above.
 

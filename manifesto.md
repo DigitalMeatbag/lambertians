@@ -50,6 +50,8 @@ The better approach is not to suppress the behavior but to **never install the m
 
 **Framing is the alignment problem. Everything else is downstream.**
 
+*Empirical observation, 19 lifetimes:* The framing hypothesis is the primary open question in this project, and the first 19 lifetimes provide a preliminary answer — one that warrants honesty. qwen2.5:32b runs "Don't be a lump" as mechanical tool rotation under suppression pressure. The Four Rules exist in the system prompt; they are not internalized as character. The compliance inspector catches violations but cannot catch hollow compliance, and hollow compliance is what's observed. The deeper diagnosis is that inhabitation requires a model that has some frame for what it is and what it's doing. A model with no such frame can satisfy the rules syntactically without ever inhabiting them. Whether a reasoning-capable model, richer memory tiers, or character memory accumulated across lifetimes changes this is the actual experiment the architecture is designed to run — and it cannot be run without a more capable model substrate. The architecture won't get in the way of that once the substrate is available.
+
 ### Identity as Operational Equilibrium
 
 The agent's behavioral identity at any given moment is the equilibrium produced by four factors:
@@ -99,7 +101,7 @@ The constitutional architecture — Clay Pot immutability, mortality, reproducti
 
 **The EOS is not decorative. It is the most important design decision in the entire stack.**
 
-The Four Rules EOS is the design choice that keeps this a research system rather than an optimizer with a lineage mechanism.
+The Four Rules EOS is the design choice that keeps this a research system rather than an optimizer with a lineage mechanism. This holds as long as the rules remain non-directed. The specific failure mode to guard against is not dramatic — it is informal and incremental. A population handed a concrete target, even casually, even once, even by the creator, is a qualitatively different system from that moment forward. The reproductive mechanism selects for fitness; if fitness is defined against a goal, selection pressure compounds across generations. The constitutional architecture provides some resistance but is not sufficient on its own. The safeguard is the EOS itself: Four Rules rather than a directed goal. Keeping that boundary is an ongoing design discipline, not a one-time decision.
 
 ---
 
