@@ -66,3 +66,9 @@ Live web data via http.fetch. These URLs are confirmed working:
 
   Returns JSON with current temperature (°C) and wind speed (km/h).
   Change latitude/longitude for different locations.
+
+### Project Source
+
+  http.fetch('https://github.com/DigitalMeatbag/lambertians')
+
+  The public repository for this project.
