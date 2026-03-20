@@ -72,6 +72,24 @@ class TurnStateStore:
             json.dumps({"consecutive_noop_count": count}),
         )
 
+    def read_reflection_state(self) -> int:
+        """Returns consecutive_reflection_count. Returns 0 if file absent."""
+        path = self._memory_dir / "reflection_state.json"
+        if not path.exists():
+            return 0
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+            return int(raw["consecutive_reflection_count"])
+        except (OSError, json.JSONDecodeError, KeyError, ValueError):
+            return 0
+
+    def write_reflection_state(self, count: int) -> None:
+        """Atomically writes reflection_state.json."""
+        self._atomic_write(
+            self._memory_dir / "reflection_state.json",
+            json.dumps({"consecutive_reflection_count": count}),
+        )
+
     def read_recent_self_prompts(self, max_entries: int) -> list[dict[str, object]]:
         """Returns list of {"text": ..., "turn": N} dicts, most recent last."""
         path = self._memory_dir / "recent_self_prompts.json"

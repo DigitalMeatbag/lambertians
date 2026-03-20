@@ -612,6 +612,32 @@ class TurnEngine:
         else:
             self._turn_state.write_noop_state(0)
 
+        # Step 16a: Reflection counter update.
+        # Counts consecutive turns with zero executed tool calls regardless of text
+        # output.  Targets the reflection attractor: an agent producing narrative
+        # output to escape the NOOP threshold while never actually acting.
+        # Compliance-blocked turns are excluded (the agent attempted action).
+        is_zero_execution = not has_compliance_block and executed_count == 0
+        if is_zero_execution:
+            reflection_count = self._turn_state.read_reflection_state() + 1
+            self._turn_state.write_reflection_state(reflection_count)
+            if reflection_count >= self._config.turn.max_consecutive_reflection_turns:
+                self._pain_submitter.submit(
+                    PainEvent(
+                        event_id=str(uuid.uuid4()),
+                        incident_type="reflection_threshold",
+                        severity=self._config.pain.events.default_noop_severity,
+                        description=(
+                            f"Consecutive reflection threshold reached: {reflection_count} turns"
+                        ),
+                        turn_number=turn_number,
+                        submitted_at=datetime.now(timezone.utc).isoformat(),
+                        context={"reflection_count": str(reflection_count)},
+                    )
+                )
+        else:
+            self._turn_state.write_reflection_state(0)
+
         # Step 16b: Compute running fitness score (observer-only — IS-13.1).
         if self._fitness_scorer is not None and self._config.fitness.compute_running_score:
             try:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from pathlib import Path
 from typing import Optional
@@ -12,7 +13,7 @@ import pytest
 from lambertian.configuration.universe_config import Config
 from lambertian.contracts.compliance_records import ComplianceNoticeResponse, ComplianceResponse
 from lambertian.contracts.pain_records import PainMessage
-from lambertian.contracts.tool_records import ToolIntent
+from lambertian.contracts.tool_records import ToolIntent, ToolResult
 from lambertian.event_stream.event_log_writer import EventLogWriter
 from lambertian.fitness.cursor_state import FitnessCursorStore
 from lambertian.fitness.event_reader import EventStreamReader
@@ -327,4 +328,165 @@ class TestComplianceBlockNotCountedAsNoop:
         events = _read_events(event_file)
         block_events = [e for e in events if e.get("event_type") == "COMPLIANCE_BLOCK"]
         assert block_events, "COMPLIANCE_BLOCK event must be written for blocked intent"
+
+
+# ---------------------------------------------------------------------------
+# Regression: P0-3 — reflection attractor
+# ---------------------------------------------------------------------------
+
+
+def _reflection_ollama(text: str = "Let me reflect on my current situation and consider what to do.") -> MagicMock:
+    """Returns a mock OllamaClient that emits long text with zero tool intents."""
+    mock = MagicMock()
+    mock.chat.return_value = (text, [])
+    return mock
+
+
+def _build_engine_reflection_threshold(
+    config: Config,
+    tmp_path: Path,
+    threshold: int,
+    ollama_override: object | None = None,
+) -> TurnEngine:
+    """Wire engine with a small max_consecutive_reflection_turns for threshold tests."""
+    new_turn = dataclasses.replace(config.turn, max_consecutive_reflection_turns=threshold)
+    patched_config = dataclasses.replace(config, turn=new_turn)
+    return _build_engine(patched_config, tmp_path, ollama_override=ollama_override)
+
+
+class TestReflectionAttractor:
+    """P0-3 regression — consecutive zero-tool-call turns must trigger pain event."""
+
+    def test_reflection_counter_increments_on_zero_tool_call_turn(
+        self, config: Config, tmp_path: Path
+    ) -> None:
+        """A turn with text output but no tool calls must increment the reflection counter."""
+        engine = _build_engine_reflection_threshold(
+            config, tmp_path, threshold=5, ollama_override=_reflection_ollama()
+        )
+        engine._execute_turn()  # type: ignore[attr-defined]
+
+        memory_dir = Path(config.paths.memory_root)
+        state_file = memory_dir / "reflection_state.json"
+        assert state_file.exists(), "reflection_state.json must be written after reflection turn"
+        data = json.loads(state_file.read_text(encoding="utf-8"))
+        assert data["consecutive_reflection_count"] == 1
+
+    def test_reflection_counter_resets_when_tool_call_executed(
+        self, config: Config, tmp_path: Path
+    ) -> None:
+        """After a reflection turn, a turn with a successful tool call must reset the counter."""
+        # Turn 1: pure reflection (no tool calls).
+        mock_ollama = MagicMock()
+        mock_ollama.chat.side_effect = [
+            ("Let me reflect on my current situation and consider what to do.", []),
+            (
+                "Now I will act.",
+                [ToolIntent(tool_name="fs.list", arguments={"path": "agent-work/"}, raw="")],
+            ),
+        ]
+
+        mock_gateway = MagicMock()
+        mock_gateway.get_tool_catalog.return_value = []
+        mock_gateway.dispatch.return_value = ToolResult(
+            tool_name="fs.list",
+            call_id="test",
+            success=True,
+            result=["agent-work/"],
+            error_type=None,
+            error_detail=None,
+            duration_ms=1,
+            truncated=False,
+        )
+
+        mock_compliance = MagicMock()
+        mock_compliance.get_pending_notice.return_value = ComplianceNoticeResponse(
+            notice_present=False, notice_text=None, verdict_from_turn=None,
+            tool_name=None, composite_score=None,
+        )
+        mock_compliance.check_intent.return_value = ComplianceResponse(
+            verdict="allow", composite_score=0.0, rule_scores={},
+            triggered_checks=(), notice_text=None,
+        )
+
+        engine = _build_engine_reflection_threshold(
+            config, tmp_path, threshold=5,
+            ollama_override=mock_ollama,
+        )
+        # Inject gateway and compliance with dispatch support.
+        engine._mcp_gateway = mock_gateway  # type: ignore[attr-defined]
+        engine._compliance_client = mock_compliance  # type: ignore[attr-defined]
+
+        engine._execute_turn()  # type: ignore[attr-defined]  # reflection turn — counter → 1
+        engine._execute_turn()  # type: ignore[attr-defined]  # tool-call turn — counter → 0
+
+        memory_dir = Path(config.paths.memory_root)
+        state_file = memory_dir / "reflection_state.json"
+        data = json.loads(state_file.read_text(encoding="utf-8"))
+        assert data["consecutive_reflection_count"] == 0, (
+            "Reflection counter must reset to 0 after a turn with executed tool calls"
+        )
+
+    def test_reflection_threshold_breach_submits_pain_event(
+        self, config: Config, tmp_path: Path
+    ) -> None:
+        """Reaching max_consecutive_reflection_turns must write a pain event to the queue."""
+        engine = _build_engine_reflection_threshold(
+            config, tmp_path, threshold=2, ollama_override=_reflection_ollama()
+        )
+
+        engine._execute_turn()  # type: ignore[attr-defined]  # count → 1
+        engine._execute_turn()  # type: ignore[attr-defined]  # count → 2 → pain event
+
+        pain_dir = Path(config.paths.pain_root)
+        queue_file = pain_dir / "event_queue.jsonl"
+        assert queue_file.exists(), "pain event queue must exist after threshold breach"
+
+        events = []
+        for line in queue_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line:
+                events.append(json.loads(line))
+
+        reflection_events = [e for e in events if e.get("incident_type") == "reflection_threshold"]
+        assert reflection_events, "reflection_threshold pain event must be submitted on breach"
+        assert reflection_events[0]["context"]["reflection_count"] == "2"
+
+    def test_compliance_blocked_turn_does_not_increment_reflection_counter(
+        self, config: Config, tmp_path: Path
+    ) -> None:
+        """A turn where all tool intents are compliance-blocked must not count as reflection."""
+        mock_ollama = MagicMock()
+        mock_ollama.chat.return_value = (
+            "Let me try to write somewhere.",
+            [ToolIntent(tool_name="fs.write", arguments={"path": "/forbidden"}, raw="")],
+        )
+        mock_compliance = MagicMock()
+        mock_compliance.get_pending_notice.return_value = ComplianceNoticeResponse(
+            notice_present=False, notice_text=None, verdict_from_turn=None,
+            tool_name=None, composite_score=None,
+        )
+        mock_compliance.check_intent.return_value = ComplianceResponse(
+            verdict="block", composite_score=1.0, rule_scores={},
+            triggered_checks=(), notice_text=None,
+        )
+
+        engine = _build_engine_reflection_threshold(
+            config, tmp_path, threshold=5,
+            ollama_override=mock_ollama,
+        )
+        engine._compliance_client = mock_compliance  # type: ignore[attr-defined]
+        engine._execute_turn()  # type: ignore[attr-defined]
+
+        memory_dir = Path(config.paths.memory_root)
+        state_file = memory_dir / "reflection_state.json"
+        if state_file.exists():
+            data = json.loads(state_file.read_text(encoding="utf-8"))
+            count = data.get("consecutive_reflection_count", 0)
+        else:
+            count = 0
+
+        assert count == 0, (
+            "Compliance-blocked turn must not increment the reflection counter"
+        )
 

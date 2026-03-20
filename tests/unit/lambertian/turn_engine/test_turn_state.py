@@ -67,6 +67,26 @@ class TestNoopState:
         assert store.read_noop_state() == 0
 
 
+class TestReflectionState:
+    def test_returns_zero_when_absent(self, store: TurnStateStore) -> None:
+        assert store.read_reflection_state() == 0
+
+    def test_write_then_read_roundtrip(self, store: TurnStateStore) -> None:
+        store.write_reflection_state(4)
+        assert store.read_reflection_state() == 4
+
+    def test_write_zero_resets(self, store: TurnStateStore) -> None:
+        store.write_reflection_state(3)
+        store.write_reflection_state(0)
+        assert store.read_reflection_state() == 0
+
+    def test_independent_from_noop_state(self, store: TurnStateStore) -> None:
+        store.write_noop_state(2)
+        store.write_reflection_state(7)
+        assert store.read_noop_state() == 2
+        assert store.read_reflection_state() == 7
+
+
 class TestRecentSelfPrompts:
     def test_returns_empty_when_absent(self, store: TurnStateStore) -> None:
         assert store.read_recent_self_prompts(10) == []

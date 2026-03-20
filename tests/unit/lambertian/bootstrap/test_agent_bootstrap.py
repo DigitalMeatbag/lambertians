@@ -75,6 +75,7 @@ def config(tmp_path: Path) -> Config:
             max_pain_messages_per_turn=3,
             self_prompt_retry_limit=2,
             max_consecutive_noop_turns=3,
+            max_consecutive_reflection_turns=5,
         ),
         mcp=McpConfig(
             request_timeout_seconds=30,

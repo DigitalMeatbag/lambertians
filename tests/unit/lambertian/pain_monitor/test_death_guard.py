@@ -67,6 +67,7 @@ def _make_config(max_age_turns: int = 1000) -> Config:
             loop_sleep_seconds=1.0, max_tool_calls_per_turn=8, max_context_events=32,
             max_pain_messages_per_turn=3, self_prompt_retry_limit=2,
             max_consecutive_noop_turns=3,
+            max_consecutive_reflection_turns=5,
         ),
         mcp=McpConfig(
             request_timeout_seconds=30, retry_count=0,

@@ -54,6 +54,7 @@ class TurnConfig:
     max_pain_messages_per_turn: int
     self_prompt_retry_limit: int
     max_consecutive_noop_turns: int
+    max_consecutive_reflection_turns: int
 
 
 @dataclass(frozen=True)

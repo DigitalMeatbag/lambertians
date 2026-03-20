@@ -161,6 +161,7 @@ def _load_turn(raw: dict[str, Any]) -> TurnConfig:
         max_pain_messages_per_turn=_int(d, "max_pain_messages_per_turn", s),
         self_prompt_retry_limit=_int(d, "self_prompt_retry_limit", s),
         max_consecutive_noop_turns=_int(d, "max_consecutive_noop_turns", s),
+        max_consecutive_reflection_turns=_int(d, "max_consecutive_reflection_turns", s),
     )
 
 
