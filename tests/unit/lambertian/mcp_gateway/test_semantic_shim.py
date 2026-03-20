@@ -424,6 +424,38 @@ class TestWriteAlias:
         result = registry.resolve_write("/agent-work/notes.txt")
         assert result is None
 
+    def test_workspace_md_exact_rewrite(self, config: Config) -> None:
+        # Agent writes bare WORKSPACE.md — redirected to full agent-work path.
+        registry = build_shim_registry(config)
+        assert registry is not None
+        result = registry.resolve_write("WORKSPACE.md")
+        assert result == "runtime/agent-work/WORKSPACE.md"
+
+    def test_journal_prefix_normalised(self, config: Config) -> None:
+        # Agent writes journal/turn_13.md — redirected to agent-work equivalent.
+        registry = build_shim_registry(config)
+        assert registry is not None
+        result = registry.resolve_write("journal/turn_13.md")
+        assert result == "runtime/agent-work/journal/turn_13.md"
+
+    def test_knowledge_prefix_normalised(self, config: Config) -> None:
+        registry = build_shim_registry(config)
+        assert registry is not None
+        result = registry.resolve_write("knowledge/notes.md")
+        assert result == "runtime/agent-work/knowledge/notes.md"
+
+    def test_observations_prefix_normalised(self, config: Config) -> None:
+        registry = build_shim_registry(config)
+        assert registry is not None
+        result = registry.resolve_write("observations/log.md")
+        assert result == "runtime/agent-work/observations/log.md"
+
+    def test_self_prefix_normalised(self, config: Config) -> None:
+        registry = build_shim_registry(config)
+        assert registry is not None
+        result = registry.resolve_write("self/identity.md")
+        assert result == "runtime/agent-work/self/identity.md"
+
 
 # ---------------------------------------------------------------------------
 # New read shim attractor tests
