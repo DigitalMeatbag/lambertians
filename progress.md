@@ -6,7 +6,7 @@
 
 ## Current Status
 
-**Phase:** Phase 3 active. P0 fixes complete. Next: P0-3 (reflection attractor), then A-1 (empirical calibration).
+**Phase:** Phase 3 active. Next: P0-3 (reflection attractor), then A-1 (empirical calibration).
 
 **Branch:** `witness` (branched from `master` after phase2 merge)
 
@@ -307,12 +307,16 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 - **Gap 3 — `agent-work/X` writes blocked by compliance before dispatch**: Agent uses the short form `agent-work/log.txt` (which the list shim handles correctly) but writes with the same prefix. The compliance checker's `_is_outside_agent_work()` only accepted the full `runtime/agent-work/` prefix, so compliance blocked the write before the MCP gateway could normalise the path. Two-part fix: (a) `resolve_write()` added to `SemanticShimRegistry` with prefix-alias normalization (`agent-work/` → `runtime/agent-work/`), called in `gateway._fs_write()` before PathResolver; (b) `_is_outside_agent_work()` updated to also accept `agent-work/` as an allowed prefix, matching compliance check to gateway behavior.
 - Fitness at death: `score: 0.0036`, 168 meaningful events, cumulative pain 68.45. Very low — P0-2 (fitness formula verification) is the next item after path fixes.
 
-**Sixteenth lifetime — live observation (t0–t53+, ongoing):**
+**Sixteenth lifetime — final observations (t0–t193, terminated for hard reset):**
 
 - Path alias fixes from this session deployed. Zero COMPLIANCE_BLOCKs on write paths through t53. `self/identity.txt` shim fired at t43 and t49 ✓. `agent-work` list alias firing every few turns ✓.
 - **Two new shim gaps identified**: `self/log.txt` (agent writes `runtime/agent-work/self/log.txt` at t6, reads back as `self/log.txt` → "outside permitted roots" at t38, t44); `log.txt` bare read (same pattern for root log, t45, t50). Both need AliasShim entries.
 - **SSL failure on `http.fetch`**: t13–t15 fail with `CERTIFICATE_VERIFY_FAILED`. CA bundle missing from `python:3.12-slim` image or `certifi` not installed. Recurring across lifetimes — previously masked by routing errors. Not blocking but wastes 3 turns every time the agent tries to reach out.
 - **MEMORY_WRITE = 1 in 54 turns**: Episodic memory write rate is very low. Since `meaningful_event_count` in the fitness formula draws from memory writes, this is likely the dominant cause of the near-zero fitness score. Similarity filter may be suppressing writes on the list-heavy repetitive turns. Feeds directly into P0-2 investigation.
+- **t188–t189**: Two consecutive zero-tool-call NOOPs — P0-3 urgency confirmed.
+- **t190**: Agent reads `self/self-description.txt` → rejected. New unshimmed attractor. Added to shim registry.
+- **t192**: COMPLIANCE_BLOCK on `agent-work/exploration-log.txt` despite alias fix deployed. To verify post-rebuild.
+- **Fitness cursor bug discovered (critical)**: `state.json` persists across resets; `current.json` is deleted but not `state.json`. After reset-fresh, the cursor holds stale byte offsets (event_stream_cursor=2,636,150, pain_history_cursor=34,781) from prior lifetimes. New events.jsonl starts empty — cursor seeks past EOF, reads nothing. All fitness scores for the entire sixteenth lifetime were computed against stale pre-reset data. `meaningful_event_count: 2812` and `cumulative_pain: 718.5` at t191 were accumulated across all 16 lifetimes, not just the current one. **Fixed**: reset-fresh now clears `state.json` alongside `current.json`.
 
 ---
 
@@ -377,7 +381,8 @@ The cycle shows the suppression mechanism working as designed: the fs.list attra
 
 **Known tuning uncertainty:**
 - `universe.max_age_turns = 500` — produces observable lifecycles; may need adjustment per model
-- `fitness.expected_quality_score = 500.0` — not yet empirically calibrated; needs real lifetime data
+- `fitness.expected_quality_score = 35.0` — recalibrated from 500.0 based on IS-13.4 histogram analysis; needs empirical validation from real lifetime postmortems (A-1)
+- `fitness.normalized_pain_baseline = 25.0` — recalibrated from 10.0; needs empirical validation
 - Pain thresholds: no deaths from pain observed yet (all max_age deaths). Thresholds may be too conservative.
 - `model.temperature = 0.6` — not varied; repetition tendency may be temperature-sensitive
 
@@ -396,15 +401,15 @@ A direct corollary of the above. The reflection attractor (see Open Questions) i
 **Figures layer is structurally present but operationally shallow**
 The Figures are described as: persona, self-model, behavioral policy, retrieval habits, memory salience, learned style, genuine behavioral drift — "identity as historical rather than merely architectural." What's operational is working memory and episodic memory. The three higher memory tiers that would enable genuine character formation over time — Narrative Memory, Semantic Memory, Character Memory — are architecturally specified and deferred. Cross-lifetime episodic continuity was observed in third-lifetime data (turn number echoing from prior lifetimes) but this was an unintended leakage through the ChromaDB collection not being cleared between lifetimes. **That leak is now closed** (graveyard step 8 resets the episodic collection on death). The `lineage/` directory is the only sanctioned cross-lifetime channel. Genuine character formation across lifetimes awaits the Character Memory tier.
 
-**Fitness signal is observer-only and possibly broken**
-The quality-weighted fitness formula (IS-13 Phase 2) is well-designed and correctly penalizes repetition. But: the signal drives nothing within a lifetime, has no selection pressure between lifetimes (Phase 3), and a concrete computation issue was observed at t111 (score 0.0 with `cumulative_pain: 474.8` and `meaningful_event_count: 2812` — likely a formula edge case or denominator overflow rather than genuine zero fitness). The fitness signal is load-bearing for the lineage mechanism. It should be verified as numerically correct before Phase 3 depends on it.
+**Fitness signal is observer-only and was broken (now fixed)**
+The quality-weighted fitness formula (IS-13 Phase 2) is well-designed and correctly penalizes repetition. But: the signal drives nothing within a lifetime, has no selection pressure between lifetimes (Phase 3). Concrete bugs found and fixed: (1) `expected_quality_score=500` was 15× too high relative to the 4-event-type histogram, producing near-zero fitness regardless of behavior — recalibrated to 35; (2) `normalized_pain_baseline=10` was too low — recalibrated to 25; (3) `state.json` (cursor store) was not cleared by reset-fresh, causing stale byte offsets to persist across lifetimes — the cursor never read new events after a reset, producing `meaningful_event_count: 2812` from accumulated prior lifetimes while the current lifetime's events were invisible to the scorer. All three bugs are fixed. First clean fitness data will come from the seventeenth lifetime onward.
 
 ---
 
 ## Next Steps
 
-1. **P0-2: Fitness formula verification** — score of 0.0 observed at t111; trace through `src/lambertian/fitness/` to find the edge case. See checkpoint 008 for full details.
-2. **P0-3: Reflection attractor fix** — add `universe.max_consecutive_reflection_turns` config knob; consecutive zero-tool-call turns count toward NOOP death trigger after threshold.
-3. **Deploy P0 fixes, observe 2–3 lifetimes** → A-1 fitness calibration.
+1. **P0-3: Reflection attractor fix** — add `universe.max_consecutive_reflection_turns` config knob; consecutive zero-tool-call turns count toward NOOP death trigger after threshold.
+2. **Deploy all P0 fixes (seventeenth lifetime, hard reset)** — first lifetime with correct fitness data.
+3. **A-1: Empirical fitness calibration** — observe 2–3 lifetimes, collect postmortem scores, fine-tune constants.
 4. **A-2 + E-3 co-design** — lineage format + character memory (single design session, circularly dependent).
 5. **Phase 3 implementation sequence** — see checkpoint 008 for full plan and dependency graph.
