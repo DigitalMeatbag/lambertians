@@ -569,8 +569,14 @@ class TurnEngine:
         self._turn_state.write_working_memory(summary, turn_number)
 
         # Step 16: Noop classification and noop state update.
+        # A compliance-blocked turn is not inaction — the agent attempted something
+        # and was stopped.  Exclude such turns from the NOOP death counter.
+        has_compliance_block = any(
+            r.compliance_verdict == "block" for r in tool_call_records
+        )
         is_noop = (
-            (not tool_call_records or all(not r.executed for r in tool_call_records))
+            not has_compliance_block
+            and (not tool_call_records or all(not r.executed for r in tool_call_records))
             and len(response_text) < _NOOP_MIN_CHARS
             and memory_writes == 0
         )
