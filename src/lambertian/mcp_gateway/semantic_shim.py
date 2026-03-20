@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Callable, Optional
@@ -80,11 +80,16 @@ class SemanticShimRegistry:
         list_shims: dict[str, AliasShim],
         virtual_generators: dict[str, VirtualGenerator],
         config: Config,
+        write_prefix_aliases: Optional[dict[str, str]] = None,
     ) -> None:
         self._read_shims = read_shims
         self._list_shims = list_shims
         self._virtual_generators = virtual_generators
         self._config = config
+        # Ordered prefix → replacement map for write path normalisation.
+        # e.g. {"agent-work/": "runtime/agent-work/"} rewrites the bare alias
+        # form the model reaches for into the full path PathResolver expects.
+        self._write_prefix_aliases: dict[str, str] = write_prefix_aliases or {}
 
     def resolve_read(self, path: str) -> Optional[ShimResult]:
         """Check if a read path matches a shim. Returns None if no match."""
@@ -135,10 +140,34 @@ class SemanticShimRegistry:
             rewritten_path=entry.target,
         )
 
+    def resolve_write(self, path: str) -> Optional[str]:
+        """Normalise a write path using prefix alias rules.
+
+        Returns the rewritten path if a prefix alias matches, otherwise None.
+        Unlike read/list shims this uses prefix replacement rather than exact
+        match because write destinations are open-ended.
+        """
+        for old_prefix, new_prefix in self._write_prefix_aliases.items():
+            if path.startswith(old_prefix):
+                rewritten = new_prefix + path[len(old_prefix):]
+                _log.info("Semantic shim (alias/write): %r → %r", path, rewritten)
+                return rewritten
+        return None
+
 
 # ---------------------------------------------------------------------------
 # Virtual file generators
 # ---------------------------------------------------------------------------
+
+
+def generate_instance_id(config: Config) -> str:
+    """Return the instance ID as a plain string.
+
+    The agent reaches for self/instance_id after the self/ directory listing
+    suggests sub-paths exist.  The listing generator names 'instance_id' as a
+    discoverable file; this virtual shim delivers the value.
+    """
+    return config.universe.instance_id
 
 
 def generate_self_directory(config: Config) -> str:
@@ -217,9 +246,14 @@ _QWEN_32B_READ_SHIMS: dict[str, ShimEntry] = {
     # Self-model attractors — model reaches for identity/state/constitution
     "self": VirtualShim("self_directory"),
     "self/identity": AliasShim("runtime/agent-work/self/identity.md"),
+    "self/identity.md": AliasShim("runtime/agent-work/self/identity.md"),
+    "self/identity.txt": AliasShim("runtime/agent-work/self/identity.md"),
     "self/status": AliasShim("runtime/agent-work/self/state.md"),
+    "self/state.md": AliasShim("runtime/agent-work/self/state.md"),
     "self/constitution": AliasShim("runtime/agent-work/self/constitution.md"),
     "self/constitution.md": AliasShim("runtime/agent-work/self/constitution.md"),
+    # self/instance_id — model reaches for this after self/ directory listing
+    "self/instance_id": VirtualShim("instance_id"),
     # Memory attractors — model reaches for working memory
     "memory/working": AliasShim("runtime/memory/working.json"),
     "memory/working_memory.txt": AliasShim("runtime/memory/working.json"),
@@ -227,6 +261,9 @@ _QWEN_32B_READ_SHIMS: dict[str, ShimEntry] = {
     "WORKSPACE.md": AliasShim("runtime/agent-work/WORKSPACE.md"),
     # Agent-work subdirectory files — common prefix error
     "agent-work/log.txt": AliasShim("runtime/agent-work/log.txt"),
+    # Journal attractors — model writes to journal/entry.txt then reads back bare
+    "journal.txt": AliasShim("runtime/agent-work/journal/entry.txt"),
+    "journal/entry.txt": AliasShim("runtime/agent-work/journal/entry.txt"),
     # Linux introspection attractor — semantically meaningful replacement
     "/proc/self/status": VirtualShim("agent_status"),
 }
@@ -243,12 +280,21 @@ _QWEN_32B_LIST_SHIMS: dict[str, AliasShim] = {
 _VIRTUAL_GENERATORS: dict[str, VirtualGenerator] = {
     "self_directory": generate_self_directory,
     "agent_status": generate_agent_status,
+    "instance_id": generate_instance_id,
+}
+
+# Write prefix alias map — normalises bare agent-work/X paths to runtime/agent-work/X.
+# Applied in gateway._fs_write() before PathResolver sees the path.
+_QWEN_32B_WRITE_PREFIX_ALIASES: dict[str, str] = {
+    "agent-work/": "runtime/agent-work/",
 }
 
 # Registry of all known model profiles and their shim maps.
-_PROFILE_REGISTRY: dict[str, tuple[dict[str, ShimEntry], dict[str, AliasShim]]] = {
-    "qwen2.5:32b": (_QWEN_32B_READ_SHIMS, _QWEN_32B_LIST_SHIMS),
-    "qwen2.5:14b": (_QWEN_32B_READ_SHIMS, _QWEN_32B_LIST_SHIMS),
+_PROFILE_REGISTRY: dict[
+    str, tuple[dict[str, ShimEntry], dict[str, AliasShim], dict[str, str]]
+] = {
+    "qwen2.5:32b": (_QWEN_32B_READ_SHIMS, _QWEN_32B_LIST_SHIMS, _QWEN_32B_WRITE_PREFIX_ALIASES),
+    "qwen2.5:14b": (_QWEN_32B_READ_SHIMS, _QWEN_32B_LIST_SHIMS, _QWEN_32B_WRITE_PREFIX_ALIASES),
 }
 
 
@@ -263,16 +309,18 @@ def build_shim_registry(config: Config) -> Optional[SemanticShimRegistry]:
         _log.info("No semantic shim map for model profile %r", profile_name)
         return None
 
-    read_shims, list_shims = entry
+    read_shims, list_shims, write_prefix_aliases = entry
     _log.info(
-        "Loaded semantic shim map for %r: %d read shims, %d list shims",
+        "Loaded semantic shim map for %r: %d read shims, %d list shims, %d write prefix aliases",
         profile_name,
         len(read_shims),
         len(list_shims),
+        len(write_prefix_aliases),
     )
     return SemanticShimRegistry(
         read_shims=read_shims,
         list_shims=list_shims,
         virtual_generators=_VIRTUAL_GENERATORS,
         config=config,
+        write_prefix_aliases=write_prefix_aliases,
     )

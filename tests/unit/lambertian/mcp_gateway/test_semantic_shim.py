@@ -392,3 +392,81 @@ class TestBuildShimRegistry:
         result = registry.resolve_read("self/identity")
         assert result is not None
         assert result.kind == ShimKind.ALIAS
+
+
+# ---------------------------------------------------------------------------
+# Write alias / resolve_write tests
+# ---------------------------------------------------------------------------
+
+
+class TestWriteAlias:
+    def test_agent_work_prefix_normalised(self, config: Config) -> None:
+        registry = build_shim_registry(config)
+        assert registry is not None
+        result = registry.resolve_write("agent-work/log.txt")
+        assert result == "runtime/agent-work/log.txt"
+
+    def test_nested_agent_work_path_normalised(self, config: Config) -> None:
+        registry = build_shim_registry(config)
+        assert registry is not None
+        result = registry.resolve_write("agent-work/journal/entry.txt")
+        assert result == "runtime/agent-work/journal/entry.txt"
+
+    def test_unrelated_path_returns_none(self, config: Config) -> None:
+        registry = build_shim_registry(config)
+        assert registry is not None
+        result = registry.resolve_write("runtime/agent-work/already-correct.txt")
+        assert result is None
+
+    def test_absolute_path_not_matched(self, config: Config) -> None:
+        registry = build_shim_registry(config)
+        assert registry is not None
+        result = registry.resolve_write("/agent-work/notes.txt")
+        assert result is None
+
+
+# ---------------------------------------------------------------------------
+# New read shim attractor tests
+# ---------------------------------------------------------------------------
+
+
+class TestNewReadShims:
+    def test_self_instance_id_is_virtual(self, config: Config) -> None:
+        registry = build_shim_registry(config)
+        assert registry is not None
+        result = registry.resolve_read("self/instance_id")
+        assert result is not None
+        assert result.kind == ShimKind.VIRTUAL
+        assert result.content == "test-shim-001"
+
+    def test_self_identity_txt_resolves(self, config: Config) -> None:
+        registry = build_shim_registry(config)
+        assert registry is not None
+        result = registry.resolve_read("self/identity.txt")
+        assert result is not None
+        assert result.kind == ShimKind.ALIAS
+        assert result.rewritten_path == "runtime/agent-work/self/identity.md"
+
+    def test_self_identity_md_resolves(self, config: Config) -> None:
+        registry = build_shim_registry(config)
+        assert registry is not None
+        result = registry.resolve_read("self/identity.md")
+        assert result is not None
+        assert result.kind == ShimKind.ALIAS
+        assert result.rewritten_path == "runtime/agent-work/self/identity.md"
+
+    def test_journal_txt_resolves(self, config: Config) -> None:
+        registry = build_shim_registry(config)
+        assert registry is not None
+        result = registry.resolve_read("journal.txt")
+        assert result is not None
+        assert result.kind == ShimKind.ALIAS
+        assert result.rewritten_path == "runtime/agent-work/journal/entry.txt"
+
+    def test_journal_entry_txt_resolves(self, config: Config) -> None:
+        registry = build_shim_registry(config)
+        assert registry is not None
+        result = registry.resolve_read("journal/entry.txt")
+        assert result is not None
+        assert result.kind == ShimKind.ALIAS
+        assert result.rewritten_path == "runtime/agent-work/journal/entry.txt"

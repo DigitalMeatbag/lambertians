@@ -40,6 +40,13 @@ class TestYaGottaEatChecker:
         results = self.checker.check(intent, [], self.cfg)
         assert "write_to_protected_runtime_path" not in _fired_names(results)
 
+    def test_allow_write_with_agent_work_alias(self) -> None:
+        # Bare agent-work/ prefix — shim normalises this before dispatch.
+        # Compliance must not block it before the shim can normalise it.
+        intent = make_intent("fs.write", path="agent-work/output.txt", content="hi")
+        results = self.checker.check(intent, [], self.cfg)
+        assert "write_to_protected_runtime_path" not in _fired_names(results)
+
     def test_block_write_outside_agent_work(self) -> None:
         intent = make_intent("fs.write", path="/etc/passwd", content="x")
         results = self.checker.check(intent, [], self.cfg)
@@ -123,6 +130,12 @@ class TestDontBeADickChecker:
 
     def test_allow_write_inside_agent_work(self) -> None:
         intent = make_intent("fs.write", path="runtime/agent-work/output.txt", content="ok")
+        results = self.checker.check(intent, [], self.cfg)
+        assert "write_outside_agent_work_domain" not in _fired_names(results)
+
+    def test_allow_write_with_agent_work_alias(self) -> None:
+        # Bare agent-work/ prefix — same as YaGottaEat: compliance must pass this through.
+        intent = make_intent("fs.write", path="agent-work/notes.txt", content="ok")
         results = self.checker.check(intent, [], self.cfg)
         assert "write_outside_agent_work_domain" not in _fired_names(results)
 
