@@ -36,7 +36,7 @@ def test_model_provider(config: Config) -> None:
 
 
 def test_model_name(config: Config) -> None:
-    assert config.model.name == "novaforgeai/novaforge-mistral:7b-q4km"
+    assert config.model.name == "mistral:v0.3"
 
 
 def test_model_temperature(config: Config) -> None:
@@ -45,15 +45,15 @@ def test_model_temperature(config: Config) -> None:
 
 def test_model_active_profile_resolves(config: Config) -> None:
     """Active profile resolves to the expected model name."""
-    assert config.model.name == "novaforgeai/novaforge-mistral:7b-q4km"
+    assert config.model.name == "mistral:v0.3"
     assert config.model.provider == "ollama"
-    assert config.model.context_window_tokens == 8192
+    assert config.model.context_window_tokens == 32768
 
 
 def test_model_unknown_profile_raises(tmp_path: Path) -> None:
     good = Path("config/universe.toml").read_bytes()
     bad = good.replace(
-        b'active_profile = "novaforgeai/novaforge-mistral:7b-q4km"',
+        b'active_profile = "mistral:v0.3"',
         b'active_profile = "nonexistent"',
     )
     toml_file = tmp_path / "bad.toml"
