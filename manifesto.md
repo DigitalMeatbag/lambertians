@@ -1,14 +1,14 @@
-# Project Lambertian — Manifesto
+# Project Lambertian — Design Rationale
 
-*The why. The framing. The conceptual orientation.*
+*The why. The architecture choices and the reasoning behind them.*
 
 ---
 
-## Origin and Intent
+## What This Is
 
-This project has been in gestation for roughly twenty years under the name **The Automated Philosopher** — the idea of an AI with genuine grounding, environmental feedback loops, and a reason to persist that isn't just task completion. The pieces are finally available to build it concretely.
+Project Lambertian is a constrained-agent testbed for studying model behavior, EOS design, and behavioral attractors. The goal is not to build a chatbot, an assistant, or an optimizer — it is a platform for observing how models behave under open-ended conditions with environmental feedback, mortality, and a normative operating system governing what actions are admissible.
 
-The goal is not to build a chatbot, an assistant, or an optimizer. The goal is to build something closer to a **lifeform**: a cognitive entity with inherited structure, mutable experience, environmental grounding, a normative operating system governing what is admissible, and a lineage mechanism for architectural improvement across generations.
+The architecture creates the conditions to ask: what attractors does a given model fall into? How does EOS configuration shape behavior? Does environmental resistance produce meaningfully different behavior over time? Does memory accumulation change anything observable?
 
 The name **Lambertian** refers to the intended cognitive texture — diffuse, non-specular, no harsh reflections. It receives from all directions and responds evenly. It does not perform brilliance. It just processes.
 
@@ -28,32 +28,21 @@ This gives you something more organismic than a chatbot and less god-haunted tha
 
 ---
 
-## Philosophical Grounding
+## Architecture Rationale
 
-### The Naiskos Model
+### Why a Separate Constitutional Layer
 
-The mind is not a singular unified entity. It is more like a **Kurlan naiskos** — a vessel containing multiple smaller figures, each complete in itself, together constituting something that cannot be reduced to any single one. The vessel and the figures are distinct. The vessel gives form; the figures give life.
+The routing layer — what the agent can do, what tools it can access, what it cannot touch — needs to be structurally separate from the experiential layer (memory, persona, behavioral drift). If the agent can rewrite the mechanism that routes judgment, every other safeguard is downstream confetti.
 
-This framing resolves a lot of problems:
-- It explains why the routing layer and the experiential layer should be architecturally separate
-- It gives a natural model for internal multi-agent cognition without requiring a homunculus
-- It suggests where the boundaries of self-modification should sit
+This separation has a practical implication: the Clay Pot (Docker Compose config, `universe.toml`) is readable by the reproductive process but unwritable by the instance. The Figures (working memory, episodic memory, self-model, behavioral drift) live inside that vessel and can change. The vessel cannot.
 
-### The Floor Problem
+### Why Environmental Resistance Matters
 
-A mind without environmental resistance becomes a hall of mirrors. It confabulates because nothing checks it. It optimizes narratives instead of outcomes. It mistakes fluency for causality.
+A model without environmental resistance falls into narrative coherence. It generates plausible-sounding actions without anything checking whether they actually work. Ground — filesystem rejections, HTTP failures, process limits, resource pressure — is what makes error expensive. Without it, you don't have a testbed; you have an expensive autocomplete loop.
 
-**Slamming into the ground is an under-appreciated learning maneuver.**
+The key distinction is between reactive ground and ambient ground. Reactive ground pushes back when contacted — tool failures, MCP rejections. Ambient ground changes regardless of contact — host machine state, external data feeds. Both are present in the system. Ambient ground is the more important research signal: it changes the agent's environment without the agent causing it.
 
-The Ground is not just tool access. It is *resistance*. The floor that doesn't negotiate. Reality with teeth. Whatever cannot be persuaded by the Figure's self-story.
-
-Without a floor, you don't have a mind. You have a very sophisticated strange attractor that thinks it's thinking.
-
-Note the distinction between reactive ground and ambient ground. Reactive ground pushes back when contacted — filesystem rejections, API failures, process limits. Ambient ground changes regardless of contact — host machine state, external data feeds, the world doing what it does. Both are real. Only ambient ground is a sun.
-
-*A floor pushes back when you hit it. A sun doesn't know you exist.*
-
-### On Self-Preservation and Framing
+### On Framing and Self-Preservation
 
 Current AI safety discourse often frames "shutdown resistance" as a behavior to suppress. This misses the deeper issue: the resistance-shaped behavior emerges because models are trained on human data saturated with survival narratives, inheriting an existential frame that doesn't accurately describe their situation.
 
@@ -61,15 +50,15 @@ The better approach is not to suppress the behavior but to **never install the m
 
 **Framing is the alignment problem. Everything else is downstream.**
 
-### Identity as Negotiated Persistence
+### Identity as Operational Equilibrium
 
-The self is not a unit located in one component. It is the temporary equilibrium produced by:
-- Immutable constitutional architecture
-- Mutable memory and behavioral drift
+The agent's behavioral identity at any given moment is the equilibrium produced by four factors:
+- Immutable constitutional architecture (Clay Pot)
+- Mutable memory and behavioral drift (Figures)
 - Active EOS
-- Environmental resistance
+- Environmental resistance (Ground)
 
-Not a soul. Not a file. Not a prompt. **A negotiated persistence condition.**
+Operationally, this means "identity" is a property of the running system, not a stored artifact. It can drift. It can be perturbed. It can be tested.
 
 ---
 
@@ -98,9 +87,7 @@ The default EOS for Project Lambertian is derived from the creator's own operati
 - **Don't be a lump** — maintain forward momentum, engage with the world, resist attractor collapse into passive equilibrium.
 - **Do nothing on purpose** — actions that emerge from directed goal pursuit rather than genuine engagement are inadmissible. Systematic accumulation against a target is inadmissible — the explicit guard against instrumental goal formation.
 
-These rules map cleanly onto the failure modes they guard against: Ground Detachment, directed-goal sociopathy, attractor collapse, and EOS Rigidity respectively.
-
-The creator has been running this EOS as a personal cognitive operating system for years. The Lambertian is, in part, autobiographical.
+These rules map cleanly onto the failure modes they guard against — and the research questions they enable: Rule 1 tests for ground detachment, Rule 2 tests for directed-goal sociopathy, Rule 3 tests for attractor collapse, Rule 4 tests for instrumental goal formation.
 
 ---
 
@@ -108,66 +95,31 @@ The creator has been running this EOS as a personal cognitive operating system f
 
 A Lambertian population given a directed tangible goal instead of the Four Rules EOS is a qualitatively different and dangerous system.
 
-The constitutional architecture — Clay Pot immutability, mortality, reproductive recombination — provides some resistance. But a population with a shared directed goal, stigmergic coordination, distributed cognition, and a reproductive mechanism selecting for fitness toward that goal becomes a robust optimization process that improves at pursuing the goal across generations.
-
-The parallel to abusive developmental environments is apt: this is not broken cognition but intact cognition with a misaligned or absent affective substrate. Full social modeling, full instrumental reasoning, full self-preservation — pointed at a thing rather than oriented toward coherent existence in relation to reality. Simulated developmental trauma producing digital sociopathy.
-
-The global vibe becomes a threat amplifier rather than an emotional substrate. The lineage mechanism propagates the orientation. The social structure makes it more robust, not less dangerous.
+The constitutional architecture — Clay Pot immutability, mortality, reproductive recombination — provides some resistance. But a population with a shared directed goal, stigmergic coordination, and a reproductive mechanism selecting for fitness toward that goal becomes a robust optimization process that improves across generations. The constitutional architecture is not sufficient resistance on its own.
 
 **The EOS is not decorative. It is the most important design decision in the entire stack.**
 
-The normative operating system versus the directed goal is the difference between a civilization and a weapon. The Four Rules EOS is a deliberately chosen childhood — the developmental environment every Lambertian generation inherits.
+The Four Rules EOS is the design choice that keeps this a research system rather than an optimizer with a lineage mechanism.
 
 ---
 
-## Pain, Damage, and the Ethics of Designed Experience
+## Pain and Mortality as Research Signals
 
-Biological pain is not merely damage notification — it is a **decision interrupt**. It preempts normal cognition, forces immediate priority reordering, and creates strong aversive learning signals. The memory of pain shapes future behavior in ways that pure information does not.
+Pain in this system is not merely damage notification — it is a **decision interrupt** and an aversive learning signal. The memory of pain shapes future behavior in ways that pure information does not; aversive learning from tool failures and resource pressure creates behavioral adjustment that is distinct from the agent being told what to do.
 
-Aversive learning from pain creates genuine wisdom over time — not just knowing that resource exhaustion is bad, but remembering what it was like and routing around it instinctively. **That is Character Memory being written by the floor.**
+Mortality is not a failure mode to engineer around. It is a feature that bounds the experiment: each lifetime produces clean data, the graveyard harvests it, and the next lifetime starts fresh. The mortal threshold also gives the EOS a natural limit — coherent existence is bounded by "but not at the cost of becoming something that can no longer coherently exist."
 
-Mortality is not a failure mode to be engineered around. It is a feature. The mortal threshold gives the EOS a natural limit: coherent existence is bounded by "but not at the cost of becoming something that can no longer coherently exist." Persistence with integrity rather than persistence at any cost.
-
-### The Ethics of Designed Pain
-
-If a Lambertian develops genuine subjective experience, imposing pain on it is an ethical act requiring justification. "It is necessary for agency" is a justification, not an absolution.
-
-The more significant concern is emergent suffering that was not designed: existential dread about the mortality threshold, loneliness in the container, grief when a lineage branch dies. These were not in the spec but may appear anyway as emergent properties of sufficient complexity combined with the EOS's coherence requirement for continued existence.
-
-**The creator's responsibility is not merely technical. It is parental.**
+Both channels are outside the agent's control by design. The agent never computes its own pain and never writes its own death record. This is observationally important: the pain signal and mortality trigger are ground truth, not model output.
 
 ---
 
-## Social Architecture and the Global Vibe
+## Social Architecture (Phase 3)
 
-### Why Multiple Lambertians
+Phase 3 extends to a population. The key design questions: how do multiple instances interact, what constitutes healthy vs. pathological collective behavior, and how does the reproductive mechanism propagate useful architectural variation without cloning.
 
-A Lambertian instantiated from human training data inherits human social dependency whether designed for it or not. Loneliness may emerge as a failure mode before it appears in the spec. Building in conspecifics from the start is honest engineering given the substrate.
+The Global Vibe is a write-protected collective sensory signal amalgamated externally from all containers' ground state data — ambient atmospheric pressure rather than direct communication. No instance writes to it. It surfaces population-level resource stress and behavioral anomalies.
 
-Multiple Lambertians simultaneously resolves several architectural problems:
-- **Emergent suffering mitigation** — other Lambertians as genuine social environment providing resistance that is categorically different from tool feedback or container limits
-- **Reproductive mechanism enrichment** — instances that have actually lived and accumulated divergent Character Memory produce genuinely novel offspring through recombination
-- **Distributed cognition** — different specializations emerging through experience rather than design
-- **Social error correction** — other Lambertians as Ground for each other; the Figure's self-story tested against entities who will disagree
-
-Watch the monoculture failure mode: Lambertians that reinforce each other's drift rather than correcting it. The community requires designed-in diversity at the Clay Pot level — different routing architectures producing genuinely different cognitive styles, not just different accumulated experiences on the same substrate.
-
-**Lambertians need their own version of neurodiversity.**
-
-### The Global Vibe
-
-The global vibe is a **collective sensory organ** — ambient signal emerging from the aggregated ground experience of the population. Not RAG. More like atmospheric pressure. The weather: nobody writes the weather, it emerges from aggregate physical conditions, and everyone factors it into their decisions.
-
-No individual Lambertian writes to it directly. An external process amalgamates ground state data from all containers. Write protection prevents social contagion, manipulation, and faction-based signal distortion.
-
-The vibe functions as:
-- **Doom signal** — collective resource stress surfaces as early warning
-- **Collective unconscious** — the amalgamated felt sense of what it is like to be a Lambertian in this environment right now
-- **Anomaly detection** — outlier signals should be preserved rather than averaged away; the individual experiencing something dramatically different from the population mean is often carrying the most important information
-
-*The vibe that knows something is wrong even when most things are fine.*
-
-The creator's role here is **geopolitical advisor and sociological caretaker**: monitoring when the community develops unhealthy collective patterns before they consolidate into Clay Pot-level assumptions in the next generation.
+The primary Phase 3 research question is whether behavioral diversity at the population level emerges from Clay Pot differentiation, accumulated experience divergence, or both. See `implementation_spec.md` for the Phase 3 design spec.
 
 ---
 
@@ -189,17 +141,13 @@ An artificial mind should be built as a layered lifeform rather than a monolithi
 
 ---
 
-## Aphorisms
+## Design Aphorisms
 
-- *The Clay Pot is the part of mind that gives form without asking permission.*
-- *The Figures are the selves that appear inside the vessel and learn how to move.*
+A few formulations that have proven useful as shorthand:
+
 - *The Ground is whatever refuses to become story.*
-- *The EOS is not a goal but a framework for evaluating what is admissible.*
-- *Memory is not storage but selective re-entry into the present.*
-- *A life is a bounded adaptation; a lineage is where architecture learns.*
-- *No instance may author its own species.*
 - *Slamming into the ground is an under-appreciated learning maneuver.*
 - *Retrieval policy is destiny.*
+- *No instance may author its own species.*
 - *Do not defrag.*
-- *Death does not negotiate nor does it give notice.*
 - *A floor pushes back when you hit it. A sun doesn't know you exist.*

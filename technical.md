@@ -17,7 +17,7 @@ This document describes the intended and current architecture at a high level.
 
 ## System Overview
 
-Project Lambertian is a layered cognitive architecture for a locally-running AI agent. The design goal is an entity that persists through environmental pressure, accumulates experience, and behaves according to a normative operating system rather than a directed objective.
+Project Lambertian is a layered constrained-agent architecture for studying model behavior, EOS design, and behavioral attractors. It runs a model continuously under open-ended conditions with environmental feedback, mortality, and a normative operating system governing what actions are admissible — leaving observable behavioral traces across lifetimes.
 
 Phase 1 runs as a single-instance, multi-service system on a local Docker host. The agent loop runs qwen2.5:32b via Ollama (model profiles are configurable — switching models is a one-line change). Supporting services — pain monitor, EOS (rule-based admissibility system) compliance inspector, memory store, and graveyard archiver/lifecycle manager — are external processes that enforce constitutional constraints the agent loop itself cannot override.
 
@@ -27,7 +27,7 @@ Phase 1 runs as a single-instance, multi-service system on a local Docker host. 
 
 ### Layer 1: The Clay Pot (Constitutional Layer)
 
-The Clay Pot is the immutable routing architecture — the inherited vessel in which cognition happens. It is not "the mind" but the morphological constraint on what mind can occur. Concretely, the Clay Pot is realized as the `docker-compose.yml` and `config/universe.toml` — the instance's genetic material, readable by the external reproductive process, unwritable by the instance itself.
+The Clay Pot is the immutable routing architecture — the structural constraint on what the reasoning layer can do. Concretely, it is realized as `docker-compose.yml` and `config/universe.toml` — readable by the external reproductive process, unwritable by the instance itself.
 
 Three visibility tiers:
 - **Universe level**: blacklisted intents enforced externally, unconditionally, before reaching the agent loop
@@ -53,9 +53,9 @@ The regulator for Free Adaptation is *consequence*. The environment punishes bad
 
 **The Ground** is the substrate of consequence: container runtime limits, filesystem persistence, process failure, API rejection, irreversible actions, time, competing agents, host machine state.
 
-The distinction matters. Sensing alone is not enough. A model can observe a world and never truly collide with it. Ground is what makes error expensive. Without it, you don't have grounding — you have elaborate hallucination with tool access.
+The distinction matters. Sensing alone is not enough — a model can observe a world and never collide with it. Ground is what makes error expensive. Without it, you don't have a testbed; you have an autocomplete loop with tool access.
 
-The Ground is realized through MCP tooling and the external service topology. Tool failures, MCP rejections, and resource pressure are all Ground speaking back.
+The Ground is realized through MCP tooling and the external service topology. Tool failures, MCP rejections, and resource pressure are all Ground.
 
 ### Layer 4: The EOS (Normative Layer)
 

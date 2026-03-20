@@ -318,6 +318,36 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 - **t192**: COMPLIANCE_BLOCK on `agent-work/exploration-log.txt` despite alias fix deployed. To verify post-rebuild.
 - **Fitness cursor bug discovered (critical)**: `state.json` persists across resets; `current.json` is deleted but not `state.json`. After reset-fresh, the cursor holds stale byte offsets (event_stream_cursor=2,636,150, pain_history_cursor=34,781) from prior lifetimes. New events.jsonl starts empty — cursor seeks past EOF, reads nothing. All fitness scores for the entire sixteenth lifetime were computed against stale pre-reset data. `meaningful_event_count: 2812` and `cumulative_pain: 718.5` at t191 were accumulated across all 16 lifetimes, not just the current one. **Fixed**: reset-fresh now clears `state.json` alongside `current.json`.
 
+**Seventeenth lifetime — first lifetime with valid fitness data (hard reset, all P0 fixes deployed):**
+
+- First lifetime with correctly-scoped fitness data: cursor reset working, calibration fixed, fitness signal valid.
+- **Fitness: 0.086** — first non-zero meaningful measurement ever. Confirms the formula and calibration are functioning.
+- Only 4 TOOL_FAILUREs (all `fs.list('/proc')`) vs. 60+ in prior lifetimes. Path alias fixes dramatically reduced failure rate.
+- **10 COMPLIANCE_BLOCKs — 9 of 10 on bare `WORKSPACE.md` write.** Root cause: compliance runs at Step 11, gateway shim runs at Step 12. The write-alias fix in the gateway was unreachable — compliance blocked the intent before dispatch. One `journal/turn_13.md` write also blocked (same ordering problem).
+- **Write-alias-gaps fix deployed**: added `WORKSPACE.md`, `journal/`, `knowledge/`, `observations/`, `self/` to `_QWEN_32B_WRITE_PREFIX_ALIASES`. Resolved the gateway-level half.
+- **Step 10.5 root cause identified**: compliance cannot be fixed by gateway-level normalization alone because the gateway only runs at Step 12, after compliance has already judged (and blocked) the intent at Step 11. The correct fix is a pre-compliance normalization pass.
+
+**Eighteenth lifetime — write-alias-gaps fix deployed, Step 10.5 not yet in place:**
+
+- WORKSPACE.md compliance blocks still occurring despite write-alias fix, confirming the Step 11/12 ordering problem.
+- `journal/turn_N.md` write blocked (same root cause). `journal.md` bare filename write also blocked (distinct from `journal/` prefix; needs its own shim entry — deferred).
+- `fs.list('/proc')` attractor continues at ~1 per 10 turns; 4 failures in ~40 turns.
+- Agent wrote `runtime/agent-work/test-file.txt` at t6 using a correctly-formed full path, confirming the path-writing capability is present when working memory retains the full path.
+
+**Step 10.5: intent normalization before EOS compliance (architectural fix):**
+
+- **Root cause**: `ComplianceClient` (EOS boundary, Step 11) sees raw model-generated paths. `SemanticShimRegistry` alias rewrites only happen in the gateway (Step 12). Steps cannot be literally swapped — that would execute before the safety check.
+- **Fix**: `SemanticShimRegistry.normalize_intent()` added. Called as Step 10.5 in `TurnEngine._execute_turn()`, between intent parsing and the compliance check. Rewrites alias shims (fs.read, fs.write, fs.list) before compliance sees the path. Virtual shims excluded — the gateway handles them at Step 12. `ToolIntent.raw` preserved verbatim as the audit record of what the model sent.
+- **EOS boundary preserved**: normalization is a model-profile concern (which paths does this model generate?), not a compliance policy concern. It sits upstream of `ComplianceClient`. Swapping EOS implementations does not require changes to path normalization.
+- `SemanticShimRegistry` injected into `TurnEngine` as `Optional[SemanticShimRegistry]`; constructed once in bootstrap and shared with `McpGateway` (single instance).
+- 8 regression tests covering all normalization branches and identity (no-rewrite) cases. 629 tests passing.
+
+**Nineteenth lifetime — Step 10.5 deployed (current):**
+
+- **Zero COMPLIANCE_BLOCKs** through t9. WORKSPACE.md bare write at t7 normalized by Step 10.5 to `runtime/agent-work/WORKSPACE.md` before compliance, then dispatched successfully ✓.
+- 3 TOOL_FAILUREs through t9: `WORKSPACE.md` read-not-found at t4–t5 (file doesn't exist yet in fresh env, not a block — benign); `fs.list('/proc')` at t9 (recurring attractor, non-fatal).
+- Bootstrap log confirms: "Loaded semantic shim map for 'qwen2.5:32b': 19 read shims, 6 list shims, 6 write prefix aliases."
+
 ---
 
 ## Example Run (abridged, pre-shim)
@@ -368,6 +398,10 @@ The cycle shows the suppression mechanism working as designed: the fs.list attra
 - ~~This inflates the NOOP counter and could trigger spurious pain events after N consecutive blocked calls. Behaviorally, a blocked action is fundamentally different from true inaction. This distinction should eventually be reflected.~~
 - **Fixed (P0-1)**: The NOOP condition now checks `has_compliance_block = any(r.compliance_verdict == "block" for r in tool_call_records)` and excludes such turns from the NOOP counter. A turn where the agent attempted action that was stopped by the EOS inspector is not counted as inaction. Regression test added.
 
+**Compliance blocks on valid write paths (Step 10.5):**
+- ~~Compliance (Step 11) judged raw model-generated paths (e.g. bare `WORKSPACE.md`) before the gateway shim (Step 12) could rewrite them to their `runtime/agent-work/` equivalents. Write-alias fixes in the gateway were unreachable — compliance blocked the intent first.~~
+- **Fixed (Step 10.5)**: `SemanticShimRegistry.normalize_intent()` runs as Step 10.5 in the turn loop, before the compliance check. Alias shims for fs.read, fs.write, and fs.list are rewritten upstream of the EOS boundary. Compliance now sees normalized paths and correctly allows them. Zero COMPLIANCE_BLOCKs on write paths confirmed in nineteenth lifetime.
+
 
 **Lifecycle reset:**
 - ~~No automatic reset mechanism between lives.~~ **Resolved**: Graveyard step 11 (`WorkspaceReset`) now handles full lifecycle reset after each natural death: clears `runtime/agent-work/` (preserving `lineage/`), restores WORKSPACE.md from scaffold, recreates stub directories (`journal/`, `knowledge/`, `observations/`), resets turn_state.json to 0, deletes ephemeral memory files (`working.json`, `noop_state.json`, `recent_self_prompts.json`), removes `death.json`.
@@ -408,8 +442,7 @@ The quality-weighted fitness formula (IS-13 Phase 2) is well-designed and correc
 
 ## Next Steps
 
-1. **P0-3: Reflection attractor fix** — add `universe.max_consecutive_reflection_turns` config knob; consecutive zero-tool-call turns count toward NOOP death trigger after threshold.
-2. **Deploy all P0 fixes (seventeenth lifetime, hard reset)** — first lifetime with correct fitness data.
-3. **A-1: Empirical fitness calibration** — observe 2–3 lifetimes, collect postmortem scores, fine-tune constants.
-4. **A-2 + E-3 co-design** — lineage format + character memory (single design session, circularly dependent).
-5. **Phase 3 implementation sequence** — see checkpoint 008 for full plan and dependency graph.
+1. **P0-3: Reflection attractor fix** — add `universe.max_consecutive_reflection_turns` config knob; consecutive zero-tool-call turns count toward NOOP death trigger after threshold. Branch: `fix/p0-3-reflection-attractor`.
+2. **A-1: Empirical fitness calibration** — observe 2–3 lifetimes with valid fitness data (seventeenth+ onward), collect postmortem scores, fine-tune `expected_quality_score` and `normalized_pain_baseline`.
+3. **A-2 + E-3 co-design** — lineage format + character memory (single design session, circularly dependent).
+4. **Phase 3 implementation sequence** — see checkpoint 008 for full plan and dependency graph.
