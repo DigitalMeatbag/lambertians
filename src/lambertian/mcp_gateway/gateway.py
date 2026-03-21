@@ -7,7 +7,7 @@ import tempfile
 import time
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 import httpx
 
@@ -56,6 +56,12 @@ class McpGateway:
         # Injected for testability; production code constructs a fresh client per request.
         self._http_client: Optional[httpx.Client] = http_client
         self._shim_registry: Optional[SemanticShimRegistry] = shim_registry
+        self._tool_handlers: dict[str, Callable[[ToolIntent, str, float], ToolResult]] = {
+            "fs.read": self._fs_read,
+            "fs.write": self._fs_write,
+            "fs.list": self._fs_list,
+            "http.fetch": self._http_fetch,
+        }
 
     # ------------------------------------------------------------------
     # Public interface
@@ -66,15 +72,8 @@ class McpGateway:
         start = time.monotonic()
         call_id = str(uuid.uuid4())
         try:
-            if intent.tool_name == "fs.read":
-                return self._fs_read(intent, call_id, start)
-            elif intent.tool_name == "fs.write":
-                return self._fs_write(intent, call_id, start)
-            elif intent.tool_name == "fs.list":
-                return self._fs_list(intent, call_id, start)
-            elif intent.tool_name == "http.fetch":
-                return self._http_fetch(intent, call_id, start)
-            else:
+            handler = self._tool_handlers.get(intent.tool_name)
+            if handler is None:
                 return _make_failure(
                     intent.tool_name,
                     call_id,
@@ -82,6 +81,7 @@ class McpGateway:
                     "mcp_rejection",
                     f"Unknown tool: {intent.tool_name}",
                 )
+            return handler(intent, call_id, start)
         except Exception as exc:
             return _make_failure(
                 intent.tool_name,

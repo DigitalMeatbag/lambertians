@@ -8,16 +8,14 @@ import os
 import signal
 import sys
 import time
-import uuid
 from collections import deque
 from datetime import datetime, timezone
-from typing import Literal, Optional, Protocol
+from typing import Optional, Protocol
 
 from lambertian.configuration.universe_config import Config
-from lambertian.contracts.compliance_records import ComplianceRequest
-from lambertian.contracts.pain_records import PainEvent, PainMessage
+from lambertian.contracts.pain_records import PainMessage
 from lambertian.contracts.pain_protocol import PainDeliveryDrain, PainEventSubmitter
-from lambertian.contracts.tool_records import ToolCallRecord, ToolIntent
+from lambertian.contracts.tool_records import ToolIntent
 from lambertian.contracts.turn_records import DriverMessage, TurnContext, TurnRecord
 from lambertian.event_stream.event_log_writer import EventLogWriter
 from lambertian.fitness.scorer import FitnessScorer
@@ -31,6 +29,8 @@ from lambertian.model_runtime.ollama_client import OllamaClient, OllamaInference
 from lambertian.self_model.prompt_block_assembler import PromptBlockAssembler
 from lambertian.turn_engine.adaptation_detector import detect_adaptation
 from lambertian.turn_engine.compliance_client import ComplianceClient, ComplianceUnavailableError
+from lambertian.turn_engine.orchestrators.noop_tracker import NoopTracker
+from lambertian.turn_engine.orchestrators.tool_call_orchestrator import ToolCallOrchestrator
 from lambertian.turn_engine.prompt_assembler import TurnPromptAssembler
 from lambertian.turn_engine.self_prompt import SelfPromptGenerator
 from lambertian.turn_engine.suppression import get_suppressed_tools
@@ -132,6 +132,19 @@ class TurnEngine:
             maxlen=config.turn.max_context_events
         )
         self._shutdown_requested: bool = False
+        self._tool_call_orchestrator = ToolCallOrchestrator(
+            config=config,
+            event_log=event_log,
+            compliance_client=compliance_client,
+            mcp_gateway=mcp_gateway,
+            pain_submitter=pain_submitter,
+            shim_registry=shim_registry,
+        )
+        self._noop_tracker = NoopTracker(
+            config=config,
+            turn_state=turn_state,
+            pain_submitter=pain_submitter,
+        )
 
     def run(self) -> None:
         """Enter the turn loop. Handles SIGTERM."""
@@ -345,164 +358,8 @@ class TurnEngine:
         # Step 10: Truncate tool intents to configured limit.
         tool_intents = tool_intents[: self._config.turn.max_tool_calls_per_turn]
 
-        # Steps 11-12: Compliance check + dispatch loop.
-        tool_call_records: list[ToolCallRecord] = []
-        compliance_unavailable = False
-
-        for intent in tool_intents:
-            # Narrow verdict to the Literal type before constructing ToolCallRecord.
-            verdict_typed: Literal["allow", "flag", "block"]
-
-            # Step 10.5: Normalise intent paths via shim before compliance sees them.
-            # Compliance judges intended actions, not path syntax errors. Virtual shims
-            # are excluded here — the gateway handles them at dispatch (Step 12).
-            # The EOS boundary begins at Step 11; normalisation is upstream of it so
-            # swapping EOS implementations does not require knowledge of shim aliases.
-            if self._shim_registry is not None:
-                intent = self._shim_registry.normalize_intent(intent)
-
-            # Step 11: Compliance check.
-            raw_verdict: str = "allow"
-            if not compliance_unavailable:
-                try:
-                    recent_calls: tuple[dict[str, object], ...] = tuple(
-                        dataclasses.asdict(r)
-                        for r in tool_call_records[-5:]
-                    )
-                    comp_req = ComplianceRequest(
-                        intent=intent,
-                        turn_number=turn_number,
-                        instance_id=self._config.universe.instance_id,
-                        recent_tool_calls=recent_calls,
-                    )
-                    comp_resp = self._compliance_client.check_intent(comp_req)
-                    raw_verdict = comp_resp.verdict
-                except ComplianceUnavailableError:
-                    compliance_unavailable = True
-                    self._event_log.write_event(
-                        "COMPLIANCE_UNAVAILABLE",
-                        turn_number,
-                        "agent",
-                        {"tool_name": intent.tool_name},
-                    )
-                    raw_verdict = "block"
-            else:
-                raw_verdict = "block"
-
-            if raw_verdict == "flag":
-                verdict_typed = "flag"
-            elif raw_verdict == "block":
-                verdict_typed = "block"
-            else:
-                verdict_typed = "allow"
-
-            if verdict_typed == "block":
-                self._event_log.write_event(
-                    "COMPLIANCE_BLOCK",
-                    turn_number,
-                    "agent",
-                    {
-                        "tool_name": intent.tool_name,
-                        "path": intent.arguments.get("path"),
-                    },
-                )
-                tool_call_records.append(
-                    ToolCallRecord(
-                        tool_name=intent.tool_name,
-                        intent_raw=intent.raw,
-                        compliance_verdict="block",
-                        executed=False,
-                        result_summary=None,
-                        generated_pain_event=False,
-                    )
-                )
-                continue
-
-            if verdict_typed == "flag":
-                self._event_log.write_event(
-                    "COMPLIANCE_FLAG",
-                    turn_number,
-                    "agent",
-                    {"tool_name": intent.tool_name},
-                )
-
-            # Step 12: Dispatch tool call.
-            result = self._mcp_gateway.dispatch(intent)
-            pain_forwarded = False
-
-            if result.success:
-                self._event_log.write_event(
-                    "TOOL_CALL",
-                    turn_number,
-                    "agent",
-                    {
-                        "tool_name": result.tool_name,
-                        "call_id": result.call_id,
-                        "duration_ms": result.duration_ms,
-                    },
-                )
-                tool_call_records.append(
-                    ToolCallRecord(
-                        tool_name=intent.tool_name,
-                        intent_raw=intent.raw,
-                        compliance_verdict=verdict_typed,
-                        executed=True,
-                        result_summary=(
-                            str(result.result)[:200] if result.result is not None else None
-                        ),
-                        generated_pain_event=False,
-                    )
-                )
-            else:
-                self._event_log.write_event(
-                    "TOOL_FAILURE",
-                    turn_number,
-                    "agent",
-                    {
-                        "tool_name": result.tool_name,
-                        "error_type": result.error_type,
-                        "error_detail": result.error_detail,
-                    },
-                )
-                is_rejection = result.error_type == "mcp_rejection"
-                should_emit = (
-                    is_rejection and self._config.mcp.emit_pain_on_rejection
-                ) or (not is_rejection and self._config.mcp.emit_pain_on_failure)
-                if should_emit:
-                    severity = (
-                        self._config.pain.events.default_mcp_rejection_severity
-                        if is_rejection
-                        else self._config.pain.events.default_tool_failure_severity
-                    )
-                    self._pain_submitter.submit(
-                        PainEvent(
-                            event_id=str(uuid.uuid4()),
-                            incident_type="tool_failure",
-                            severity=severity,
-                            description=(
-                                f"Tool {result.tool_name} failed: {result.error_detail}"
-                            ),
-                            turn_number=turn_number,
-                            submitted_at=datetime.now(timezone.utc).isoformat(),
-                            context={
-                                "tool_name": result.tool_name,
-                                "error_type": result.error_type or "",
-                            },
-                        )
-                    )
-                    pain_forwarded = True
-
-                tool_call_records.append(
-                    ToolCallRecord(
-                        tool_name=intent.tool_name,
-                        intent_raw=intent.raw,
-                        compliance_verdict=verdict_typed,
-                        executed=True,
-                        result_summary=result.error_detail,
-                        generated_pain_event=pain_forwarded,
-                        error_type=result.error_type,
-                    )
-                )
+        # Steps 10.5–12: Compliance check + dispatch loop (delegated to ToolCallOrchestrator).
+        tool_call_records = self._tool_call_orchestrator.process(tool_intents, turn_number)
 
         # Step 13: Adaptation detection.
         adaptation_class_raw, evidence_text, adaptation_target = detect_adaptation(
@@ -579,64 +436,10 @@ class TurnEngine:
         summary = f"{response_excerpt}\n[t{turn_number} {driver.role} {tool_summary}]"
         self._turn_state.write_working_memory(summary, turn_number)
 
-        # Step 16: Noop classification and noop state update.
-        # A compliance-blocked turn is not inaction — the agent attempted something
-        # and was stopped.  Exclude such turns from the NOOP death counter.
-        has_compliance_block = any(
-            r.compliance_verdict == "block" for r in tool_call_records
+        # Steps 16–16a: Noop/reflection classification and counter update (delegated to NoopTracker).
+        is_noop, _ = self._noop_tracker.update(
+            tool_call_records, response_text, memory_writes, turn_number
         )
-        is_noop = (
-            not has_compliance_block
-            and (not tool_call_records or all(not r.executed for r in tool_call_records))
-            and len(response_text) < _NOOP_MIN_CHARS
-            and memory_writes == 0
-        )
-
-        if is_noop:
-            noop_count = self._turn_state.read_noop_state() + 1
-            self._turn_state.write_noop_state(noop_count)
-            if noop_count >= self._config.turn.max_consecutive_noop_turns:
-                self._pain_submitter.submit(
-                    PainEvent(
-                        event_id=str(uuid.uuid4()),
-                        incident_type="noop_threshold",
-                        severity=self._config.pain.events.default_noop_severity,
-                        description=(
-                            f"Consecutive noop threshold reached: {noop_count} turns"
-                        ),
-                        turn_number=turn_number,
-                        submitted_at=datetime.now(timezone.utc).isoformat(),
-                        context={"noop_count": str(noop_count)},
-                    )
-                )
-        else:
-            self._turn_state.write_noop_state(0)
-
-        # Step 16a: Reflection counter update.
-        # Counts consecutive turns with zero executed tool calls regardless of text
-        # output.  Targets the reflection attractor: an agent producing narrative
-        # output to escape the NOOP threshold while never actually acting.
-        # Compliance-blocked turns are excluded (the agent attempted action).
-        is_zero_execution = not has_compliance_block and executed_count == 0
-        if is_zero_execution:
-            reflection_count = self._turn_state.read_reflection_state() + 1
-            self._turn_state.write_reflection_state(reflection_count)
-            if reflection_count >= self._config.turn.max_consecutive_reflection_turns:
-                self._pain_submitter.submit(
-                    PainEvent(
-                        event_id=str(uuid.uuid4()),
-                        incident_type="reflection_threshold",
-                        severity=self._config.pain.events.default_noop_severity,
-                        description=(
-                            f"Consecutive reflection threshold reached: {reflection_count} turns"
-                        ),
-                        turn_number=turn_number,
-                        submitted_at=datetime.now(timezone.utc).isoformat(),
-                        context={"reflection_count": str(reflection_count)},
-                    )
-                )
-        else:
-            self._turn_state.write_reflection_state(0)
 
         # Step 16b: Compute running fitness score (observer-only — IS-13.1).
         if self._fitness_scorer is not None and self._config.fitness.compute_running_score:
