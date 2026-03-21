@@ -56,6 +56,7 @@ def _build_engine(
     pain_drain: object | None = None,
     ollama_override: object | None = None,
     compliance_override: object | None = None,
+    gateway_override: object | None = None,
 ) -> TurnEngine:
     """Wire a full TurnEngine with all external I/O mocked or pointed at tmp_path."""
     runtime = Path(config.paths.runtime_root)
@@ -105,8 +106,11 @@ def _build_engine(
             composite_score=None,
         )
 
-    mock_gateway = MagicMock()
-    mock_gateway.get_tool_catalog.return_value = []
+    if gateway_override is not None:
+        mock_gateway = gateway_override
+    else:
+        mock_gateway = MagicMock()
+        mock_gateway.get_tool_catalog.return_value = []
 
     drain = pain_drain if pain_drain is not None else _EmptyDrain()
 
@@ -347,11 +351,19 @@ def _build_engine_reflection_threshold(
     tmp_path: Path,
     threshold: int,
     ollama_override: object | None = None,
+    compliance_override: object | None = None,
+    gateway_override: object | None = None,
 ) -> TurnEngine:
     """Wire engine with a small max_consecutive_reflection_turns for threshold tests."""
     new_turn = dataclasses.replace(config.turn, max_consecutive_reflection_turns=threshold)
     patched_config = dataclasses.replace(config, turn=new_turn)
-    return _build_engine(patched_config, tmp_path, ollama_override=ollama_override)
+    return _build_engine(
+        patched_config,
+        tmp_path,
+        ollama_override=ollama_override,
+        compliance_override=compliance_override,
+        gateway_override=gateway_override,
+    )
 
 
 class TestReflectionAttractor:
@@ -412,10 +424,9 @@ class TestReflectionAttractor:
         engine = _build_engine_reflection_threshold(
             config, tmp_path, threshold=5,
             ollama_override=mock_ollama,
+            compliance_override=mock_compliance,
+            gateway_override=mock_gateway,
         )
-        # Inject gateway and compliance with dispatch support.
-        engine._mcp_gateway = mock_gateway  # type: ignore[attr-defined]
-        engine._compliance_client = mock_compliance  # type: ignore[attr-defined]
 
         engine._execute_turn()  # type: ignore[attr-defined]  # reflection turn — counter → 1
         engine._execute_turn()  # type: ignore[attr-defined]  # tool-call turn — counter → 0
@@ -474,8 +485,8 @@ class TestReflectionAttractor:
         engine = _build_engine_reflection_threshold(
             config, tmp_path, threshold=5,
             ollama_override=mock_ollama,
+            compliance_override=mock_compliance,
         )
-        engine._compliance_client = mock_compliance  # type: ignore[attr-defined]
         engine._execute_turn()  # type: ignore[attr-defined]
 
         memory_dir = Path(config.paths.memory_root)

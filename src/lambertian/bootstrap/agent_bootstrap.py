@@ -7,29 +7,11 @@ import logging
 import time
 from pathlib import Path
 
+from lambertian.bootstrap.component_factory import ComponentFactory
 from lambertian.configuration.universe_config import Config
-from lambertian.event_stream.event_log_writer import EventLogWriter
-from lambertian.fitness.cursor_state import FitnessCursorStore
-from lambertian.fitness.event_reader import EventStreamReader
-from lambertian.fitness.pain_reader import PainHistoryReader
-from lambertian.fitness.registry import build_default_registry
-from lambertian.fitness.scorer import FitnessScorer
-from lambertian.lifecycle.death_record_reader import DeathRecordReader
-from lambertian.mcp_gateway.gateway import McpGateway
-from lambertian.mcp_gateway.path_resolver import PathResolver
-from lambertian.mcp_gateway.semantic_shim import build_shim_registry
 from lambertian.memory_store.episodic_store import EpisodicStore
 from lambertian.memory_store.querier import ChromaMemoryQuerier, MemoryQuerier, NoOpMemoryQuerier
-from lambertian.model_runtime.ollama_client import OllamaClient
-from lambertian.pain_monitor.death_guard import DeathGuard
-from lambertian.pain_monitor.delivery_queue import DeliveryQueue
-from lambertian.pain_monitor.event_submitter import FilePainEventSubmitter
-from lambertian.self_model.prompt_block_assembler import PromptBlockAssembler
-from lambertian.self_model.self_model_writer import SelfModelWriter
-from lambertian.turn_engine.compliance_client import ComplianceClient
 from lambertian.turn_engine.engine import StdinUserInputProvider, TurnEngine
-from lambertian.turn_engine.self_prompt import SelfPromptGenerator
-from lambertian.turn_engine.turn_state import TurnStateStore
 
 _log = logging.getLogger(__name__)
 
@@ -50,31 +32,21 @@ class AgentBootstrap:
         fitness_state_path = fitness_score_path.parent / "state.json"
         event_stream_dir = Path(config.paths.event_stream_file).parent
 
-        self._event_log = EventLogWriter(config)
-        self._self_model_writer = SelfModelWriter(config, self_model_dir)
-        self._death_reader = DeathRecordReader(pain_root / "death.json")
-        self._death_guard = DeathGuard(config, pain_root / "death.json")
-        self._model_client = OllamaClient(config)
-        self._shim_registry = build_shim_registry(config)
-        self._mcp_gateway = McpGateway(
-            config,
-            PathResolver(runtime_root, Path("config")),
-            shim_registry=self._shim_registry,
-        )
-        self._compliance_client = ComplianceClient(config)
-        constitution_text = Path(config.instance.constitution_path).read_text(encoding="utf-8")
-        self._block_assembler = PromptBlockAssembler(config, constitution_text)
-        self._turn_state = TurnStateStore(memory_dir)
-        self._self_prompt_gen = SelfPromptGenerator(config)
-        self._delivery_queue = DeliveryQueue(pain_root / "delivery_queue.json")
-        self._pain_submitter = FilePainEventSubmitter(pain_root / "event_queue.jsonl")
-        self._fitness_scorer = FitnessScorer(
-            config=config,
-            registry=build_default_registry(quality_config=config.fitness.quality),
-            cursor_store=FitnessCursorStore(fitness_state_path),
-            event_reader=EventStreamReader(event_stream_dir),
-            pain_reader=PainHistoryReader(pain_root / "pain_history.jsonl"),
-            output_path=fitness_score_path,
+        self._event_log = ComponentFactory.create_event_log(config)
+        self._self_model_writer = ComponentFactory.create_self_model_writer(config, self_model_dir)
+        self._death_reader = ComponentFactory.create_death_reader(pain_root / "death.json")
+        self._death_guard = ComponentFactory.create_death_guard(config, pain_root / "death.json")
+        self._model_client = ComponentFactory.create_model_client(config)
+        self._shim_registry = ComponentFactory.create_shim_registry(config)
+        self._mcp_gateway = ComponentFactory.create_mcp_gateway(config, runtime_root, self._shim_registry)
+        self._compliance_client = ComponentFactory.create_compliance_client(config)
+        self._block_assembler = ComponentFactory.create_block_assembler(config)
+        self._turn_state = ComponentFactory.create_turn_state(memory_dir)
+        self._self_prompt_gen = ComponentFactory.create_self_prompt_gen(config)
+        self._delivery_queue = ComponentFactory.create_delivery_queue(pain_root)
+        self._pain_submitter = ComponentFactory.create_pain_submitter(pain_root)
+        self._fitness_scorer = ComponentFactory.create_fitness_scorer(
+            config, fitness_state_path, fitness_score_path, event_stream_dir, pain_root
         )
 
     def run(self) -> None:

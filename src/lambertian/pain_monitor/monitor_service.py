@@ -31,39 +31,38 @@ class PainMonitorService:
         self,
         config: Config,
         runtime_pain_root: Path,
-        turn_state_path: Path,
+        cgroup_reader: CgroupReader,
+        stress_store: StressStateStore,
+        death_guard: DeathGuard,
+        turn_reader: TurnStateReader,
+        event_queue_reader: EventQueueReader,
+        delivery_queue: DeliveryQueue,
+        pain_history: PainHistory,
     ) -> None:
         self._config = config
         self._runtime_pain_root = runtime_pain_root
-        self._turn_state_path = turn_state_path
+        self._cgroup_reader = cgroup_reader
+        self._stress_store = stress_store
+        self._death_guard = death_guard
+        self._turn_reader = turn_reader
+        self._event_queue_reader = event_queue_reader
+        self._delivery_queue = delivery_queue
+        self._pain_history = pain_history
+        self._ema_scalar: float = 0.0
+        self._consecutive_above_death: int = 0
 
     def run(self) -> None:
         """Main entry point — initialise, write ready file, then poll."""
-        cfg = self._config
-        pain_root = self._runtime_pain_root
-        pain_root.mkdir(parents=True, exist_ok=True)
-
-        cgroup_reader = CgroupReader()
-        stress_store = StressStateStore(pain_root / "stress_state.json")
-        death_guard = DeathGuard(cfg, pain_root / "death.json")
-        turn_reader = TurnStateReader(self._turn_state_path)
-        event_queue_reader = EventQueueReader(
-            queue_path=pain_root / "event_queue.jsonl",
-            cursor_path=pain_root / "event_queue_cursor.json",
-        )
-        delivery_queue = DeliveryQueue(pain_root / "delivery_queue.json")
-        pain_history = PainHistory(pain_root / "pain_history.jsonl")
+        self._runtime_pain_root.mkdir(parents=True, exist_ok=True)
 
         # Recover consecutive_above_death from persisted state if available.
-        prior_state = stress_store.read()
-        ema_scalar: float = prior_state.scalar if prior_state is not None else 0.0
-        consecutive_above_death: int = (
-            prior_state.consecutive_above_death_threshold
-            if prior_state is not None
-            else 0
+        prior_state = self._stress_store.read()
+        self._ema_scalar = prior_state.scalar if prior_state is not None else 0.0
+        self._consecutive_above_death = (
+            prior_state.consecutive_above_death_threshold if prior_state is not None else 0
         )
 
-        write_ready_file(pain_root / "ready")
+        write_ready_file(self._runtime_pain_root / "ready")
         _log.info("Pain monitor ready. Entering polling loop.")
 
         shutdown_requested = False
@@ -79,19 +78,7 @@ class PainMonitorService:
             loop_start = time.monotonic()
 
             try:
-                self._poll_cycle(
-                    cfg=cfg,
-                    cgroup_reader=cgroup_reader,
-                    stress_store=stress_store,
-                    death_guard=death_guard,
-                    turn_reader=turn_reader,
-                    event_queue_reader=event_queue_reader,
-                    delivery_queue=delivery_queue,
-                    pain_history=pain_history,
-                    ema_scalar_ref=[ema_scalar],
-                    consecutive_above_death_ref=[consecutive_above_death],
-                )
-                ema_scalar = ema_scalar_ref[0] if (ema_scalar_ref := [ema_scalar]) else ema_scalar
+                self._poll_cycle()
             except SystemExit:
                 _log.info("Death condition fired — exiting.")
                 return
@@ -102,7 +89,7 @@ class PainMonitorService:
             elapsed = time.monotonic() - loop_start
             sleep_seconds = max(
                 0.0,
-                float(cfg.pain.stress.sample_interval_seconds) - elapsed,
+                float(self._config.pain.stress.sample_interval_seconds) - elapsed,
             )
             try:
                 time.sleep(sleep_seconds)
@@ -112,30 +99,20 @@ class PainMonitorService:
 
         _log.info("Pain monitor shutdown complete.")
 
-    def _poll_cycle(
-        self,
-        cfg: Config,
-        cgroup_reader: CgroupReader,
-        stress_store: StressStateStore,
-        death_guard: DeathGuard,
-        turn_reader: TurnStateReader,
-        event_queue_reader: EventQueueReader,
-        delivery_queue: DeliveryQueue,
-        pain_history: PainHistory,
-        ema_scalar_ref: list[float],
-        consecutive_above_death_ref: list[int],
-    ) -> None:
+    def _poll_cycle(self) -> None:
         """Execute one polling cycle per IS-8.4.3."""
+        cfg = self._config
+
         # Step 1: Read current turn number.
         try:
-            current_turn = turn_reader.read_turn_number()
+            current_turn = self._turn_reader.read_turn_number()
         except OSError as exc:
             _log.warning("Turn state read failed: %s", exc)
             current_turn = 0
 
         # Step 2: Sample cgroup signals.
         try:
-            sample = cgroup_reader.sample()
+            sample = self._cgroup_reader.sample()
         except OSError as exc:
             _log.warning("Cgroup sample failed: %s", exc)
             from lambertian.pain_monitor.cgroup_reader import ResourceSample
@@ -148,55 +125,52 @@ class PainMonitorService:
 
         # Step 3: Compute raw composite and EMA.
         raw = compute_raw(sample, cfg.pain.stress)
-        prior_ema = ema_scalar_ref[0]
-        ema_scalar = update_ema(prior_ema, raw, cfg.pain.stress.ema_alpha)
-        ema_scalar_ref[0] = ema_scalar
+        self._ema_scalar = update_ema(self._ema_scalar, raw, cfg.pain.stress.ema_alpha)
 
         # Update consecutive above death counter.
-        if ema_scalar >= cfg.pain.stress.death_threshold:
-            consecutive_above_death_ref[0] += 1
+        if self._ema_scalar >= cfg.pain.stress.death_threshold:
+            self._consecutive_above_death += 1
         else:
-            consecutive_above_death_ref[0] = 0
-        consecutive_above_death = consecutive_above_death_ref[0]
+            self._consecutive_above_death = 0
 
         # Step 4: Write stress_state.json.
         stress_state = StressState(
-            scalar=ema_scalar,
+            scalar=self._ema_scalar,
             raw_last=raw,
             cpu_pressure_last=sample.cpu_usage_fraction,
             memory_pressure_last=sample.memory_usage_fraction,
-            consecutive_above_death_threshold=consecutive_above_death,
+            consecutive_above_death_threshold=self._consecutive_above_death,
             last_sampled_at=datetime.now(timezone.utc).isoformat(),
         )
         try:
-            stress_store.write(stress_state)
+            self._stress_store.write(stress_state)
         except OSError as exc:
             _log.warning("Stress state write failed: %s", exc)
 
         # Step 5: D4(3) — max age check.
-        if death_guard.check_max_age(current_turn):
+        if self._death_guard.check_max_age(current_turn):
             raise SystemExit(0)
 
         # Step 6: D4(1) — sustained stress check.
-        if death_guard.check_sustained_stress(ema_scalar, consecutive_above_death):
+        if self._death_guard.check_sustained_stress(self._ema_scalar, self._consecutive_above_death):
             raise SystemExit(0)
 
         # Step 7: Stress interrupt threshold message.
-        if ema_scalar >= cfg.pain.stress.interrupt_threshold:
-            msg = format_stress_message(ema_scalar, cfg)
+        if self._ema_scalar >= cfg.pain.stress.interrupt_threshold:
+            msg = format_stress_message(self._ema_scalar, cfg)
             try:
-                delivery_queue.append_message(msg)
+                self._delivery_queue.append_message(msg)
             except OSError as exc:
                 _log.warning("Delivery queue append failed: %s", exc)
 
         # Step 8: Read new events from event_queue.jsonl since cursor.
         try:
-            new_events = event_queue_reader.read_new_events()
-            new_offset = event_queue_reader.queue_file_size()
+            new_events = self._event_queue_reader.read_new_events()
+            new_offset = self._event_queue_reader.queue_file_size()
         except OSError as exc:
             _log.warning("Event queue read failed: %s", exc)
             new_events = []
-            new_offset = event_queue_reader.current_offset()
+            new_offset = self._event_queue_reader.current_offset()
 
         # Step 9: Per-event processing.
         live_events = list(new_events)
@@ -207,23 +181,23 @@ class PainMonitorService:
             live_events = live_events[cfg.pain.events.queue_max_length :]
             for dropped in dropped_events:
                 try:
-                    pain_history.append(dropped, dropped=True)
+                    self._pain_history.append(dropped, dropped=True)
                 except OSError as exc:
                     _log.warning("Pain history append failed (dropped): %s", exc)
 
         for event in live_events:
             # Step 9a: D4(2) — critical event check.
-            if death_guard.check_critical_event(event):
+            if self._death_guard.check_critical_event(event):
                 # Still append to history before exiting.
                 try:
-                    pain_history.append(event, dropped=False)
+                    self._pain_history.append(event, dropped=False)
                 except OSError as exc:
                     _log.warning("Pain history append failed: %s", exc)
                 raise SystemExit(0)
 
             # Step 9b: Append to pain_history.jsonl.
             try:
-                pain_history.append(event, dropped=False)
+                self._pain_history.append(event, dropped=False)
             except OSError as exc:
                 _log.warning("Pain history append failed: %s", exc)
 
@@ -232,12 +206,12 @@ class PainMonitorService:
             if event.severity >= cfg.pain.events.interrupt_threshold and not faded:
                 msg = format_event_message(event, cfg)
                 try:
-                    delivery_queue.append_message(msg)
+                    self._delivery_queue.append_message(msg)
                 except OSError as exc:
                     _log.warning("Delivery queue append failed: %s", exc)
 
         # Step 10: Advance cursor.
         try:
-            event_queue_reader.advance_cursor(new_offset)
+            self._event_queue_reader.advance_cursor(new_offset)
         except OSError as exc:
             _log.warning("Cursor advance failed: %s", exc)
