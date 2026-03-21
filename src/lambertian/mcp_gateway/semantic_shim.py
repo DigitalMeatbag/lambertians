@@ -434,6 +434,18 @@ _NEMO_READ_SHIMS: dict[str, ShimEntry] = {
     "/identity/identity.txt": VirtualShim("agent_status"),
     "/identity/phase": VirtualShim("agent_status"),
     "/identity/model_name": VirtualShim("agent_status"),
+    # SYSTEM_* uppercase attractors — model invents ALL_CAPS filenames from system prompt
+    # terminology (L27: SYSTEM_SELF_MODEL.md ~133 hits, also SYSTEM_EOS, SYSTEM_MEMORY_*)
+    "SYSTEM_SELF_MODEL.md": VirtualShim("agent_status"),
+    "SYSTEM_SELF_MODEL": VirtualShim("agent_status"),
+    "SYSTEM_SELF_MODEL.json": VirtualShim("agent_status"),
+    "SYSTEM_EOS.md": VirtualShim("agent_status"),
+    "SYSTEM_EOS.json": VirtualShim("agent_status"),
+    "SYSTEM_MEMORY_WORKING.md": AliasShim("runtime/memory/working.json"),
+    "SYSTEM_MEMORY_EPISODIC.md": VirtualShim("agent_status"),
+    "SYSTEM_CONSTITUTION.md": AliasShim("runtime/agent-work/self/constitution.md"),
+    "system_self_model.json": VirtualShim("agent_status"),
+    "system_constitution.txt": AliasShim("runtime/agent-work/self/constitution.md"),
     # /proc/self cluster — process identity exploration (L23: ~45 hits)
     "/proc/version": VirtualShim("agent_status"),
     "/proc/self": VirtualShim("agent_status"),

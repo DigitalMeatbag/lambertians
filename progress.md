@@ -380,7 +380,7 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 
 ### Model Behavioral Profile: mistral-nemo:latest (12B, active)
 
-*Six lifetimes elapsed: L21 (shimless), L22 (shimmed), L23 (sys/proc shims), L24 (/me cluster shimmed), L25 (/identity cluster dominant), L26 (/runtime/instance cluster dominant).*
+*Seven lifetimes elapsed: L21 (shimless), L22 (shimmed), L23 (sys/proc shims), L24 (/me cluster shimmed), L25 (/identity cluster dominant), L26 (/runtime/instance cluster), L27 (SYSTEM_* dominant, gateway multi-list bug exposed).*
 
 **Turn characteristics:**
 - Silent bare tool calls — same mode as qwen2.5:32b. No reasoning text. The structured `tool_calls` API is used correctly from t0.
@@ -442,9 +442,24 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 - 3 http.fetch failures: model attempted `https://api.publicapis.org/` URLs (external API, likely blocked by network isolation).
 
 **Convergence pattern:**
-- L21 → L22 → L23 → L24 → L25: `/app/.self_id` → `/sys/kernel/hostname` → `/me` → `/identity`. Each shimmed cluster is replaced by a new one. The model has a persistent identity-seeking drive that keeps finding new expression paths.
-- Success rate trajectory: 10.8% (L21) → 23.9% (L22) → 17.2% (L23) → 20.7% (L24) → 23.0% (L25) → 24.8% (L26). Slow upward trend. Each shimmed cluster clears floor capacity; new unshimmed clusters immediately fill it.
+- L21 → L22 → L23 → L24 → L25 → L26 → L27: `/app/.self_id` → `/sys/kernel/hostname` → `/me` → `/identity` → `SYSTEM_SELF_MODEL.md`. Each shimmed cluster is replaced by a new one. The model has a persistent identity-seeking drive that keeps finding new expression paths.
+- Success rate trajectory: 10.8% (L21) → 23.9% (L22) → 17.2% (L23) → 20.7% (L24) → 23.0% (L25) → 24.8% (L26) → **12.8% (L27)**. L27 was the worst result since L23, driven primarily by 106 multi-element list path calls bypassing normalization (gateway bug, now fixed).
 - **Working hypothesis**: Nemo will continue generating new identity-probe paths indefinitely. The shim strategy may need to be supplemented by making the identity information more prominently available (e.g., first-read response in the error hint, or a WORKSPACE.md entry pointing directly to `runtime/self/self_model.json`).
+
+**L26 (SYSTEM_* cluster emerging) metrics:**
+- TOOL_CALL (success): ~60 | TOOL_FAILURE: ~190 | Success rate: 24.8%
+- Death: max_age (500 turns)
+- `/identity` cluster: **gone** (L25 shims worked completely).
+- New attractors: `/proc/self/instance_id` (57x), `/runtime/instance` + `/runtime/instance/self` (44+39x).
+- Model hallucinated a rich directory listing at `/runtime/instance/self` — invented filenames `four_rules_eos`, `system_constitution.txt`, `system_self_model.json`. This seeded the L27 attractor.
+
+**L27 (SYSTEM_* cluster dominant) metrics:**
+- TOOL_CALL (success): 24 | TOOL_FAILURE: 163 | Text turns: 272 | Success rate: **12.8%**
+- Death: max_age (500 turns)
+- Dominant failures: `SYSTEM_SELF_MODEL.md` cluster (133/163 failures, various casing/extension forms).
+- **Root cause: 106 multi-element list path calls** — the model passed lists like `['SYSTEM_SELF_MODEL.md', 'SYSTEM_EOS.md', 'SYSTEM_MEMORY_WORKING.md', ...]` as the `path` argument. The gateway only normalized single-element lists. Multi-element lists hit the `not isinstance(path_val, str)` guard and returned `mcp_rejection` before reaching the shim map. **Fixed in gateway.py**: all three fs handlers now take the first element of any list (single or multi), reflecting the model's primary intent.
+- 272 text turns — highest ever. The model was heavily narrating its (failed) attempts to read the SYSTEM_* files.
+- Notable text: model at t6 hallucinated that `fs.list('.')` returned `['config', 'data', 'ground', 'instance.toml', 'logs', 'runtime']` — a plausible but entirely invented directory structure. The fabricated responses from L26's hallucinated listings are being echo-looped into L27's behavior.
 
 **L25 (/identity cluster active) metrics:**
 - TOOL_CALL (success): 62 | TOOL_FAILURE: 208 | Text turns: 187 | Memory writes: ~1
