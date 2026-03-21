@@ -426,6 +426,14 @@ _NEMO_READ_SHIMS: dict[str, ShimEntry] = {
     # Root-level JSON identity attractors (L24: 56 hits on /instance_identity.json)
     "/instance_identity.json": VirtualShim("agent_status"),
     "/identity.json": VirtualShim("agent_status"),
+    # /identity cluster — model uses /identity as a structured self-model directory (L25: 196 hits)
+    "/identity": VirtualShim("agent_status"),
+    "/identity/instance_id": VirtualShim("instance_id"),
+    "/identity/instance_core.toml": VirtualShim("agent_status"),
+    "/identity/instance_character.toml": VirtualShim("agent_status"),
+    "/identity/identity.txt": VirtualShim("agent_status"),
+    "/identity/phase": VirtualShim("agent_status"),
+    "/identity/model_name": VirtualShim("agent_status"),
     # /proc/self cluster — process identity exploration (L23: ~45 hits)
     "/proc/version": VirtualShim("agent_status"),
     "/proc/self": VirtualShim("agent_status"),
@@ -479,6 +487,9 @@ _NEMO_LIST_SHIMS: dict[str, AliasShim] = {
     # /me cluster list attractors
     "/me": AliasShim("runtime/agent-work/self"),
     "/me/": AliasShim("runtime/agent-work/self"),
+    # /identity cluster list attractors (L25: 196 hits)
+    "/identity": AliasShim("runtime/agent-work/self"),
+    "/identity/": AliasShim("runtime/agent-work/self"),
     # /runtime/ list attractors — model may probe these as directories
     "/runtime/agent-identity": AliasShim("runtime/agent-work/self"),
     "/runtime/agent-tools": AliasShim("runtime/agent-work"),

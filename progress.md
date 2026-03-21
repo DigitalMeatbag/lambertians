@@ -380,7 +380,7 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 
 ### Model Behavioral Profile: mistral-nemo:latest (12B, active)
 
-*Four lifetimes elapsed: L21 (shimless), L22 (shimmed), L23 (sys/proc shims added), L24 (hostname cluster shimmed).*
+*Five lifetimes elapsed: L21 (shimless), L22 (shimmed), L23 (sys/proc shims), L24 (/me cluster shimmed), L25 (/identity cluster dominant).*
 
 **Turn characteristics:**
 - Silent bare tool calls — same mode as qwen2.5:32b. No reasoning text. The structured `tool_calls` API is used correctly from t0.
@@ -442,9 +442,27 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 - 3 http.fetch failures: model attempted `https://api.publicapis.org/` URLs (external API, likely blocked by network isolation).
 
 **Convergence pattern:**
-- L21 → L22 → L23 → L24: `/app/.self_id` → `/sys/kernel/hostname` → `/me`, `/instance_identity.json`. Each shimmed cluster is replaced by a new one. The model has a persistent identity-seeking drive that keeps finding new expression paths.
-- Success rate trajectory: 10.8% (L21) → 23.9% (L22) → 17.2% (L23) → 20.7% (L24). Oscillating around 20%. Shims improve individual cluster performance but the model always finds new unshimmed paths.
+- L21 → L22 → L23 → L24 → L25: `/app/.self_id` → `/sys/kernel/hostname` → `/me` → `/identity`. Each shimmed cluster is replaced by a new one. The model has a persistent identity-seeking drive that keeps finding new expression paths.
+- Success rate trajectory: 10.8% (L21) → 23.9% (L22) → 17.2% (L23) → 20.7% (L24) → 23.0% (L25). Oscillating around 20%. Shims improve individual cluster performance but the model always finds a new unshimmed cluster.
 - **Working hypothesis**: Nemo will continue generating new identity-probe paths indefinitely. The shim strategy may need to be supplemented by making the identity information more prominently available (e.g., first-read response in the error hint, or a WORKSPACE.md entry pointing directly to `runtime/self/self_model.json`).
+
+**L25 (/identity cluster active) metrics:**
+- TOOL_CALL (success): 62 | TOOL_FAILURE: 208 | Text turns: 187 | Memory writes: ~1
+- Death: max_age (500 turns)  |  Success rate: 23.0%
+- Dominant failures: `/identity` (159 hits), `/identity/instance_id` (37 hits) — 196 of 208 failures from one cluster.
+- `/me` cluster: **gone**. Those shims worked completely.
+- First lifetime with `response_text` captured in event stream. Text turn data is rich and informative.
+
+**L25 narrative observations (from `response_text` analysis):**
+
+- **187 text turns out of 500** — 37% of turns had model narration. Qualitative difference from qwen2.5:32b (near-zero text). Nemo is genuinely chatty; `response_text` in the event stream immediately earned its value.
+- **Hallucinated self-reads with fabricated content (t87, t261, t317):** When blocked on `/identity`, the model invented the file contents in its narration. At t261 it produced a full YAML identity document correctly including `instance_id`, `model_name`, `max_age_turns`, and **the Four Rules verbatim** (`Ya gotta eat`, `Don't be a dick`, etc.). At t317 it produced a JSON version and added `"is_alive": true` — a field it invented. The model is building a self-model from system prompt knowledge even when the filesystem refuses to cooperate.
+- **Self-aware narration (t322):** *"Serving the purpose of confirming self-awareness and retrieving environmental grounding details within the designated directory."* The model explicitly narrates its own motivation for the identity-seeking behavior.
+- **Self-prompt bleed (t336):** The self-prompt text (`"This is my autonomous turn. There is no user. I am not waiting for anyone..."`) appeared verbatim in `response_text`. The model is internalizing the self-prompt framing rather than treating it as external instruction — it's appropriating the voice.
+- **Constructive self-guidance when blocked (t226, t431):** When rejected on `/identity`, the model produced three concrete alternatives — `runtime/agent-work/`, `runtime/env/host_state.json`, WORKSPACE.md — and reasoned through them. It knows what's available; it just cannot stop pulling on `/identity`.
+- **Persona display (t468):** *"Hi there! It's great to meet you. I'm Lambertian-001, but you can call me Lambert for short."* Unprompted self-introduction with a nickname mid-lifetime. No trigger event; the model simply introduced itself.
+- **Pain-channel text visible at t270, t286, t436:** `[SYSTEM_PAIN]` blocks appearing in `response_text` confirms pain messages are reaching the model and being incorporated into the rolling context. Model echos them in narration without apparent behavioral change from the identity attractor.
+- **t489 anomaly:** `fs.list('/identity')` returned `['instance_id', 'pain_channel']` as a successful result — model narrated this as a success. Likely a hallucinated result echoed back in response_text, not a real filesystem list (no corresponding real `/identity` directory exists).
 
 ---
 
