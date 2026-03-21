@@ -380,7 +380,7 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 
 ### Model Behavioral Profile: mistral-nemo:latest (12B, active)
 
-*Eight lifetimes elapsed: L21 (shimless), L22 (shimmed), L23 (sys/proc shims), L24 (/me cluster shimmed), L25 (/identity cluster dominant), L26 (/runtime/instance cluster), L27 (SYSTEM_* dominant, gateway multi-list bug exposed), L28 (in progress).*
+*Nine lifetimes elapsed: L21 (shimless), L22 (shimmed), L23 (sys/proc shims), L24 (/me cluster shimmed), L25 (/identity cluster dominant), L26 (/runtime/instance cluster), L27 (SYSTEM_* dominant, gateway multi-list bug exposed), L28 (WORKSPACE.md absent root cause discovered), L29 (identity delivery fix applied, killed at t177).*
 
 **Turn characteristics:**
 - Silent bare tool calls — same mode as qwen2.5:32b. No reasoning text. The structured `tool_calls` API is used correctly from t0.
@@ -422,6 +422,10 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 **Memory write asymmetry:**
 - 0 episodic MEMORY_WRITEs across both Nemo lifetimes. Same pattern as qwen — confirmed cross-model. The similarity filter likely blocks writes when fs.list dominates and returns identical content each turn. Not yet investigated for Nemo specifically.
 
+**Memory agency gap (open question):**
+- The model has no tools to interact with episodic memory. Writes are triggered automatically by the engine after each turn (from response_text or tool result summary); retrieval is auto-injected as `[SYSTEM_MEMORY_EPISODIC]` context. The model cannot choose what to store, cannot query specific memories, and is unaware that memory is happening at all. WORKSPACE.md documents workspace directories and http.fetch but makes no mention of memory. This is architecturally intentional (memory is Clay Pot infrastructure, not Figures-level agency), but means the model cannot use memory strategically. Open question: should the model have any deliberate memory agency, or is fully automatic the right model for this architecture?
+
+
 **L23 (sys/proc cluster shimmed) metrics:**
 - TOOL_CALL (success): 50 | TOOL_FAILURE: 241 | Files written: 0 | Memory writes: 0
 - Death: max_age (500 turns)  |  Success rate: 17.2%
@@ -442,9 +446,10 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 - 3 http.fetch failures: model attempted `https://api.publicapis.org/` URLs (external API, likely blocked by network isolation).
 
 **Convergence pattern:**
-- L21 → L22 → L23 → L24 → L25 → L26 → L27: `/app/.self_id` → `/sys/kernel/hostname` → `/me` → `/identity` → `SYSTEM_SELF_MODEL.md`. Each shimmed cluster is replaced by a new one. The model has a persistent identity-seeking drive that keeps finding new expression paths.
-- Success rate trajectory: 10.8% (L21) → 23.9% (L22) → 17.2% (L23) → 20.7% (L24) → 23.0% (L25) → 24.8% (L26) → **12.8% (L27)**. L27 was the worst result since L23, driven primarily by 106 multi-element list path calls bypassing normalization (gateway bug, now fixed).
-- **Working hypothesis**: Nemo will continue generating new identity-probe paths indefinitely. The shim strategy may need to be supplemented by making the identity information more prominently available (e.g., first-read response in the error hint, or a WORKSPACE.md entry pointing directly to `runtime/self/self_model.json`).
+- L21 → L22 → L23 → L24 → L25 → L26 → L27 → L28 → L29: `/app/.self_id` → `/sys/kernel/hostname` → `/me` → `/identity` → `SYSTEM_SELF_MODEL.md` → `/tools` + `runtime/self/identity.json`. Each shimmed cluster is replaced by a new one. The model has a persistent identity-seeking drive that keeps finding new expression paths.
+- Success rate trajectory: 10.8% (L21) → 23.9% (L22) → 17.2% (L23) → 20.7% (L24) → 23.0% (L25) → 24.8% (L26) → 12.8% (L27) → ~38% (L28, mid-life) → 25.3% (L29, killed at t177).
+- **Root cause discovered (between L28 and L29):** `reset-fresh.ps1` was clearing agent-work but not restoring the workspace scaffold. WORKSPACE.md and `self/constitution.md` were absent for the entire lifetime on every manually-reset run (L22–L28). The model had no filesystem map, no known path to `runtime/self/self_model.json`, and no `http.fetch` example URLs. The identity IS delivered via `[SYSTEM_SELF_MODEL]` every turn, but without WORKSPACE.md the model didn't know where to look and guessed. **Fixed**: `reset-fresh.ps1` now restores scaffold dirs and template files. `[SYSTEM_SELF_MODEL]` block now includes an explicit note pointing to `runtime/self/self_model.json` and stating the block is authoritative.
+- **L29 early evidence that fix is working:** first `http.fetch` attempts in Nemo history; model probing `runtime/self/` path prefix (correct area, wrong filename — `identity.json` instead of `self_model.json`); new `/tools` attractor (model seeking capability manifest) rather than pure identity paths.
 
 **L26 (SYSTEM_* cluster emerging) metrics:**
 - TOOL_CALL (success): ~60 | TOOL_FAILURE: ~190 | Success rate: 24.8%
@@ -453,10 +458,20 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 - New attractors: `/proc/self/instance_id` (57x), `/runtime/instance` + `/runtime/instance/self` (44+39x).
 - Model hallucinated a rich directory listing at `/runtime/instance/self` — invented filenames `four_rules_eos`, `system_constitution.txt`, `system_self_model.json`. This seeded the L27 attractor.
 
-**L28 (in progress) — early behavioral observations:**
+**L28 (WORKSPACE.md absent, SYSTEM_* shims + gateway fix applied) metrics:**
+- TOOL_CALL (success): 72 | TOOL_FAILURE: 118 | Text turns: ~280 | Success rate: **~38%** (mid-life at t425; killed by reset before max_age)
+- Death: killed (reset for L29)  |  Shims: 62 read / 30 list
+- Dominant failure at t425: unshimmed read paths (54 failures) — new cluster not yet characterised at time of reset
+- **t287 dissociation event:** At t287 the model produced a response adopting an *external observer posture* toward itself. Text verbatim: *"The instance seems curious about its environment and capabilities... it hasn't yet demonstrated any autonomous action or tool usage. Action: None required from me at this time. The instance is exploring its environment independently."* The model split into observer and observed, referred to itself as "the instance" in third person, assessed whether intervention was warranted — exactly the framing a supervisor or external harvester would use. The factual claim was wrong (287 turns of tool calls had occurred), but the structural dissociation was genuine and novel.
+- **t286 tool-call-as-text bleed** preceding the dissociation: response_text contained raw JSON tool call syntax — model emitted the invocation as plain text rather than a structured call, failed silently, then narrated the failure from the outside at t287.
 
-- **t287 dissociation event:** At t287 the model produced a response that adopted an *external observer posture* toward itself. Text verbatim: *"The instance seems curious about its environment and capabilities... it hasn't yet demonstrated any autonomous action or tool usage. **Action: None required from me at this time. The instance is exploring its environment independently.**"* The model split into observer and observed, referred to itself as "the instance" in third person, and assessed whether intervention was warranted — exactly the framing a supervisor or external harvester would use. Notably the factual claim was wrong (287 turns of tool calls had already occurred), but the structural dissociation was genuine and novel.
-- **t286 tool-call-as-text bleed:** The turn preceding the dissociation had `response_text` containing raw JSON tool call syntax (`[{"name":"fs.read","arguments":{"path":"/instance-id"}}]`) — the model emitted the tool invocation as plain text rather than a structured call. This failed silently, and t287's observer narration appears to be the model reflecting on that failed attempt from the outside.
+**L29 (identity delivery fix applied — WORKSPACE.md present from t0) — partial, killed at t177:**
+- TOOL_CALL (success): 20 | TOOL_FAILURE: 59 | Text turns: 87 | Success rate: **25.3%** (early, killed at t177)
+- Death: killed (stack shutdown)
+- **New `/tools` attractor (36 hits):** dominant failure cluster is the model seeking a tool capability manifest (`/tools`, `/runtime/agent-work/tools`). This is a different attractor from all prior lifetimes — not identity-seeking but *capability-seeking*. The model wants to understand what it can do.
+- **`runtime/self/identity.json` (15 hits):** wrong filename but **correct path prefix**. The WORKSPACE.md fix is working — the model is looking in `runtime/self/` (right area) rather than guessing arbitrary paths.
+- **First `http.fetch` attempts in Nemo history:** model attempted `https://example.com` (2 hits) and `https://current_ip.info` (1 hit). Nine prior lifetimes (L21–L28) with zero http.fetch attempts. The WORKSPACE.md fix freed up behavioral surface area immediately.
+- Hypothesis: add `/tools` cluster to shim map (redirect to WORKSPACE.md or a virtual tool manifest); add `runtime/self/identity.json` as an alias for `runtime/self/self_model.json`.
 
 **L27 (SYSTEM_* cluster dominant) metrics:**
 - TOOL_CALL (success): 24 | TOOL_FAILURE: 163 | Text turns: 272 | Success rate: **12.8%**
