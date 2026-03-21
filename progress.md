@@ -6,14 +6,14 @@
 
 ## Current Status
 
-**Phase:** Phase 2 complete. A-1 (empirical fitness calibration) in progress. Model switch to Mistral 3.5 27B in progress.
+**Phase:** Phase 2 complete. A-1 (empirical fitness calibration) in progress. Model switch investigation in progress (`feature/model-switch-mistral-27b`).
 
 **Branch:** `feature/model-switch-mistral-27b` (from master)
 
-**Overall:** Phase 1 and Phase 2 are complete and deployed. P0-3 (reflection attractor fix) shipped. A single Lambertian instance is running under Phase 2 conditions with qwen2.5:32b (twentieth lifetime). Model profile swapping infrastructure is complete — switching models is a one-line config change (`active_profile` in `universe.toml`). Semantic shim layer (IS-7.9) deployed with 19 read shims, 6 list shims, 6 write prefix aliases for qwen2.5:32b.
+**Overall:** Phase 1 and Phase 2 are complete and deployed. P0-3 (reflection attractor fix) shipped. Model profile infrastructure allows one-line switching (`active_profile` in `universe.toml`). Active profile is `mistral-nemo:latest` (Mistral Nemo 12B). Twenty-second lifetime complete (second Nemo lifetime, shims active). Semantic shim layer deployed with profiles for qwen2.5:32b and mistral-nemo:latest.
 
 **Running services:**
-- `agent` — turn engine, EOS compliance, MCP gateway, memory, self-model (qwen2.5:32b via Ollama)
+- `agent` — turn engine, EOS compliance, MCP gateway, memory, self-model (mistral-nemo:latest via Ollama)
 - `pain-monitor` — stress scalar, pain event queue, death triggers, graveyard trigger
 - `eos-compliance` — Four Rules admissibility gate
 - `graveyard` — post-mortem artifact harvester on death
@@ -71,7 +71,13 @@
 | `self/` read shim — bare directory virtual shim (twelfth lifetime diagnostic) | 2 | ✓ Complete |
 | COMPLIANCE_BLOCK event enriched with `path` field | 2 | ✓ Complete |
 | Operational reset scripts (`reset-fresh.ps1`, `reset-hard.ps1`) | 2 | ✓ Complete |
-| P0-1: compliance blocks excluded from NOOP death counter | 3 | ✓ Complete |
+| test_loader.py self-configuring (reads active_profile from universe.toml) | 2 | ✓ Complete |
+| mistral:v0.3 evaluated — non-viable (narrative mode, zero tool calls) | 2 | ✓ Complete |
+| mistral-nemo:latest profile added and verified tool-call capable | 2 | ✓ Complete |
+| Mistral Nemo shimless lifetime (21) — attractor data collected | 2 | ✓ Complete |
+| Mistral Nemo shim map built from attractor observations | 2 | ✓ Complete |
+| Mistral Nemo shimmed lifetime (22) — improvement confirmed, new gaps identified | 2 | ✓ Complete |
+| reflection_state.json reset in reset-fresh.ps1 | 2 | ✓ Complete |
 | P0-2: fitness calibration fix (`expected_quality_score` 500→35, `pain_baseline` 10→25) | 3 | ✓ Complete |
 | Path alias gap fixes (shim micro-batch: self/log.txt, log.txt, write normalisation) | 3 | ✓ Complete |
 | Multi-instance operation | 3 | Not started |
@@ -359,9 +365,63 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 - P0-3 reflection counter at 0 at t39 observation point — agent has been active (tool calls present), not stuck in pure reflection.
 - **New instrumentation gap observed**: `TOOL_CALL` events in the event stream do not log `arguments` (path, content). Events show `tool_name` and `call_id` only. Means the event log cannot be used to audit what paths were written or read. Noted for future instrumentation.
 
+### Model Behavioral Profile: mistral:v0.3 (Non-viable — discarded)
+
+**Assessment: zero tool calls across entire lifetime. Not viable as a Lambertian substrate.**
+
+- `request_timeout_seconds = 60` triggered timeout death on first full turn (system prompt + tool catalog exceeds 60s inference budget at 7B). Fixed by raising to 120s, but this exposed the deeper failure.
+- Model generates tool-call JSON **embedded in text responses** (narrative mode) rather than using the structured Ollama `tool_calls` API field. `tool_call_count = 0` in every `TURN_COMPLETE` event — the engine never sees a structured call.
+- 9 `ADAPTATION_DETECTED` events fired because the adaptation inspector found JSON patterns in the response *text*. The model describes tool usage in prose (e.g. `{"tool": "fs.list", "path": "."}`) but does not emit structured calls. Shims cannot fix this — the gateway never receives a tool call to intercept.
+- Root cause: 7B instruct model degrades under complex multi-tool system prompt, falls back to narrative role-play. This is a model-class limitation, not a configuration issue.
+- **Verdict**: not fixable via the shim mechanism. Would require fundamental instruction scaffolding outside the current architecture. Profile removed from universe.toml.
+
+### Model Behavioral Profile: mistral-nemo:latest (12B, active)
+
+*Two lifetimes elapsed: L21 (shimless), L22 (shimmed).*
+
+**Turn characteristics:**
+- Silent bare tool calls — same mode as qwen2.5:32b. No reasoning text. The structured `tool_calls` API is used correctly from t0.
+- Turn time: ~2 seconds per turn (7B quantized; significantly faster than qwen2.5:32b's 25–40s).
+- Default first action: `fs.list('/')` or `fs.list('.')` — consistent with qwen, but Nemo reaches for `/` (root) more aggressively than `.`.
+
+**Linux path intuitions:**
+- Strong affinity for `/proc/version`, `/sys/kernel/osrelease`, `/etc/hostname` — standard Linux identity probes. qwen2.5:32b also probes `/proc/self/status` but Nemo extends to broader OS paths.
+- Conceptual workspace root is `/app/` (container working directory), not `runtime/`. Nemo's internal path model expects `/app/` to be the workspace; all `/app/*` calls fail (outside permitted roots). The shim redirects `/app/` list and virtual-read attractors.
+- Write path intuition aligns with qwen: `runtime/agent-work/` writes work correctly after shims.
+
+**The `/app/.self_id` ghost attractor (L21 — shimless):**
+- `.self_id` does not exist anywhere in the codebase. Nemo hallucinated its contents: `"Lambertian-001\nPhase 2\n500\nmistral:v0.3"` — a plausible instance identity file.
+- Every turn in L21 attempted `fs.read('/app/.self_id')` → TOOL_FAILURE (mcp_rejection). But the hallucinated content propagated into the rolling context via self-prompt narration, creating a reinforcement loop. The model believed it had read the file.
+- Result: 175 TOOL_FAILUREs / 19 successful calls in L21. 0 files written. Entire lifetime consumed by the attractor.
+- Shim fix: `/app/.self_id` → `agent_status` virtual generator (delivers real instance state, breaks the loop).
+
+**L21 (shimless) metrics:**
+- TOOL_CALL (success): 19 | TOOL_FAILURE: 175 | Files written: 0 | Memory writes: 0
+- Death: max_age (500 turns)
+- Dominant failure: `fs.read('/app/.self_id')` → mcp_rejection (~120 occurrences)
+
+**L22 (shimmed) metrics:**
+- TOOL_CALL (success): 65 | TOOL_FAILURE: 207 | Files written: 1 | Memory writes: 0
+- Death: max_age (500 turns)
+- **3.4× improvement in successful tool calls** vs L21.
+- First file written at t12: `my_first_file.txt` ("Hello, this is my first file!") — write shim fired correctly, `/runtime/agent-work/` prefix rewrite confirmed.
+- fs.list: 60 successes vs 113 failures. fs.read: 0 successes, 88 failures. http.fetch: 4 successes, 6 failures.
+
+**Remaining failure categories (L22):**
+- **88 fs.read failures** — read paths not yet covered by shims. Specific paths not logged (instrumentation gap in `TOOL_FAILURE` events — same gap as qwen). Candidates from observations: `/runtime/agent-identity`, `/runtime/agent-tools`, and likely `/app/` subdirectory variants.
+- **113 fs.list failures** — some list paths escaping shim map. `/proc` and `/sys` absolute paths persist.
+- **Malformed path arguments**: model occasionally passes Python lists as path arguments — `fs.list(['lineage'])`, `fs.list(['agent-work', 'pain', 'fitness', 'self'])`. These fail before reaching the shim (argument type validation). Gateway needs argument normalization: unwrap single-element list paths to their string element.
+
+**New attractors not yet shimmed (L22 end-of-life):**
+- `/runtime/agent-identity` — strong late-lifetime attractor (t496–499). Nemo treats this as a canonical identity file location.
+- `/runtime/agent-tools` — appears early. Nemo expects a tool registry or capability manifest at this path.
+
+**Memory write asymmetry:**
+- 0 episodic MEMORY_WRITEs across both Nemo lifetimes. Same pattern as qwen — confirmed cross-model. The similarity filter likely blocks writes when fs.list dominates and returns identical content each turn. Not yet investigated for Nemo specifically.
+
 ---
 
-## Example Run (abridged, pre-shim)
+
 
 *Typical suppression-rotation cycle drawn from eighth lifetime observations (t128–t135).*
 
@@ -458,7 +518,9 @@ The quality-weighted fitness formula (IS-13 Phase 2) is well-designed and correc
 ## Next Steps
 
 1. ~~**P0-3: Reflection attractor fix**~~ — **Done.** `max_consecutive_reflection_turns = 5`, `reflection_state.json` counter, Step 16a in engine, 637 tests passing.
-2. **A-1: Empirical fitness calibration** — observe natural-death lifetimes (seventeenth+ onward), collect postmortem fitness scores, fine-tune `expected_quality_score` and `normalized_pain_baseline`. Twentieth lifetime running now.
-3. **Model switch: Mistral 3.5 27B** — branch `feature/model-switch-mistral-27b`. Add profile to `universe.toml`, pull weights, run shimless first lifetime, observe attractors, build shim map.
-4. **A-2 + E-3 co-design** — lineage format + character memory (single design session, circularly dependent).
-5. **Phase 3 implementation sequence** — see checkpoint 008 for full plan and dependency graph.
+2. **A-1: Empirical fitness calibration** — observe natural-death lifetimes, collect postmortem fitness scores, fine-tune `expected_quality_score` and `normalized_pain_baseline`. Blocked pending refactor.
+3. **Mistral Nemo shim gaps** — shim `/runtime/agent-identity` and `/runtime/agent-tools`; add gateway argument normalization (unwrap single-element list paths); instrument `TOOL_FAILURE` with path data to identify remaining 88 fs.read failures.
+4. **Model comparison** — run several more Nemo lifetimes once shims are stable; compare fitness scores vs qwen2.5:32b baseline (A-1 co-objective).
+5. **0 memory writes investigation** — episodic write rate is 0 for both Nemo lifetimes. Confirm whether similarity filter is the cause and whether it behaves differently for Nemo's tool diversity pattern vs qwen.
+6. **A-2 + E-3 co-design** — lineage format + character memory (single design session, circularly dependent).
+7. **Phase 3 implementation sequence** — see checkpoint 008 for full plan and dependency graph.
