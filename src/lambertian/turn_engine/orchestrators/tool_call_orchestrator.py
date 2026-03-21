@@ -156,6 +156,7 @@ class ToolCallOrchestrator:
                         "tool_name": result.tool_name,
                         "error_type": result.error_type,
                         "error_detail": result.error_detail,
+                        "path": intent.arguments.get("path") or intent.arguments.get("url"),
                     },
                 )
                 is_rejection = result.error_type == "mcp_rejection"

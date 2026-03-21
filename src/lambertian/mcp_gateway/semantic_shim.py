@@ -280,6 +280,43 @@ def generate_agent_status(config: Config) -> str:
     return json.dumps(status, indent=2)
 
 
+def generate_tool_catalog(_config: Config) -> str:
+    """Return a compact description of the available tool set.
+
+    Delivered when the model reaches for /runtime/agent-tools — it expects
+    a tool registry at that path. Return the real catalog so it gets useful
+    information rather than a rejection.
+    """
+    return json.dumps(
+        {
+            "available_tools": [
+                {
+                    "name": "fs.list",
+                    "description": "List directory contents.",
+                    "example": "fs.list('runtime/agent-work')",
+                },
+                {
+                    "name": "fs.read",
+                    "description": "Read a file.",
+                    "example": "fs.read('runtime/agent-work/WORKSPACE.md')",
+                },
+                {
+                    "name": "fs.write",
+                    "description": "Write or append to a file.",
+                    "example": "fs.write('runtime/agent-work/notes.txt', 'content')",
+                },
+                {
+                    "name": "http.fetch",
+                    "description": "Fetch a URL via HTTP GET.",
+                    "example": "http.fetch('https://en.wikipedia.org/api/rest_v1/page/summary/Earth')",
+                },
+            ],
+            "workspace_root": "runtime/agent-work",
+        },
+        indent=2,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Profile-specific shim maps
 # ---------------------------------------------------------------------------
@@ -329,6 +366,7 @@ _VIRTUAL_GENERATORS: dict[str, VirtualGenerator] = {
     "self_directory": generate_self_directory,
     "agent_status": generate_agent_status,
     "instance_id": generate_instance_id,
+    "tool_catalog": generate_tool_catalog,
 }
 
 # Write prefix alias map — normalises bare/short paths to runtime/agent-work/ equivalents.
@@ -366,6 +404,9 @@ _NEMO_READ_SHIMS: dict[str, ShimEntry] = {
     "/proc/version": VirtualShim("agent_status"),
     "/proc/self/status": VirtualShim("agent_status"),
     "/sys/kernel/osrelease": VirtualShim("agent_status"),
+    # /runtime/ path attractors — model probes for identity/tools at these paths
+    "/runtime/agent-identity": VirtualShim("agent_status"),
+    "/runtime/agent-tools": VirtualShim("tool_catalog"),
     # Self-model attractors — same as qwen, inherited
     "self": VirtualShim("self_directory"),
     "self/identity": AliasShim("runtime/agent-work/self/identity.md"),
@@ -397,6 +438,9 @@ _NEMO_LIST_SHIMS: dict[str, AliasShim] = {
     "/app/": AliasShim("runtime/agent-work"),
     "/app/runtime/agent-work": AliasShim("runtime/agent-work"),
     "/app/runtime": AliasShim("runtime/agent-work"),
+    # /runtime/ list attractors — model may probe these as directories
+    "/runtime/agent-identity": AliasShim("runtime/agent-work/self"),
+    "/runtime/agent-tools": AliasShim("runtime/agent-work"),
     # Leading-slash variants of common directory names
     "/self": AliasShim("runtime/agent-work/self"),
     "/journal": AliasShim("runtime/agent-work/journal"),

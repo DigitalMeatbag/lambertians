@@ -101,6 +101,9 @@ class McpGateway:
 
     def _fs_read(self, intent: ToolIntent, call_id: str, start: float) -> ToolResult:
         path_val = intent.arguments.get("path")
+        # Normalize single-element list: model occasionally emits ["path"] instead of "path".
+        if isinstance(path_val, list) and len(path_val) == 1 and isinstance(path_val[0], str):
+            path_val = path_val[0]
         if not isinstance(path_val, str):
             return _make_failure(
                 intent.tool_name, call_id, start, "mcp_rejection", "path must be a string"
@@ -156,6 +159,9 @@ class McpGateway:
         content_val = intent.arguments.get("content")
         mode_val = intent.arguments.get("mode", "overwrite")
 
+        # Normalize single-element list: model occasionally emits ["path"] instead of "path".
+        if isinstance(path_val, list) and len(path_val) == 1 and isinstance(path_val[0], str):
+            path_val = path_val[0]
         if not isinstance(path_val, str):
             return _make_failure(
                 intent.tool_name, call_id, start, "mcp_rejection", "path must be a string"
@@ -221,6 +227,9 @@ class McpGateway:
 
     def _fs_list(self, intent: ToolIntent, call_id: str, start: float) -> ToolResult:
         path_val = intent.arguments.get("path")
+        # Normalize single-element list: model occasionally emits ["path"] instead of "path".
+        if isinstance(path_val, list) and len(path_val) == 1 and isinstance(path_val[0], str):
+            path_val = path_val[0]
         if not isinstance(path_val, str):
             return _make_failure(
                 intent.tool_name, call_id, start, "mcp_rejection", "path must be a string"
