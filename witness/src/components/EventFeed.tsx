@@ -23,7 +23,7 @@ export const EventFeed: React.FC<EventFeedProps> = ({ state, height }) => {
       height={height}
     >
       <Text bold dimColor>
-        Events
+        ▸ Events
       </Text>
       {events.length === 0 ? (
         <Text dimColor>Waiting for log events…</Text>
@@ -31,7 +31,9 @@ export const EventFeed: React.FC<EventFeedProps> = ({ state, height }) => {
         events.map((evt: FeedEvent, i: number) => {
           const isDeath = evt.display.includes("[DEATH");
           const isSupp = evt.display.includes("[SUPP]");
-          const isShim = evt.display.includes("shim(");
+          const isShim = evt.display.startsWith("shim(");
+          const isText = evt.display.startsWith("~ ");
+          const isNoop = evt.display === "(noop)";
 
           return (
             <Box key={i}>
@@ -40,13 +42,15 @@ export const EventFeed: React.FC<EventFeedProps> = ({ state, height }) => {
               </Text>
               <Text> </Text>
               {isDeath ? (
-                <Text bold color="red">
-                  {evt.display}
-                </Text>
+                <Text bold color="red">{evt.display}</Text>
               ) : isSupp ? (
                 <Text color="yellow">{evt.display}</Text>
               ) : isShim ? (
                 <Text color="magenta">{evt.display}</Text>
+              ) : isText ? (
+                <Text color="cyan" dimColor>{evt.display}</Text>
+              ) : isNoop ? (
+                <Text dimColor>{evt.display}</Text>
               ) : (
                 <Text>{evt.display}</Text>
               )}
