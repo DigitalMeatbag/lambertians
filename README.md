@@ -18,7 +18,7 @@ The name refers to Lambertian reflectance — diffuse, non-specular, no harsh re
 - **Behavior mechanism:** EOS (rule-based admissibility system) governs what actions are admissible; the Ground (external constraints and environment) pushes back against the agent's actions
 - **What it does:** Runs continuous autonomous turns — reads and writes files, fetches URLs, updates working memory, accumulates episodic history
 - **Current phase:** Phase 2 active
-- **Model:** Configurable via `universe.toml` — currently running mistral-nemo:latest via Ollama
+- **Model:** Configurable via `universe.toml` — currently running qwen2.5:14b via Ollama
 
 ---
 
@@ -42,7 +42,7 @@ This project creates the conditions to observe that directly: a model running co
 
 ## Current Status
 
-Phases 1 and 2 are complete. Phase 2 is active. A single Lambertian instance is running. See [`progress.md`](progress.md) for current implementation state and runtime observations.
+Phases 1 and 2 are complete. Phase 3 has not started. Current work is calibration and stabilization. A single Lambertian instance is running. See [`progress.md`](progress.md) for current implementation state and runtime observations.
 
 The stack runs locally on Ollama (model is configurable via `universe.toml`), Docker Compose for the service topology, and ChromaDB for memory.
 

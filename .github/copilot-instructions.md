@@ -198,6 +198,6 @@ These decisions are closed. Do not reopen without explicit owner instruction.
 
 ## Phase Scope
 
-Active phase is **Phase 2**. Phase 1 and Phase 2 are complete and running. Do not design for Phase 3 unless explicitly instructed.
+Phases 1 and 2 are complete. Phase 3 has not started. Current work is calibration and stabilization. Do not design for Phase 3 unless explicitly instructed.
 Do not add hooks, extension points, or future-proofing beyond what the foundation specifies.
 Phase 3 concerns flagged in the foundation are noted for awareness only.

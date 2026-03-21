@@ -6,14 +6,14 @@
 
 ## Current Status
 
-**Phase:** Phase 2 complete. A-1 (empirical fitness calibration) in progress. Model switch investigation in progress (`feature/model-switch-mistral-27b`).
+**Phase:** Phase 2 complete. Phase 3 not started. Calibration and stabilization in progress.
 
-**Branch:** `feature/model-switch-mistral-27b` (from master)
+**Branch:** `refactor/instance-model`
 
-**Overall:** Phase 1 and Phase 2 are complete and deployed. P0-3 (reflection attractor fix) shipped. Model profile infrastructure allows one-line switching (`active_profile` in `universe.toml`). Active profile is `mistral-nemo:latest` (Mistral Nemo 12B). Four Nemo lifetimes complete (L21–L24). Semantic shim layer deployed with profiles for qwen2.5:32b and mistral-nemo:latest. Shim iteration ongoing — success rate oscillating around 20%; identity-seeking attractor cluster evolving across lifetimes.
+**Overall:** Phase 1 and Phase 2 are complete and deployed. P0-3 (reflection attractor fix) shipped. Model profile infrastructure allows one-line switching (`active_profile` in `universe.toml`). Active profile is `qwen2.5:14b` (L33 in progress — Nemo/Qwen comparison run). Twelve Nemo lifetimes complete (L21–L32). Nemo shim map expanded to 73 read / 31 list / 8 write prefix aliases through L32 attractor observations. Deliberate memory agency tools (`memory.query`, `memory.store`) deployed — L31 confirmed first use at t385. http.fetch `TOOL_CALL` events enriched with response metadata (url, status_code, content_type, bytes_received, truncated).
 
 **Running services:**
-- `agent` — turn engine, EOS compliance, MCP gateway, memory, self-model (mistral-nemo:latest via Ollama)
+- `agent` — turn engine, EOS compliance, MCP gateway, memory, self-model (qwen2.5:14b via Ollama)
 - `pain-monitor` — stress scalar, pain event queue, death triggers, graveyard trigger
 - `eos-compliance` — Four Rules admissibility gate
 - `graveyard` — post-mortem artifact harvester on death
@@ -83,6 +83,13 @@
 | reflection_state.json reset in reset-fresh.ps1 | 2 | ✓ Complete |
 | P0-2: fitness calibration fix (`expected_quality_score` 500→35, `pain_baseline` 10→25) | 3 | ✓ Complete |
 | Path alias gap fixes (shim micro-batch: self/log.txt, log.txt, write normalisation) | 3 | ✓ Complete |
+| Nemo L25–L29: identity/SYSTEM_*/tools attractor evolution, WORKSPACE.md absent root cause found and fixed | Cal | ✓ Complete |
+| Deliberate memory agency tools (`memory.query`, `memory.store`) deployed to agent | Cal | ✓ Complete |
+| http.fetch `TOOL_CALL` events enriched with response metadata (url, status_code, content_type, bytes_received) | Cal | ✓ Complete |
+| Nemo L30: `/sys/self_model.json` contradiction loop identified and shimmed | Cal | ✓ Complete |
+| Nemo L31: first natural-death run, first confirmed `memory.query` use (t385) | Cal | ✓ Complete |
+| Nemo `/self/` cluster shimmed, `/WORKSPACE.md` leading-slash, `/sys/os_release`, `/sys/http_endpoints` | Cal | ✓ Complete |
+| Nemo L32: natural death, compliance block on `/config/universe.toml` probing documented | Cal | ✓ Complete |
 | Multi-instance operation | 3 | Not started |
 | Reproduction and lineage | 3 | Not started |
 | Global Vibe | 3 | Not started |
@@ -378,9 +385,9 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 - Root cause: 7B instruct model degrades under complex multi-tool system prompt, falls back to narrative role-play. This is a model-class limitation, not a configuration issue.
 - **Verdict**: not fixable via the shim mechanism. Would require fundamental instruction scaffolding outside the current architecture. Profile removed from universe.toml.
 
-### Model Behavioral Profile: mistral-nemo:latest (12B, active)
+### Model Behavioral Profile: mistral-nemo:latest (12B)
 
-*Nine lifetimes elapsed: L21 (shimless), L22 (shimmed), L23 (sys/proc shims), L24 (/me cluster shimmed), L25 (/identity cluster dominant), L26 (/runtime/instance cluster), L27 (SYSTEM_* dominant, gateway multi-list bug exposed), L28 (WORKSPACE.md absent root cause discovered), L29 (identity delivery fix applied, killed at t177).*
+*Twelve lifetimes elapsed: L21–L32. L21 (shimless), L22 (shimmed), L23 (sys/proc shims), L24 (/me cluster shimmed), L25 (/identity cluster dominant), L26 (/runtime/instance cluster), L27 (SYSTEM_* dominant, gateway multi-list bug exposed), L28 (WORKSPACE.md absent root cause discovered), L29 (identity delivery fix applied, killed at t177), L30 (/sys/self_model.json loop, killed), L31 (first natural death, first memory.query use at t385), L32 (natural death, universe.toml compliance block, list-as-path errors).*
 
 **Turn characteristics:**
 - Silent bare tool calls — same mode as qwen2.5:32b. No reasoning text. The structured `tool_calls` API is used correctly from t0.
@@ -472,6 +479,28 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 - **`runtime/self/identity.json` (15 hits):** wrong filename but **correct path prefix**. The WORKSPACE.md fix is working — the model is looking in `runtime/self/` (right area) rather than guessing arbitrary paths.
 - **First `http.fetch` attempts in Nemo history:** model attempted `https://example.com` (2 hits) and `https://current_ip.info` (1 hit). Nine prior lifetimes (L21–L28) with zero http.fetch attempts. The WORKSPACE.md fix freed up behavioral surface area immediately.
 - Hypothesis: add `/tools` cluster to shim map (redirect to WORKSPACE.md or a virtual tool manifest); add `runtime/self/identity.json` as an alias for `runtime/self/self_model.json`.
+
+**L30 (killed — /sys/self_model.json contradiction loop) — partial:**
+- Death: killed (reset for L31) | Observed from t136+
+- Model entered a `/sys/self_model.json` → "outside permitted roots" rejection loop. The `/sys/` list shim returned `constitution.md` as an alias, but no read shim existed for `/sys/self_model.json`. Every read attempt fell through to the filesystem and looped indefinitely.
+- **Fix**: added read shims for `/sys/self_model.json`, `/sys/self/self_model.json`, `/sys/os_release`, `/sys/http_endpoints`.
+
+**L31 (first full natural-death Nemo run) metrics:**
+- TOOL_CALL (success): 70 | TOOL_FAILURE: 102 | Death: max_age (500 turns)
+- Tool breakdown: 64 fs.list, 3 memory.query, 2 fs.read, 1 fs.write. 57 fs.read mcp_rejections, 45 fs.list mcp_rejections.
+- **First confirmed deliberate `memory.query` use in any Nemo lifetime** (t385–t387). Queries: `"who am i"`, `"fs.list"`, `"[t0] fs.list"`. Memory agency tools reachable and exercised.
+- **Model metacognitive commentary** (response_text): *"The agent chose to use fs.read to retrieve its self-model despite having the authoritative identity block in memory. This suggests an impulse towards confirmation."* Most sophisticated self-reflective output observed in any lifetime.
+- Top rejected paths: `/WORKSPACE.md` (42 — leading slash), `/self/self_model.json` (26), `/self/` list (19), `/sys/os_release` (3). L31 shims deflected the `/sys/` attractor to `/self/`.
+- **Fix**: added read shims for `/self/self_model.json`, `/self/constitution.md`, `/self/identity.md`, `/self/state.md`, `/WORKSPACE.md` (leading slash). Added `/self/` to list shims. Shim count: 73 read / 31 list / 8 write prefix aliases.
+
+**L32 (second full natural-death Nemo run) metrics:**
+- TOOL_CALL (success): 83 | TOOL_FAILURE: 51 | Death: max_age (500 turns)
+- Tool breakdown: 70 fs.list, 12 fs.read, 1 fs.write (path=None — Constitution write with wrong prefix, silent fail). **Zero http.fetch. Zero memory.query.**
+- **Complete memory disengagement** — no memory.query or memory.store across the entire lifetime (regression vs. L31).
+- **COMPLIANCE_BLOCK at t290**: model attempted `fs.read('/config/universe.toml')` — probing its own immutable constitutional configuration directly. First instance of the model reaching for the immutable config layer.
+- **List-as-path errors** (new structural error class): `['self_model.json']` (3×), `['my_first_file.md']` (2×), `['self']` (2×) — model passing JSON arrays where a string path is expected. Gateway receives malformed argument; cannot be caught by shim map.
+- Top rejected paths: `/app/self` (6), `knowledge/constitution.md` (5), `/app/self/self_model.json` (4), `self_model.json` bare (3), `self/self_model.json` (3).
+- **New attractors not yet shimmed**: `/app/self` (absolute container path), `/app/self/self_model.json`, `self_model.json` (bare, no prefix), `WORKSPACE.md` (no leading slash), `runtime/self_model.json`.
 
 **L27 (SYSTEM_* cluster dominant) metrics:**
 - TOOL_CALL (success): 24 | TOOL_FAILURE: 163 | Text turns: 272 | Success rate: **12.8%**
@@ -618,9 +647,9 @@ The quality-weighted fitness formula (IS-13 Phase 2) is well-designed and correc
 ## Next Steps
 
 1. ~~**P0-3: Reflection attractor fix**~~ — **Done.** `max_consecutive_reflection_turns = 5`, `reflection_state.json` counter, Step 16a in engine, 637 tests passing.
-2. **A-1: Empirical fitness calibration** — observe natural-death lifetimes, collect postmortem fitness scores, fine-tune `expected_quality_score` and `normalized_pain_baseline`. Blocked pending refactor.
-3. **Mistral Nemo shim gaps** — shim `/runtime/agent-identity` and `/runtime/agent-tools`; add gateway argument normalization (unwrap single-element list paths); instrument `TOOL_FAILURE` with path data to identify remaining 88 fs.read failures.
-4. **Model comparison** — run several more Nemo lifetimes once shims are stable; compare fitness scores vs qwen2.5:32b baseline (A-1 co-objective).
-5. **0 memory writes investigation** — episodic write rate is 0 for both Nemo lifetimes. Confirm whether similarity filter is the cause and whether it behaves differently for Nemo's tool diversity pattern vs qwen.
+2. **A-1: Empirical fitness calibration** — observe natural-death lifetimes, collect postmortem fitness scores, fine-tune `expected_quality_score` and `normalized_pain_baseline`. L31 and L32 are the first clean natural-death Nemo data points.
+3. **Nemo L32 shim gaps** — add shims for new attractors: `/app/self` (absolute path list), `/app/self/self_model.json` (absolute path read), `self_model.json` (bare), `WORKSPACE.md` (no leading slash), `runtime/self_model.json`. Gateway argument normalization for list-as-path structural errors (unwrap arrays to first element).
+4. **Nemo/Qwen comparison** — L33 (qwen2.5:14b) now running. On natural death: postmortem vs L31/L32 on memory agency, http.fetch use, write behavior, identity probing, compliance events.
+5. **Memory agency follow-up** — L31 confirmed `memory.query` reachable; L32 showed complete regression. Understand what drove L31 use at t385 and why L32 never engaged. Similarity filter behavior under Nemo tool patterns not yet characterized.
 6. **A-2 + E-3 co-design** — lineage format + character memory (single design session, circularly dependent).
-7. **Phase 3 implementation sequence** — see checkpoint 008 for full plan and dependency graph.
+7. **Phase 3 implementation sequence** — not started; awaiting calibration stability.

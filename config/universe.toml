@@ -23,7 +23,7 @@ normal_shutdown_grace_seconds = 5
 # active_profile: name of the model profile to use.
 # Must match a key in [model.profiles]. Change this single value to swap models —
 # all model-specific settings (context window, timeouts, temperature, etc.) come with the profile.
-active_profile = "mistral-nemo:latest"
+active_profile = "qwen2.5:14b"
 
 [model.profiles."qwen2.5:14b"]
 provider                           = "ollama"
