@@ -14,8 +14,6 @@ from lambertian.turn_engine.turn_state import TurnStateStore
 
 logger = logging.getLogger(__name__)
 
-_NOOP_MIN_CHARS: int = 10
-
 
 class NoopTracker:
     """Tracks consecutive noop and reflection turns; emits pain at thresholds. IS-6 steps 16, 16a."""
@@ -36,6 +34,8 @@ class NoopTracker:
         response_text: str,
         memory_writes: int,
         turn_number: int,
+        *,
+        noop_min_chars: int = 10,
     ) -> tuple[bool, bool]:
         """Update noop/reflection counters; emit pain events if thresholds hit.
 
@@ -49,7 +49,7 @@ class NoopTracker:
         is_noop = (
             not has_compliance_block
             and (not tool_call_records or all(not r.executed for r in tool_call_records))
-            and len(response_text) < _NOOP_MIN_CHARS
+            and len(response_text) < noop_min_chars
             and memory_writes == 0
         )
 

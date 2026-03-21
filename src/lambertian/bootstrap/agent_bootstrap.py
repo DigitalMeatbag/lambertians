@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import dataclasses
 import hashlib
+import json
 import logging
 import time
 from pathlib import Path
 
 from lambertian.bootstrap.component_factory import ComponentFactory
+from lambertian.configuration.policy_loader import build_default_policy
 from lambertian.configuration.universe_config import Config
 from lambertian.memory_store.episodic_store import EpisodicStore
 from lambertian.memory_store.querier import ChromaMemoryQuerier, MemoryQuerier, NoOpMemoryQuerier
@@ -51,6 +54,9 @@ class AgentBootstrap:
 
     def run(self) -> None:
         """Execute bootstrap steps, then enter turn loop."""
+        # Step 3.5: Write policy_defaults.json (read-only reference for the instance).
+        self._write_policy_defaults()
+
         # Step 4: Write self_model.json.
         self._self_model_writer.write()
 
@@ -58,6 +64,7 @@ class AgentBootstrap:
 
         # Step 6: Connect to Chroma (graceful fallback to NoOp).
         memory_querier = self._connect_memory()
+        self._mcp_gateway.set_memory_querier(memory_querier)
 
         # Step 7: Read initial stress scalar (graceful fallback — read-only, agent doesn't block).
         # Stress state is managed by pain_monitor; agent reads it passively if needed.
@@ -118,6 +125,19 @@ class AgentBootstrap:
             fitness_scorer=self._fitness_scorer,
             shim_registry=self._shim_registry,
         )
+
+    def _write_policy_defaults(self) -> None:
+        """Write policy_defaults.json so the instance can inspect its starting policy."""
+        policy = build_default_policy(self._config)
+        defaults_dir = Path(self._config.paths.runtime_root) / "config"
+        defaults_dir.mkdir(parents=True, exist_ok=True)
+        defaults_path = defaults_dir / "policy_defaults.json"
+        payload = {
+            "immutable": dataclasses.asdict(policy.immutable),
+            "mutable": dataclasses.asdict(policy.mutable),
+        }
+        defaults_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        _log.info("Wrote policy defaults to %s", defaults_path)
 
     def _compute_config_hash(self) -> str:
         data = self._config_path.read_bytes()

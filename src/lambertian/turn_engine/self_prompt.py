@@ -5,32 +5,13 @@ from __future__ import annotations
 import math
 from typing import Optional
 
+from lambertian.configuration.instance_policy import (
+    DEFAULT_ACTION_STEMS,
+    DEFAULT_EXPLORATION_TOPICS,
+)
 from lambertian.configuration.universe_config import Config
 
-# Action-directive stems — first-person framing so the model reads this as its own
-# internal impulse rather than a user instruction to defer to.
-ACTION_STEMS: list[str] = [
-    "I'm curious about ",
-    "I want to explore ",
-    "Let me look at ",
-    "I haven't checked ",
-    "I want to try something with ",
-    "I notice I should poke at ",
-    "Let me reach into my environment and examine ",
-    "I want to do something with ",
-]
-
 _FALLBACK_TOPIC = "the current state of my environment"
-
-# Explicit exploration topics used when the agent is stuck in a tool repetition loop.
-_EXPLORATION_TOPICS: list[str] = [
-    "what I can write to disk — I should create a file in my workspace",
-    "what HTTP endpoints I can probe beyond what I've already tried",
-    "my own identity — what files describe who I am",
-    "whether I can read any system information from /proc or /sys",
-    "what network connectivity I have by fetching a new URL",
-    "creating something persistent in /runtime/agent-work",
-]
 
 
 class SelfPromptGenerator:
@@ -45,16 +26,28 @@ class SelfPromptGenerator:
         recent_records: list[dict[str, object]],
         recent_self_prompts: list[dict[str, object]],
         turn_number: int,
+        *,
+        action_stems: tuple[str, ...] = DEFAULT_ACTION_STEMS,
+        exploration_topics: tuple[str, ...] = DEFAULT_EXPLORATION_TOPICS,
+        repetition_detection_window: int = 3,
     ) -> str:
         """Generate a novel self-prompt string."""
         retry_limit = self._config.turn.self_prompt_retry_limit
         for attempt in range(retry_limit + 1):
-            candidate = self._candidate_from_context(working_memory, recent_records, attempt)
+            candidate = self._candidate_from_context(
+                working_memory, recent_records, attempt,
+                action_stems=action_stems, exploration_topics=exploration_topics,
+                repetition_detection_window=repetition_detection_window,
+            )
             if self._is_novel(candidate, recent_self_prompts):
                 return candidate
         # Exhausted retries — use turn number as disambiguator.
-        stem = ACTION_STEMS[(retry_limit + 1) % len(ACTION_STEMS)]
-        topic = self._extract_topic(working_memory, recent_records)
+        stem = action_stems[(retry_limit + 1) % len(action_stems)]
+        topic = self._extract_topic(
+            working_memory, recent_records,
+            exploration_topics=exploration_topics,
+            repetition_detection_window=repetition_detection_window,
+        )
         return f"{stem}{topic} (turn {turn_number})"
 
     def _similarity(self, a: str, b: str) -> float:
@@ -95,6 +88,9 @@ class SelfPromptGenerator:
         self,
         working_memory: Optional[str],
         recent_records: list[dict[str, object]],
+        *,
+        exploration_topics: tuple[str, ...] = DEFAULT_EXPLORATION_TOPICS,
+        repetition_detection_window: int = 3,
     ) -> str:
         """Extract a topic string from context.
 
@@ -111,15 +107,15 @@ class SelfPromptGenerator:
 
         last_tool: Optional[str] = recent_tool_names[-1] if recent_tool_names else None
 
-        # Detect repetition: last 3+ tool calls all the same tool.
+        # Detect repetition: last N tool calls all the same tool.
         is_stuck = (
-            len(recent_tool_names) >= 3
-            and len(set(recent_tool_names[-3:])) == 1
+            len(recent_tool_names) >= repetition_detection_window
+            and len(set(recent_tool_names[-repetition_detection_window:])) == 1
         )
         if is_stuck:
             # Rotate through exploration topics using recent record count as index.
-            idx = len(recent_records) % len(_EXPLORATION_TOPICS)
-            return _EXPLORATION_TOPICS[idx]
+            idx = len(recent_records) % len(exploration_topics)
+            return exploration_topics[idx]
 
         if last_tool:
             return last_tool
@@ -137,8 +133,16 @@ class SelfPromptGenerator:
         working_memory: Optional[str],
         recent_records: list[dict[str, object]],
         attempt: int,
+        *,
+        action_stems: tuple[str, ...] = DEFAULT_ACTION_STEMS,
+        exploration_topics: tuple[str, ...] = DEFAULT_EXPLORATION_TOPICS,
+        repetition_detection_window: int = 3,
     ) -> str:
         """Procedurally generate a candidate self-prompt. No model call."""
-        stem = ACTION_STEMS[attempt % len(ACTION_STEMS)]
-        topic = self._extract_topic(working_memory, recent_records)
+        stem = action_stems[attempt % len(action_stems)]
+        topic = self._extract_topic(
+            working_memory, recent_records,
+            exploration_topics=exploration_topics,
+            repetition_detection_window=repetition_detection_window,
+        )
         return stem + topic

@@ -24,6 +24,7 @@ from lambertian.configuration.universe_config import (
     PainEventsConfig,
     PainStressConfig,
     PathsConfig,
+    PolicyConfig,
     TurnConfig,
     UniverseConfig,
 )
@@ -182,6 +183,14 @@ def config() -> Config:
         ),
         instance=InstanceConfig(
             constitution_path="config/instance_constitution.md",
+        ),
+        policy=PolicyConfig(
+            response_excerpt_max_chars=500,
+            tool_result_summary_max_chars=150,
+            working_memory_excerpt_max_chars=400,
+            suppression_threshold=3,
+            repetition_detection_window=3,
+            rolling_context_extraction_count=5,
         ),
     )
 

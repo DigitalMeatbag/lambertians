@@ -105,6 +105,17 @@ self_prompt_retry_limit   = 2
 max_consecutive_noop_turns        = 3
 max_consecutive_reflection_turns  = 5
 
+[policy]
+# Mutable-policy seed values — defaults for InstancePolicy.mutable.
+# The instance can drift these at runtime via self/policy.json (dynamic instance state).
+# Changes take effect on the next turn. Values here are the immutable starting point.
+response_excerpt_max_chars        = 500
+tool_result_summary_max_chars     = 150
+working_memory_excerpt_max_chars  = 400
+suppression_threshold             = 3
+repetition_detection_window       = 3
+rolling_context_extraction_count  = 5
+
 [mcp]
 request_timeout_seconds = 30
 retry_count             = 0

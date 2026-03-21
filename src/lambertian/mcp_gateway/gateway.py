@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import tempfile
 import time
 import uuid
 from pathlib import Path
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 import httpx
 
@@ -16,6 +17,11 @@ from lambertian.contracts.tool_records import HttpFetchResult, ToolIntent, ToolR
 from lambertian.mcp_gateway.path_resolver import PathBoundaryViolation, PathResolver
 from lambertian.mcp_gateway.semantic_shim import SemanticShimRegistry, ShimKind
 from lambertian.mcp_gateway.tool_definitions import get_tool_catalog
+
+if TYPE_CHECKING:
+    from lambertian.memory_store.querier import MemoryQuerier
+
+_log = logging.getLogger(__name__)
 
 _DEFAULT_AGENT_HEADERS: dict[str, str] = {
     "User-Agent": "lambertian-agent/1.0 (local AI research project)",
@@ -50,22 +56,31 @@ class McpGateway:
         path_resolver: PathResolver,
         http_client: Optional[httpx.Client] = None,
         shim_registry: Optional[SemanticShimRegistry] = None,
+        memory_querier: Optional[MemoryQuerier] = None,
     ) -> None:
         self._config = config
         self._path_resolver = path_resolver
         # Injected for testability; production code constructs a fresh client per request.
         self._http_client: Optional[httpx.Client] = http_client
         self._shim_registry: Optional[SemanticShimRegistry] = shim_registry
+        self._memory_querier: Optional[MemoryQuerier] = memory_querier
         self._tool_handlers: dict[str, Callable[[ToolIntent, str, float], ToolResult]] = {
             "fs.read": self._fs_read,
             "fs.write": self._fs_write,
             "fs.list": self._fs_list,
             "http.fetch": self._http_fetch,
+            "memory.query": self._memory_query,
+            "memory.flag": self._memory_flag,
+            "memory.consolidate": self._memory_consolidate,
         }
 
     # ------------------------------------------------------------------
     # Public interface
     # ------------------------------------------------------------------
+
+    def set_memory_querier(self, querier: MemoryQuerier) -> None:
+        """Late-bind the memory querier after Chroma connection completes."""
+        self._memory_querier = querier
 
     def dispatch(self, intent: ToolIntent) -> ToolResult:
         """Execute a tool intent. Returns ToolResult (success or typed failure)."""
@@ -359,6 +374,107 @@ class McpGateway:
             error_detail=None,
             duration_ms=int((time.monotonic() - start) * 1000),
             truncated=truncated,
+        )
+
+    # ------------------------------------------------------------------
+    # Memory tool implementations
+    # ------------------------------------------------------------------
+
+    def _memory_query(self, intent: ToolIntent, call_id: str, start: float) -> ToolResult:
+        if self._memory_querier is None:
+            return _make_failure(
+                intent.tool_name, call_id, start, "mcp_rejection",
+                "Memory system unavailable",
+            )
+        query = intent.arguments.get("query")
+        if not isinstance(query, str) or not query.strip():
+            return _make_failure(
+                intent.tool_name, call_id, start, "mcp_rejection",
+                "query must be a non-empty string",
+            )
+        top_k = intent.arguments.get("top_k", 5)
+        try:
+            top_k = int(top_k)
+        except (TypeError, ValueError):
+            top_k = 5
+        top_k = max(1, min(top_k, 20))
+        results = self._memory_querier.query_episodic(query, top_k)
+        return ToolResult(
+            tool_name=intent.tool_name,
+            call_id=call_id,
+            success=True,
+            result=results,
+            error_type=None,
+            error_detail=None,
+            duration_ms=int((time.monotonic() - start) * 1000),
+            truncated=False,
+        )
+
+    def _memory_flag(self, intent: ToolIntent, call_id: str, start: float) -> ToolResult:
+        if self._memory_querier is None:
+            return _make_failure(
+                intent.tool_name, call_id, start, "mcp_rejection",
+                "Memory system unavailable",
+            )
+        document_id = intent.arguments.get("document_id")
+        significance = intent.arguments.get("significance")
+        if not isinstance(document_id, str) or not document_id.strip():
+            return _make_failure(
+                intent.tool_name, call_id, start, "mcp_rejection",
+                "document_id must be a non-empty string",
+            )
+        if not isinstance(significance, str) or not significance.strip():
+            return _make_failure(
+                intent.tool_name, call_id, start, "mcp_rejection",
+                "significance must be a non-empty string",
+            )
+        found = self._memory_querier.flag_episodic(document_id, significance)
+        if not found:
+            return _make_failure(
+                intent.tool_name, call_id, start, "not_found",
+                f"Document not found: {document_id}",
+            )
+        return ToolResult(
+            tool_name=intent.tool_name,
+            call_id=call_id,
+            success=True,
+            result=f"Flagged {document_id}: {significance}",
+            error_type=None,
+            error_detail=None,
+            duration_ms=int((time.monotonic() - start) * 1000),
+            truncated=False,
+        )
+
+    def _memory_consolidate(self, intent: ToolIntent, call_id: str, start: float) -> ToolResult:
+        if self._memory_querier is None:
+            return _make_failure(
+                intent.tool_name, call_id, start, "mcp_rejection",
+                "Memory system unavailable",
+            )
+        query = intent.arguments.get("query")
+        summary = intent.arguments.get("summary")
+        if not isinstance(query, str) or not query.strip():
+            return _make_failure(
+                intent.tool_name, call_id, start, "mcp_rejection",
+                "query must be a non-empty string",
+            )
+        if not isinstance(summary, str) or not summary.strip():
+            return _make_failure(
+                intent.tool_name, call_id, start, "mcp_rejection",
+                "summary must be a non-empty string",
+            )
+        doc_id = self._memory_querier.write_consolidation(
+            summary, turn_number=0, instance_id=self._config.universe.instance_id,
+        )
+        return ToolResult(
+            tool_name=intent.tool_name,
+            call_id=call_id,
+            success=True,
+            result=f"Consolidation written: {doc_id}",
+            error_type=None,
+            error_detail=None,
+            duration_ms=int((time.monotonic() - start) * 1000),
+            truncated=False,
         )
 
     def _make_client(self) -> httpx.Client:

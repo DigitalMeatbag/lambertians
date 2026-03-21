@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/ -x -q)",
+      "Bash(python -m pytest tests/unit/lambertian/mcp_gateway/test_memory_tools.py -x -q)"
+    ]
+  }
+}

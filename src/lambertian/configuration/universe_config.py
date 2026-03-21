@@ -198,6 +198,22 @@ class EnvMonitorConfig:
 
 
 @dataclass(frozen=True)
+class PolicyConfig:
+    """Mutable-policy defaults — seed values for InstancePolicy.mutable.
+
+    These live in [policy] in universe.toml (immutable instance configuration).
+    The instance can drift them at runtime via self/policy.json (dynamic instance state).
+    """
+
+    response_excerpt_max_chars: int
+    tool_result_summary_max_chars: int
+    working_memory_excerpt_max_chars: int
+    suppression_threshold: int
+    repetition_detection_window: int
+    rolling_context_extraction_count: int
+
+
+@dataclass(frozen=True)
 class Config:
     universe: UniverseConfig
     model: ModelConfig
@@ -214,3 +230,4 @@ class Config:
     creator_observability: CreatorObservabilityConfig
     env_monitor: EnvMonitorConfig
     instance: InstanceConfig
+    policy: PolicyConfig

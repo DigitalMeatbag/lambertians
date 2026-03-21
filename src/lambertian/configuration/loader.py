@@ -24,6 +24,7 @@ from lambertian.configuration.universe_config import (
     PainEventsConfig,
     PainStressConfig,
     PathsConfig,
+    PolicyConfig,
     TurnConfig,
     UniverseConfig,
 )
@@ -326,6 +327,19 @@ def _load_creator_observability(raw: dict[str, Any]) -> CreatorObservabilityConf
     )
 
 
+def _load_policy(raw: dict[str, Any]) -> PolicyConfig:
+    s = "policy"
+    d = _dict(raw, s, "<root>")
+    return PolicyConfig(
+        response_excerpt_max_chars=_int(d, "response_excerpt_max_chars", s),
+        tool_result_summary_max_chars=_int(d, "tool_result_summary_max_chars", s),
+        working_memory_excerpt_max_chars=_int(d, "working_memory_excerpt_max_chars", s),
+        suppression_threshold=_int(d, "suppression_threshold", s),
+        repetition_detection_window=_int(d, "repetition_detection_window", s),
+        rolling_context_extraction_count=_int(d, "rolling_context_extraction_count", s),
+    )
+
+
 def _load_env_monitor(raw: dict[str, Any]) -> EnvMonitorConfig:
     s = "env_monitor"
     d = _dict(raw, s, "<root>")
@@ -362,6 +376,7 @@ def load_config(path: Path) -> Config:
         creator_observability=_load_creator_observability(raw),
         env_monitor=_load_env_monitor(raw),
         instance=_load_instance(raw),
+        policy=_load_policy(raw),
     )
 
     from lambertian.configuration.validator import validate_config

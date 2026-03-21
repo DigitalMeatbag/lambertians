@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Protocol, runtime_checkable
+from typing import Optional, Protocol, runtime_checkable
 
 from lambertian.configuration.universe_config import Config
 from lambertian.memory_store.episodic_store import EpisodicStore
@@ -17,6 +17,10 @@ class MemoryQuerier(Protocol):
     def write_episodic_worthy(
         self, request: MemoryWriteRequest, instance_id: str
     ) -> str: ...
+    def flag_episodic(self, document_id: str, significance: str) -> bool: ...
+    def write_consolidation(
+        self, summary: str, turn_number: int, instance_id: str
+    ) -> str: ...
 
 
 class NoOpMemoryQuerier:
@@ -30,6 +34,14 @@ class NoOpMemoryQuerier:
 
     def write_episodic_worthy(
         self, request: MemoryWriteRequest, instance_id: str
+    ) -> str:
+        return ""
+
+    def flag_episodic(self, document_id: str, significance: str) -> bool:
+        return False
+
+    def write_consolidation(
+        self, summary: str, turn_number: int, instance_id: str
     ) -> str:
         return ""
 
@@ -84,4 +96,24 @@ class ChromaMemoryQuerier:
         )
         if not checker.is_worthy(request.content, request.document_type):
             return ""
+        return self._store.write(request, instance_id, self._stress_state_path)
+
+    def flag_episodic(self, document_id: str, significance: str) -> bool:
+        """Flag a document with a significance annotation. Returns True if doc existed."""
+        return self._store.update_metadata(
+            document_id, {"flagged": True, "significance": significance}
+        )
+
+    def write_consolidation(
+        self, summary: str, turn_number: int, instance_id: str
+    ) -> str:
+        """Write a consolidation summary as a new episodic document."""
+        request = MemoryWriteRequest(
+            content=summary,
+            document_type="consolidation",
+            turn_number=turn_number,
+            write_index=0,
+            tool_name=None,
+            adaptation_class=None,
+        )
         return self._store.write(request, instance_id, self._stress_state_path)

@@ -5,7 +5,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import chromadb
 import httpx
@@ -153,6 +153,42 @@ class EpisodicStore:
         stored_emb: list[float] = [float(x) for x in raw_embeddings[0]]
         content_emb: list[float] = self._embed_text(content)
         return _cosine_similarity(content_emb, stored_emb)
+
+    def get_document(self, document_id: str) -> Optional[EpisodicDocument]:
+        """Fetch a single document by ID. Returns None if not found."""
+        try:
+            result: Any = self._collection.get(
+                ids=[document_id],
+                include=["documents", "metadatas"],
+            )
+        except Exception:
+            return None
+        ids: list[str] = result.get("ids", [])
+        if not ids:
+            return None
+        docs: list[str] = result.get("documents", [])
+        metas: list[dict[str, object]] = result.get("metadatas", [])
+        return EpisodicDocument(
+            document_id=ids[0],
+            content=docs[0] if docs else "",
+            metadata=metas[0] if metas else {},
+            similarity_score=1.0,
+        )
+
+    def update_metadata(
+        self, document_id: str, metadata_updates: dict[str, str | int | float | bool]
+    ) -> bool:
+        """Merge metadata_updates into an existing document's metadata. Returns True if doc existed."""
+        existing = self.get_document(document_id)
+        if existing is None:
+            return False
+        merged = dict(existing.metadata)
+        merged.update(metadata_updates)
+        self._collection.update(
+            ids=[document_id],
+            metadatas=[merged],
+        )
+        return True
 
     def clear_collection(self) -> None:
         """Delete and recreate the episodic collection, clearing all lifetime memory.

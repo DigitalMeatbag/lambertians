@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 import os
+from pathlib import Path
 import signal
 import sys
 import time
@@ -12,6 +13,8 @@ from collections import deque
 from datetime import datetime, timezone
 from typing import Optional, Protocol
 
+from lambertian.configuration.instance_policy import InstancePolicy
+from lambertian.configuration.policy_loader import resolve_policy
 from lambertian.configuration.universe_config import Config
 from lambertian.contracts.pain_records import PainMessage
 from lambertian.contracts.pain_protocol import PainDeliveryDrain, PainEventSubmitter
@@ -37,10 +40,6 @@ from lambertian.turn_engine.suppression import get_suppressed_tools
 from lambertian.turn_engine.turn_state import TurnStateStore
 
 logger = logging.getLogger(__name__)
-
-# [ASSUMED: 10 chars — minimum response length to not be classified as a noop; not specified in IS-1]
-_NOOP_MIN_CHARS: int = 10
-
 
 def _format_intent(intent: ToolIntent) -> str:
     """Compact human-readable representation of a tool call for log output."""
@@ -172,6 +171,11 @@ class TurnEngine:
     def _execute_turn(self) -> None:
         """Run one complete turn (IS-6.3 steps 1-19)."""
 
+        # Step 0: Resolve per-turn policy (immutable from config, mutable from self/policy.json).
+        policy = resolve_policy(
+            self._config, Path("runtime/agent-work/self/policy.json")
+        )
+
         # Step 1: Read turn number, check death record, check max age.
         turn_number = self._turn_state.read_turn_number()
         timestamp_start = datetime.now(timezone.utc).isoformat()
@@ -267,6 +271,9 @@ class TurnEngine:
                 list(self._rolling_context),
                 recent_self_prompts,
                 turn_number,
+                action_stems=policy.mutable.action_stems,
+                exploration_topics=policy.mutable.exploration_topics,
+                repetition_detection_window=policy.mutable.repetition_detection_window,
             )
             self._turn_state.append_self_prompt(
                 prompt_text, turn_number, self._config.eos.recency_window_turns
@@ -305,7 +312,10 @@ class TurnEngine:
         # Step 9: Model inference.
         # Suppress tools called exclusively for the last N turns to break repetition loops.
         # NOOP turns are transparent to the suppression window (see suppression.py).
-        suppressed_tools = get_suppressed_tools(list(self._rolling_context))
+        suppressed_tools = get_suppressed_tools(
+            list(self._rolling_context),
+            threshold=policy.mutable.suppression_threshold,
+        )
         full_catalog = self._mcp_gateway.get_tool_catalog()
         if suppressed_tools:
             filtered_catalog = [
@@ -324,7 +334,10 @@ class TurnEngine:
         else:
             active_catalog = full_catalog
         try:
-            messages_list = self._prompt_assembler.assemble(context)
+            messages_list = self._prompt_assembler.assemble(
+                context,
+                rolling_context_extraction_count=policy.mutable.rolling_context_extraction_count,
+            )
             response_text, tool_intents = self._model_client.chat(
                 messages_list, active_catalog
             )
@@ -386,15 +399,15 @@ class TurnEngine:
             # Determine what content and document type to write.
             write_content: str = ""
             doc_type: str = "model_response"
-            if response_text and len(response_text) >= _NOOP_MIN_CHARS:
-                write_content = response_text[:500]
+            if response_text and len(response_text) >= policy.immutable.noop_min_chars:
+                write_content = response_text[:policy.mutable.response_excerpt_max_chars]
                 doc_type = "model_response"
             elif tool_call_records:
                 # Silent-call model path: synthesize a compact turn summary.
                 parts: list[str] = []
                 for r in tool_call_records:
                     if r.executed and r.result_summary:
-                        parts.append(f"{r.tool_name}: {r.result_summary[:150]}")
+                        parts.append(f"{r.tool_name}: {r.result_summary[:policy.mutable.tool_result_summary_max_chars]}")
                     elif r.executed:
                         parts.append(f"{r.tool_name}: (executed)")
                 if parts:
@@ -403,7 +416,7 @@ class TurnEngine:
 
             if (
                 write_content
-                and len(write_content) >= _NOOP_MIN_CHARS
+                and len(write_content) >= policy.immutable.noop_min_chars
                 and memory_writes < self._config.memory.episodic_max_writes_per_turn
             ):
                 request = MemoryWriteRequest(
@@ -432,13 +445,14 @@ class TurnEngine:
         # not the mechanical header.  Metadata follows on its own line.
         executed_count = sum(1 for r in tool_call_records if r.executed)
         tool_summary = f"tools:{executed_count}/{len(tool_call_records)} mem:{memory_writes}"
-        response_excerpt = response_text.strip()[:400] if response_text else ""
+        response_excerpt = response_text.strip()[:policy.mutable.working_memory_excerpt_max_chars] if response_text else ""
         summary = f"{response_excerpt}\n[t{turn_number} {driver.role} {tool_summary}]"
         self._turn_state.write_working_memory(summary, turn_number)
 
         # Steps 16–16a: Noop/reflection classification and counter update (delegated to NoopTracker).
         is_noop, _ = self._noop_tracker.update(
-            tool_call_records, response_text, memory_writes, turn_number
+            tool_call_records, response_text, memory_writes, turn_number,
+            noop_min_chars=policy.immutable.noop_min_chars,
         )
 
         # Step 16b: Compute running fitness score (observer-only — IS-13.1).

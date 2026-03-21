@@ -11,6 +11,8 @@ class TurnPromptAssembler:
     def assemble(
         self,
         context: TurnContext,
+        *,
+        rolling_context_extraction_count: int = 5,
     ) -> list[dict[str, object]]:
         """Returns ordered list of {"role": ..., "content": ...} dicts.
 
@@ -85,7 +87,7 @@ class TurnPromptAssembler:
         if context.driver.role == "SELF_PROMPT":
             # Collect recent tool names from the last 5 turns to detect repetition.
             recent_tool_names: list[str] = []
-            for r in context.rolling_context[-5:]:
+            for r in context.rolling_context[-rolling_context_extraction_count:]:
                 tcs = r.get("tool_calls", ())
                 if isinstance(tcs, (list, tuple)):
                     for tc in tcs:
