@@ -2752,6 +2752,7 @@ Events are grouped by category. Each type's schema lists only the **additional f
 | `adaptation_class` | `Optional[str]` | `free`, `reviewed`, or `forbidden`; `null` if none detected |
 | `noop` | `bool` | Whether this turn was classified as a noop |
 | `turn_duration_ms` | `int` | Wall-clock milliseconds from `timestamp_start` to `timestamp_end` |
+| `response_text` | `Optional[str]` | First 800 characters of the model's text output this turn; `null` if the model produced no text (silent tool-call turns) |
 
 **`TURN_FAILED`** — written by `agent` at IS-6.3 step 9 on model inference failure, or at any other fatal step.
 

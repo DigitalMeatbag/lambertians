@@ -477,6 +477,7 @@ class TurnEngine:
                 "memory_writes": memory_writes,
                 "noop": is_noop,
                 "adaptation_class": adaptation_class_raw,
+                "response_text": response_text.strip()[:800] if response_text else None,
             },
         )
 
