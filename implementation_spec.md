@@ -2754,6 +2754,8 @@ Events are grouped by category. Each type's schema lists only the **additional f
 | `turn_duration_ms` | `int` | Wall-clock milliseconds from `timestamp_start` to `timestamp_end` |
 | `response_text` | `Optional[str]` | First 800 characters of the model's text output this turn; `null` if the model produced no text (silent tool-call turns) |
 
+> **Note:** `lambertian-witness` sources turn text from docker log parsing, which uses a 400-character excerpt written to the log line. The witness does not yet read `response_text` from the event stream directly — long turns are silently truncated in the Narration panel at 400 chars. Future improvement: refactor witness to tail `events.jsonl` and consume `response_text` from `TURN_COMPLETE` events.
+
 **`TURN_FAILED`** — written by `agent` at IS-6.3 step 9 on model inference failure, or at any other fatal step.
 
 | Additional field | Type | Description |
