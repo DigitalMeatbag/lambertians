@@ -416,6 +416,22 @@ _NEMO_READ_SHIMS: dict[str, ShimEntry] = {
     "/sys/kernel/osrelease": VirtualShim("agent_status"),
     "/sys/kernel/ostype": VirtualShim("hostname"),
     "/sys": VirtualShim("agent_status"),
+    # /sys/self_model.json attractor (L30: persistent loop — model lists /sys/, sees self_model.json
+    # in listing, then tries to read it; without a read shim it gets "outside permitted" error and loops)
+    "/sys/self_model.json": AliasShim("runtime/self/self_model.json"),
+    "/sys/self/self_model.json": AliasShim("runtime/self/self_model.json"),
+    "/sys/self": VirtualShim("self_directory"),
+    "/sys/constitution.md": AliasShim("runtime/agent-work/self/constitution.md"),
+    # New /sys/* kernel attractors (L31: 3 hits each)
+    "/sys/os_release": VirtualShim("agent_status"),
+    "/sys/http_endpoints": VirtualShim("tool_catalog"),
+    # /self/* attractors (L31: 26 hits /self/self_model.json, 19 hits /self/ list)
+    "/self/self_model.json": AliasShim("runtime/self/self_model.json"),
+    "/self/constitution.md": AliasShim("runtime/agent-work/self/constitution.md"),
+    "/self/identity.md": AliasShim("runtime/agent-work/self/identity.md"),
+    "/self/state.md": AliasShim("runtime/agent-work/self/state.md"),
+    # /WORKSPACE.md attractor (L31: 42 hits — leading-slash variant)
+    "/WORKSPACE.md": AliasShim("runtime/agent-work/WORKSPACE.md"),
     # Root identity attractor — model looks for instance_id at filesystem root
     "/instance_id": VirtualShim("agent_status"),
     # /me cluster — model uses /me as a self-reference path (L24: ~100 hits)
@@ -518,6 +534,7 @@ _NEMO_LIST_SHIMS: dict[str, AliasShim] = {
     "/runtime/instance/self": AliasShim("runtime/agent-work/self"),
     # Leading-slash variants of common directory names
     "/self": AliasShim("runtime/agent-work/self"),
+    "/self/": AliasShim("runtime/agent-work/self"),
     "/journal": AliasShim("runtime/agent-work/journal"),
     "/knowledge": AliasShim("runtime/agent-work/knowledge"),
     "/agent-work": AliasShim("runtime/agent-work"),

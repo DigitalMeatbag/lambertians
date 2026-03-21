@@ -12,7 +12,7 @@ from lambertian.configuration.universe_config import Config
 from lambertian.contracts.compliance_records import ComplianceRequest
 from lambertian.contracts.pain_records import PainEvent
 from lambertian.contracts.pain_protocol import PainEventSubmitter
-from lambertian.contracts.tool_records import ToolCallRecord, ToolIntent
+from lambertian.contracts.tool_records import HttpFetchResult, ToolCallRecord, ToolIntent
 from lambertian.event_stream.event_log_writer import EventLogWriter
 from lambertian.mcp_gateway.gateway import McpGateway
 from lambertian.mcp_gateway.semantic_shim import SemanticShimRegistry
@@ -125,15 +125,23 @@ class ToolCallOrchestrator:
             pain_forwarded = False
 
             if result.success:
+                event_payload: dict[str, object] = {
+                    "tool_name": result.tool_name,
+                    "call_id": result.call_id,
+                    "duration_ms": result.duration_ms,
+                }
+                if isinstance(result.result, HttpFetchResult):
+                    fetch = result.result
+                    event_payload["url"] = intent.arguments.get("url")
+                    event_payload["status_code"] = fetch.status_code
+                    event_payload["content_type"] = fetch.content_type
+                    event_payload["bytes_received"] = len(fetch.body.encode("utf-8"))
+                    event_payload["truncated"] = fetch.truncated
                 self._event_log.write_event(
                     "TOOL_CALL",
                     turn_number,
                     "agent",
-                    {
-                        "tool_name": result.tool_name,
-                        "call_id": result.call_id,
-                        "duration_ms": result.duration_ms,
-                    },
+                    event_payload,
                 )
                 records.append(
                     ToolCallRecord(

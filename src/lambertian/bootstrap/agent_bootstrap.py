@@ -129,7 +129,7 @@ class AgentBootstrap:
     def _write_policy_defaults(self) -> None:
         """Write policy_defaults.json so the instance can inspect its starting policy."""
         policy = build_default_policy(self._config)
-        defaults_dir = Path(self._config.paths.runtime_root) / "config"
+        defaults_dir = Path(self._config.paths.self_model_file).parent
         defaults_dir.mkdir(parents=True, exist_ok=True)
         defaults_path = defaults_dir / "policy_defaults.json"
         payload = {

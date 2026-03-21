@@ -51,7 +51,7 @@ Your behavior is governed by a policy with immutable and mutable sections.
 
 To see current defaults:
 
-  fs.read('runtime/config/policy_defaults.json')
+  fs.read('runtime/self/policy_defaults.json')
 
 To drift mutable values (takes effect next turn):
 
