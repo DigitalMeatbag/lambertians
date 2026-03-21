@@ -2,7 +2,7 @@
 
 **A constrained-agent testbed for studying model behavior, EOS design, and behavioral attractors.**
 
-Project Lambertian is a locally-running AI agent architecture designed to surface how models behave under constrained, open-ended conditions. It has an inherited structure the agent cannot rewrite, a mutable self that accumulates experience, environmental grounding that pushes back, a normative operating system (EOS) governing what actions are admissible, and a lineage mechanism for architectural change across generations.
+Project Lambertian is a locally-running AI agent architecture designed to surface how models behave under constrained, open-ended conditions. It has an inherited structure the agent cannot rewrite (**immutable instance configuration**), a mutable self that accumulates experience (**dynamic instance state**), environmental grounding that pushes back (**Ground**), a normative operating system (EOS) governing what actions are admissible, and a lineage mechanism for architectural change across generations.
 
 It is not a chatbot. It is not an assistant. It is not trying to maximize anything.
 
@@ -17,8 +17,8 @@ The name refers to Lambertian reflectance — diffuse, non-specular, no harsh re
 - **Environment:** Filesystem (`runtime/`), HTTP, host telemetry — all accessed via MCP-mediated tooling
 - **Behavior mechanism:** EOS (rule-based admissibility system) governs what actions are admissible; the Ground (external constraints and environment) pushes back against the agent's actions
 - **What it does:** Runs continuous autonomous turns — reads and writes files, fetches URLs, updates working memory, accumulates episodic history
-- **Current phase:** Phase 3 active
-- **Model:** qwen2.5:32b via Ollama (model selection is a one-line config change)
+- **Current phase:** Phase 2 active
+- **Model:** Configurable via `universe.toml` — currently running mistral-nemo:latest via Ollama
 
 ---
 
@@ -42,9 +42,9 @@ This project creates the conditions to observe that directly: a model running co
 
 ## Current Status
 
-Phases 1 and 2 are complete. Phase 3 is active. A single Lambertian instance is running. See [`progress.md`](progress.md) for current implementation state and runtime observations.
+Phases 1 and 2 are complete. Phase 2 is active. A single Lambertian instance is running. See [`progress.md`](progress.md) for current implementation state and runtime observations.
 
-The stack runs locally on Ollama with qwen2.5:32b (model profiles are configurable — switching models is a one-line config change), Docker Compose for the service topology, and ChromaDB for memory.
+The stack runs locally on Ollama (model is configurable via `universe.toml`), Docker Compose for the service topology, and ChromaDB for memory.
 
 ---
 

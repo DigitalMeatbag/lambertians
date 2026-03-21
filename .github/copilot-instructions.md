@@ -7,8 +7,12 @@ or an optimizer. It is an attempt to build something closer to a cognitive organ
 inherited structure, mutable experience, environmental grounding, persistent motive, and a lineage
 mechanism for architectural improvement across generations.
 
-The canonical reference for all architectural decisions, terminology, and design intent is
-`lambertian_foundation.md`. When in doubt, read it before assuming.
+The canonical references for architectural decisions, terminology, and design intent are:
+- `manifesto.md` — design rationale, conceptual framing, why this architecture
+- `technical.md` — engineering overview, six-layer architecture, EOS in practical terms
+- `implementation_spec.md` — the formal IS-level build spec (IS-1 through IS-13)
+
+When in doubt, read the relevant document before assuming.
 
 All major architectural decisions (D1–D7) are documented in the foundation and are closed unless
 explicitly reopened by the project owner.
