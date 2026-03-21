@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Optional
 
 from lambertian.configuration.universe_config import Config
 from lambertian.event_stream.event_log_writer import EventLogWriter
@@ -53,14 +54,14 @@ class ComponentFactory:
         return OllamaClient(config)
 
     @staticmethod
-    def create_shim_registry(config: Config) -> SemanticShimRegistry:
+    def create_shim_registry(config: Config) -> Optional[SemanticShimRegistry]:
         return build_shim_registry(config)
 
     @staticmethod
     def create_mcp_gateway(
         config: Config,
         runtime_root: Path,
-        shim_registry: SemanticShimRegistry,
+        shim_registry: Optional[SemanticShimRegistry],
     ) -> McpGateway:
         return McpGateway(
             config,
