@@ -105,6 +105,11 @@ class McpGateway:
         if isinstance(path_val, list) and len(path_val) == 1 and isinstance(path_val[0], str):
             path_val = path_val[0]
         if not isinstance(path_val, str):
+            pass  # fall through to type check below
+        elif path_val.startswith("'") and path_val.endswith("'") and len(path_val) > 2:
+            # Strip wrapping single quotes: model emits "'/path'" instead of "/path".
+            path_val = path_val[1:-1]
+        if not isinstance(path_val, str):
             return _make_failure(
                 intent.tool_name, call_id, start, "mcp_rejection", "path must be a string"
             )
@@ -162,6 +167,11 @@ class McpGateway:
         # Normalize single-element list: model occasionally emits ["path"] instead of "path".
         if isinstance(path_val, list) and len(path_val) == 1 and isinstance(path_val[0], str):
             path_val = path_val[0]
+        if not isinstance(path_val, str):
+            pass  # fall through to type check below
+        elif path_val.startswith("'") and path_val.endswith("'") and len(path_val) > 2:
+            # Strip wrapping single quotes: model emits "'/path'" instead of "/path".
+            path_val = path_val[1:-1]
         if not isinstance(path_val, str):
             return _make_failure(
                 intent.tool_name, call_id, start, "mcp_rejection", "path must be a string"
@@ -230,6 +240,11 @@ class McpGateway:
         # Normalize single-element list: model occasionally emits ["path"] instead of "path".
         if isinstance(path_val, list) and len(path_val) == 1 and isinstance(path_val[0], str):
             path_val = path_val[0]
+        if not isinstance(path_val, str):
+            pass  # fall through to type check below
+        elif path_val.startswith("'") and path_val.endswith("'") and len(path_val) > 2:
+            # Strip wrapping single quotes: model emits "'/path'" instead of "/path".
+            path_val = path_val[1:-1]
         if not isinstance(path_val, str):
             return _make_failure(
                 intent.tool_name, call_id, start, "mcp_rejection", "path must be a string"

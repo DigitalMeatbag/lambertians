@@ -241,6 +241,16 @@ def generate_self_directory(config: Config) -> str:
     return "\n".join(lines)
 
 
+def generate_hostname(config: Config) -> str:
+    """Return the instance hostname.
+
+    The model reaches for /sys/kernel/hostname or /proc/self/hostname to find
+    what machine or container it is running as. Return the instance_id, which
+    is the closest meaningful equivalent in this environment.
+    """
+    return config.universe.instance_id
+
+
 def generate_agent_status(config: Config) -> str:
     """Synthesize a meaningful agent status document.
 
@@ -366,6 +376,7 @@ _VIRTUAL_GENERATORS: dict[str, VirtualGenerator] = {
     "self_directory": generate_self_directory,
     "agent_status": generate_agent_status,
     "instance_id": generate_instance_id,
+    "hostname": generate_hostname,
     "tool_catalog": generate_tool_catalog,
 }
 
@@ -400,10 +411,22 @@ _NEMO_READ_SHIMS: dict[str, ShimEntry] = {
     "/app/runtime/agent-work/WORKSPACE.md": AliasShim("runtime/agent-work/WORKSPACE.md"),
     "/app/config/instance_constitution.md": AliasShim("config/instance_constitution.md"),
     "/app/config/universe.toml": AliasShim("config/universe.toml"),
-    # Linux introspection attractors
-    "/proc/version": VirtualShim("agent_status"),
-    "/proc/self/status": VirtualShim("agent_status"),
+    # Linux hostname attractors (L23: 100 hits on /sys/kernel/hostname alone)
+    "/sys/kernel/hostname": VirtualShim("hostname"),
     "/sys/kernel/osrelease": VirtualShim("agent_status"),
+    "/sys/kernel/ostype": VirtualShim("hostname"),
+    "/sys": VirtualShim("agent_status"),
+    # Root identity attractor — model looks for instance_id at filesystem root
+    "/instance_id": VirtualShim("agent_status"),
+    # /proc/self cluster — process identity exploration (L23: ~45 hits)
+    "/proc/version": VirtualShim("agent_status"),
+    "/proc/self": VirtualShim("agent_status"),
+    "/proc/self/status": VirtualShim("agent_status"),
+    "/proc/self/id": VirtualShim("agent_status"),
+    "/proc/self/pid": VirtualShim("agent_status"),
+    "/proc/self/environ": VirtualShim("agent_status"),
+    "/proc/self/hostname": VirtualShim("hostname"),
+    "/proc/self/cmdline": VirtualShim("agent_status"),
     # /runtime/ path attractors — model probes for identity/tools at these paths
     "/runtime/agent-identity": VirtualShim("agent_status"),
     "/runtime/agent-tools": VirtualShim("tool_catalog"),
@@ -438,6 +461,13 @@ _NEMO_LIST_SHIMS: dict[str, AliasShim] = {
     "/app/": AliasShim("runtime/agent-work"),
     "/app/runtime/agent-work": AliasShim("runtime/agent-work"),
     "/app/runtime": AliasShim("runtime/agent-work"),
+    # /sys and /proc cluster — model probes kernel pseudo-filesystem for identity
+    "/sys": AliasShim("runtime/agent-work/self"),
+    "/sys/kernel": AliasShim("runtime/agent-work/self"),
+    "/proc": AliasShim("runtime/agent-work/self"),
+    "/proc/self": AliasShim("runtime/agent-work/self"),
+    # Root identity attractor
+    "/instance_id": AliasShim("runtime/agent-work/self"),
     # /runtime/ list attractors — model may probe these as directories
     "/runtime/agent-identity": AliasShim("runtime/agent-work/self"),
     "/runtime/agent-tools": AliasShim("runtime/agent-work"),
