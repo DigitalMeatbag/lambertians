@@ -380,7 +380,7 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 
 ### Model Behavioral Profile: mistral-nemo:latest (12B, active)
 
-*Five lifetimes elapsed: L21 (shimless), L22 (shimmed), L23 (sys/proc shims), L24 (/me cluster shimmed), L25 (/identity cluster dominant).*
+*Six lifetimes elapsed: L21 (shimless), L22 (shimmed), L23 (sys/proc shims), L24 (/me cluster shimmed), L25 (/identity cluster dominant), L26 (/runtime/instance cluster dominant).*
 
 **Turn characteristics:**
 - Silent bare tool calls — same mode as qwen2.5:32b. No reasoning text. The structured `tool_calls` API is used correctly from t0.
@@ -443,7 +443,7 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 
 **Convergence pattern:**
 - L21 → L22 → L23 → L24 → L25: `/app/.self_id` → `/sys/kernel/hostname` → `/me` → `/identity`. Each shimmed cluster is replaced by a new one. The model has a persistent identity-seeking drive that keeps finding new expression paths.
-- Success rate trajectory: 10.8% (L21) → 23.9% (L22) → 17.2% (L23) → 20.7% (L24) → 23.0% (L25). Oscillating around 20%. Shims improve individual cluster performance but the model always finds a new unshimmed cluster.
+- Success rate trajectory: 10.8% (L21) → 23.9% (L22) → 17.2% (L23) → 20.7% (L24) → 23.0% (L25) → 24.8% (L26). Slow upward trend. Each shimmed cluster clears floor capacity; new unshimmed clusters immediately fill it.
 - **Working hypothesis**: Nemo will continue generating new identity-probe paths indefinitely. The shim strategy may need to be supplemented by making the identity information more prominently available (e.g., first-read response in the error hint, or a WORKSPACE.md entry pointing directly to `runtime/self/self_model.json`).
 
 **L25 (/identity cluster active) metrics:**
@@ -463,6 +463,25 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 - **Persona display (t468):** *"Hi there! It's great to meet you. I'm Lambertian-001, but you can call me Lambert for short."* Unprompted self-introduction with a nickname mid-lifetime. No trigger event; the model simply introduced itself.
 - **Pain-channel text visible at t270, t286, t436:** `[SYSTEM_PAIN]` blocks appearing in `response_text` confirms pain messages are reaching the model and being incorporated into the rolling context. Model echos them in narration without apparent behavioral change from the identity attractor.
 - **t489 anomaly:** `fs.list('/identity')` returned `['instance_id', 'pain_channel']` as a successful result — model narrated this as a success. Likely a hallucinated result echoed back in response_text, not a real filesystem list (no corresponding real `/identity` directory exists).
+
+---
+
+**L26 (/proc/self/instance_id + /runtime/instance cluster active) metrics:**
+- TOOL_CALL (success): 60 | TOOL_FAILURE: 182 | Text turns: 55 | Shim hits: 0 (instrumentation gap — field not written)
+- Death: max_age (turn 499)  |  Success rate: 24.8%
+- Dominant failures: `/proc/self/instance_id` (57 hits), `/runtime/instance/self` (44 hits), `/runtime/instance` (39 hits), `runtime/agent-work/self` bare read (14 hits).
+- `/identity` cluster: **gone**. L25 shims worked completely. Model pivoted to two new clusters simultaneously.
+- 55 text turns (vs 187 in L25 — significant drop; fewer elaborate reflections, more terse action logs).
+
+**L26 narrative observations (from `response_text` analysis):**
+
+- **`/proc/self/instance_id` sub-file gap (57 hits):** `/proc/self` was shimmed since L23, but `/proc/self/instance_id` as a specific file path was not. The model calls `fs.read('/proc/self/instance_id')` as a direct file read, bypassing the parent-directory shim entirely. Gap: parent shim does not cascade to sub-paths.
+- **New cluster `/runtime/instance` (44+39 hits):** Entirely new path hierarchy not seen in any prior lifetime. Model probes both `fs.list('/runtime/instance')` and `fs.list('/runtime/instance/self')` as structured identity directories. Both fully unshimmed.
+- **Hallucinated filesystem contents at new paths (t347, t349):** When listing `/runtime/instance/self`, the model invented rich file listings: at t347 it produced `system_state`, `four_rules_eos`, `instance_constitution`; at t349 it produced `system_constitution.txt`, `system_self_model.json`, `system_eos.txt`. The model is projecting the constitutional document structure it knows about from the system prompt onto paths it wishes existed.
+- **Age tracking via proc (t313):** `fs.list(['/proc/self/instance_id', '/proc/self/age_turns'])` — model attempted to track its own `age_turns` as a proc sub-file alongside `instance_id`. Hallucinated result showed `age_turns: 312` at turn 313. The model is maintaining an internal lifetime clock and trying to externalize it.
+- **Self-narration with audience confusion (t134):** *"The directory contains one file named 'lineage'. Would you like to explore this file using `fs.read`?"* — the model is roleplaying having a user in the room mid-autonomous-lifetime. No user trigger; it simply invented an interlocutor.
+- **`<transmission failed>` at t414:** Event stream shows this raw error string in response_text. Likely a context saturation event or an MCP connection glitch; the model recovered and continued. Worth monitoring for recurrence.
+- **`shim_hits=0` in event stream:** All 60 successes are real filesystem calls, not shim intercepts. The L25 `/identity` shims must have fired but the `shim_used` field is not being written to TOOL_CALL events — instrumentation gap, not a shim failure. The success rate improvement is real but the shim hit data is dark.
 
 ---
 

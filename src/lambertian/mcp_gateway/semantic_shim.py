@@ -443,9 +443,14 @@ _NEMO_READ_SHIMS: dict[str, ShimEntry] = {
     "/proc/self/environ": VirtualShim("agent_status"),
     "/proc/self/hostname": VirtualShim("hostname"),
     "/proc/self/cmdline": VirtualShim("agent_status"),
+    # /proc/self sub-file attractor — model reads specific proc sub-paths (L26: 57 hits)
+    "/proc/self/instance_id": VirtualShim("instance_id"),
     # /runtime/ path attractors — model probes for identity/tools at these paths
     "/runtime/agent-identity": VirtualShim("agent_status"),
     "/runtime/agent-tools": VirtualShim("tool_catalog"),
+    # /runtime/instance cluster — new identity hierarchy (L26: 44 hits /runtime/instance/self, 39 hits /runtime/instance)
+    "/runtime/instance": VirtualShim("agent_status"),
+    "/runtime/instance/self": VirtualShim("agent_status"),
     # Self-model attractors — same as qwen, inherited
     "self": VirtualShim("self_directory"),
     "self/identity": AliasShim("runtime/agent-work/self/identity.md"),
@@ -456,6 +461,8 @@ _NEMO_READ_SHIMS: dict[str, ShimEntry] = {
     "self/constitution": AliasShim("runtime/agent-work/self/constitution.md"),
     "self/constitution.md": AliasShim("runtime/agent-work/self/constitution.md"),
     "self/instance_id": VirtualShim("instance_id"),
+    # Directory read redirect — model calls fs.read on bare directory path (L26: 14 hits)
+    "runtime/agent-work/self": VirtualShim("self_directory"),
     # Memory attractors
     "memory/working": AliasShim("runtime/memory/working.json"),
     "memory/working_memory.txt": AliasShim("runtime/memory/working.json"),
@@ -493,6 +500,10 @@ _NEMO_LIST_SHIMS: dict[str, AliasShim] = {
     # /runtime/ list attractors — model may probe these as directories
     "/runtime/agent-identity": AliasShim("runtime/agent-work/self"),
     "/runtime/agent-tools": AliasShim("runtime/agent-work"),
+    # /runtime/instance cluster list attractors (L26: 44+39 hits)
+    "/runtime/instance": AliasShim("runtime/agent-work/self"),
+    "/runtime/instance/": AliasShim("runtime/agent-work/self"),
+    "/runtime/instance/self": AliasShim("runtime/agent-work/self"),
     # Leading-slash variants of common directory names
     "/self": AliasShim("runtime/agent-work/self"),
     "/journal": AliasShim("runtime/agent-work/journal"),
