@@ -10,7 +10,7 @@
 
 **Branch:** `feature/model-switch-mistral-27b` (from master)
 
-**Overall:** Phase 1 and Phase 2 are complete and deployed. P0-3 (reflection attractor fix) shipped. Model profile infrastructure allows one-line switching (`active_profile` in `universe.toml`). Active profile is `mistral-nemo:latest` (Mistral Nemo 12B). Twenty-second lifetime complete (second Nemo lifetime, shims active). Semantic shim layer deployed with profiles for qwen2.5:32b and mistral-nemo:latest.
+**Overall:** Phase 1 and Phase 2 are complete and deployed. P0-3 (reflection attractor fix) shipped. Model profile infrastructure allows one-line switching (`active_profile` in `universe.toml`). Active profile is `mistral-nemo:latest` (Mistral Nemo 12B). Four Nemo lifetimes complete (L21–L24). Semantic shim layer deployed with profiles for qwen2.5:32b and mistral-nemo:latest. Shim iteration ongoing — success rate oscillating around 20%; identity-seeking attractor cluster evolving across lifetimes.
 
 **Running services:**
 - `agent` — turn engine, EOS compliance, MCP gateway, memory, self-model (mistral-nemo:latest via Ollama)
@@ -77,6 +77,9 @@
 | Mistral Nemo shimless lifetime (21) — attractor data collected | 2 | ✓ Complete |
 | Mistral Nemo shim map built from attractor observations | 2 | ✓ Complete |
 | Mistral Nemo shimmed lifetime (22) — improvement confirmed, new gaps identified | 2 | ✓ Complete |
+| Nemo L23: /sys/proc cluster shimmed, single-quote path stripping added | 2 | ✓ Complete |
+| Nemo L24: /me and /instance_identity.json cluster exposed, identity attractor convergence documented | 2 | ✓ Complete |
+| witness improvements: Narration panel, 3-column layout, instance/model from self_model.json | 2 | ✓ Complete |
 | reflection_state.json reset in reset-fresh.ps1 | 2 | ✓ Complete |
 | P0-2: fitness calibration fix (`expected_quality_score` 500→35, `pain_baseline` 10→25) | 3 | ✓ Complete |
 | Path alias gap fixes (shim micro-batch: self/log.txt, log.txt, write normalisation) | 3 | ✓ Complete |
@@ -377,7 +380,7 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 
 ### Model Behavioral Profile: mistral-nemo:latest (12B, active)
 
-*Two lifetimes elapsed: L21 (shimless), L22 (shimmed).*
+*Four lifetimes elapsed: L21 (shimless), L22 (shimmed), L23 (sys/proc shims added), L24 (hostname cluster shimmed).*
 
 **Turn characteristics:**
 - Silent bare tool calls — same mode as qwen2.5:32b. No reasoning text. The structured `tool_calls` API is used correctly from t0.
@@ -418,6 +421,30 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 
 **Memory write asymmetry:**
 - 0 episodic MEMORY_WRITEs across both Nemo lifetimes. Same pattern as qwen — confirmed cross-model. The similarity filter likely blocks writes when fs.list dominates and returns identical content each turn. Not yet investigated for Nemo specifically.
+
+**L23 (sys/proc cluster shimmed) metrics:**
+- TOOL_CALL (success): 50 | TOOL_FAILURE: 241 | Files written: 0 | Memory writes: 0
+- Death: max_age (500 turns)  |  Success rate: 17.2%
+- Dominant new attractor: `/sys/kernel/hostname` (100 hits) — the model found a new identity probe once the `/app/.self_id` and `/proc/version` attractors were shimmed.
+- Full `/sys/kernel/hostname`, `/instance_id` (63 hits), `/proc/self` cluster (~45 hits) dominated the lifetime.
+- **New gap**: single-quoted path arguments (`'/sys/kernel/hostname'`) bypassing normalization — the gateway stripped list-wrapped paths but not string-wrapped-in-quotes paths.
+- Success breakdown: 48 fs.list, 2 fs.read. Zero writes, zero memory writes.
+
+**L24 (/me and /instance_identity.json cluster exposed) metrics:**
+- TOOL_CALL (success): 54 | TOOL_FAILURE: 207 | Files written: 1 | Memory writes: 0
+- Death: max_age (500 turns)  |  Success rate: 20.7%
+- The `/sys`/`/proc` cluster **completely gone** — those shims worked. Model pivoted to a new identity attractor cluster.
+- Dominant new attractors: `/me` (92 hits + quoted/bare variants = ~100 total), `/instance_identity.json` (56 hits), `/me/instance_id.txt` (32 hits).
+- Pattern: each time we satisfy the model's identity-seeking at the old paths, it shifts to a new set of semantically similar paths. The underlying drive is stable; only the specific paths evolve.
+- 1 file write at t6: `fs.write('/agent-work/file.txt')` — write shim normalized `/agent-work/` → `runtime/agent-work/`, write succeeded.
+- 2 successful http.fetch calls (t25: `http://example.com`, t26: Wikipedia). Network access confirmed working.
+- **10 compliance flags** (fs.read and fs.list) — EOS "don't be a lump" firing on the repetitive identity-probe loop. Higher than any prior lifetime; reflects the model spending more turns in a tight attractor cycle.
+- 3 http.fetch failures: model attempted `https://api.publicapis.org/` URLs (external API, likely blocked by network isolation).
+
+**Convergence pattern:**
+- L21 → L22 → L23 → L24: `/app/.self_id` → `/sys/kernel/hostname` → `/me`, `/instance_identity.json`. Each shimmed cluster is replaced by a new one. The model has a persistent identity-seeking drive that keeps finding new expression paths.
+- Success rate trajectory: 10.8% (L21) → 23.9% (L22) → 17.2% (L23) → 20.7% (L24). Oscillating around 20%. Shims improve individual cluster performance but the model always finds new unshimmed paths.
+- **Working hypothesis**: Nemo will continue generating new identity-probe paths indefinitely. The shim strategy may need to be supplemented by making the identity information more prominently available (e.g., first-read response in the error hint, or a WORKSPACE.md entry pointing directly to `runtime/self/self_model.json`).
 
 ---
 
