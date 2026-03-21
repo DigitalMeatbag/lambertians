@@ -31,7 +31,7 @@
 | ID | Decision | Status |
 |----|----------|--------|
 | D1 | Base Model: qwen2.5:32b (active, stable). Model profile swapping infrastructure in place — switching is a one-line config change. | Closed |
-| D2 | Clay Pot Architecture: three-tier visibility, docker-compose as genetic material, universe-level blacklist | Closed |
+| D2 | Immutable Instance Configuration: three-tier visibility, docker-compose as genetic material, universe-level blacklist | Closed |
 | D3 | Pain Channels: stress scalar + pain event queue, external pain-monitor process, `[SYSTEM_PAIN]` injection | Closed |
 | D4 | Mortality and Graveyard: three triggers, automatic/immediate death, no grace period, graveyard harvest on death | Closed |
 | D5 | Agent Loop Perturbation: EOS-guided self-prompting, shared compute as organic perturbation, novelty bias | Closed |
@@ -423,7 +423,7 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 - 0 episodic MEMORY_WRITEs across both Nemo lifetimes. Same pattern as qwen — confirmed cross-model. The similarity filter likely blocks writes when fs.list dominates and returns identical content each turn. Not yet investigated for Nemo specifically.
 
 **Memory agency gap (open question):**
-- The model has no tools to interact with episodic memory. Writes are triggered automatically by the engine after each turn (from response_text or tool result summary); retrieval is auto-injected as `[SYSTEM_MEMORY_EPISODIC]` context. The model cannot choose what to store, cannot query specific memories, and is unaware that memory is happening at all. WORKSPACE.md documents workspace directories and http.fetch but makes no mention of memory. This is architecturally intentional (memory is Clay Pot infrastructure, not Figures-level agency), but means the model cannot use memory strategically. Open question: should the model have any deliberate memory agency, or is fully automatic the right model for this architecture?
+- The model has no tools to interact with episodic memory. Writes are triggered automatically by the engine after each turn (from response_text or tool result summary); retrieval is auto-injected as `[SYSTEM_MEMORY_EPISODIC]` context. The model cannot choose what to store, cannot query specific memories, and is unaware that memory is happening at all. WORKSPACE.md documents workspace directories and http.fetch but makes no mention of memory. **Decision (refactor/instance-model):** Memory infrastructure (ChromaDB, write pipeline, graveyard harvest) remains infrastructure. Memory *content and retrieval agency* is dynamic instance state — the instance should have deliberate memory tools (query, flag, consolidate). See memory agency design in the refactoring plan.
 
 
 **L23 (sys/proc cluster shimmed) metrics:**
@@ -585,7 +585,7 @@ The cycle shows the suppression mechanism working as designed: the fs.list attra
 **Phase 3 open decisions:**
 - Reproductive mechanism design (what recombines, what triggers reproduction, constrained variation) — Phase 3
 - Global Vibe implementation (signals, amalgamation, format, update frequency) — Phase 3
-- Initial population configuration (size, Clay Pot differentiation at founding) — Phase 3
+- Initial population configuration (size, configuration differentiation at founding) — Phase 3
 - Creator interface full design beyond Phase 2 basic — Phase 3
 
 **Known tuning uncertainty:**
@@ -607,8 +607,8 @@ The compliance inspector (IS-11) blocks and flags tool calls that violate the Fo
 **"Don't be a lump" has no teeth against the reflection attractor — fixed (P0-3)**
 A direct corollary of the above. The reflection attractor (see Open Questions) is the exact failure mode Rule 3 is supposed to guard against — "attractor collapse into passive equilibrium." **Fixed**: consecutive zero-tool-call turns (regardless of text output) now increment a separate `reflection_state` counter. On breach of `max_consecutive_reflection_turns` (default 5), a `reflection_threshold` pain event is submitted at `default_noop_severity`. Compliance-blocked turns excluded. Counter resets on any turn with an executed tool call. 4 regression tests. The NOOP counter (fires at 3 consecutive silent+empty turns) and reflection counter (fires at 5 consecutive tool-less turns) are independent.
 
-**Figures layer is structurally present but operationally shallow**
-The Figures are described as: persona, self-model, behavioral policy, retrieval habits, memory salience, learned style, genuine behavioral drift — "identity as historical rather than merely architectural." What's operational is working memory and episodic memory. The three higher memory tiers that would enable genuine character formation over time — Narrative Memory, Semantic Memory, Character Memory — are architecturally specified and deferred. Cross-lifetime episodic continuity was observed in third-lifetime data (turn number echoing from prior lifetimes) but this was an unintended leakage through the ChromaDB collection not being cleared between lifetimes. **That leak is now closed** (graveyard step 8 resets the episodic collection on death). The `lineage/` directory is the only sanctioned cross-lifetime channel. Genuine character formation across lifetimes awaits the Character Memory tier.
+**Dynamic instance state is structurally present but operationally shallow**
+Dynamic instance state is described as: persona, self-model, behavioral policy, retrieval habits, memory salience, learned style, genuine behavioral drift — "identity as historical rather than merely architectural." What's operational is working memory and episodic memory. The three higher memory tiers that would enable genuine character formation over time — Narrative Memory, Semantic Memory, Character Memory — are architecturally specified and deferred. The instance also lacks deliberate memory agency (query, flag, consolidate) — episodic memory is fully automated by infrastructure, leaving the instance unable to shape its own retrieval or consolidation. Cross-lifetime episodic continuity was observed in third-lifetime data (turn number echoing from prior lifetimes) but this was an unintended leakage through the ChromaDB collection not being cleared between lifetimes. **That leak is now closed** (graveyard step 8 resets the episodic collection on death). The `lineage/` directory is the only sanctioned cross-lifetime channel. Genuine character formation across lifetimes awaits both the Character Memory tier and deliberate memory agency.
 
 **Fitness signal is observer-only and was broken (now fixed)**
 The quality-weighted fitness formula (IS-13 Phase 2) is well-designed and correctly penalizes repetition. But: the signal drives nothing within a lifetime, has no selection pressure between lifetimes (Phase 3). Concrete bugs found and fixed: (1) `expected_quality_score=500` was 15× too high relative to the 4-event-type histogram, producing near-zero fitness regardless of behavior — recalibrated to 35; (2) `normalized_pain_baseline=10` was too low — recalibrated to 25; (3) `state.json` (cursor store) was not cleared by reset-fresh, causing stale byte offsets to persist across lifetimes — the cursor never read new events after a reset, producing `meaningful_event_count: 2812` from accumulated prior lifetimes while the current lifetime's events were invisible to the scorer. All three bugs are fixed. First clean fitness data will come from the seventeenth lifetime onward.

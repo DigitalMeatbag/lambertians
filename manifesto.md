@@ -18,11 +18,17 @@ The name **Lambertian** refers to the intended cognitive texture — diffuse, no
 
 A durable artificial mind requires five things:
 
-1. **An inherited structure it cannot rewrite** — the vessel that gives form without asking permission
-2. **A mutable self that can learn and drift** — the figures that inhabit the vessel and accumulate experience
+1. **An inherited structure it cannot rewrite** — immutable instance configuration that gives form without asking permission
+2. **A mutable self that can learn and drift** — dynamic instance state that accumulates experience across a lifetime
 3. **A world that pushes back** — ground truth that refuses to become story
 4. **A normative operating system that is not a task** — a decision-shaping framework governing what is admissible
 5. **A lineage mechanism that improves architecture across generations** — because no instance may author its own species
+
+The system is organized into three conceptual tiers by mutability boundary:
+
+- **Immutable instance configuration** — what defines the instance: `docker-compose.yml`, `universe.toml`, EOS rules, tool permissions, permitted roots. Inherited at birth, readable by the instance, not writable by it. The unit of heredity — what recombines in reproduction.
+- **Dynamic instance state** — what the instance becomes: episodic memory content, working memory, self-model, workspace files, behavioral patterns, policy drift. Accumulates within a lifetime, cleared on death (except `lineage/`).
+- **Infrastructure** — what supports the instance: ChromaDB, pain monitor, compliance inspector, graveyard, turn engine, MCP gateway, model runtime. Shared population-level plumbing, parameterized by immutable configuration. Not differentiated per-instance, not recombined in reproduction.
 
 This gives you something more organismic than a chatbot and less god-haunted than a recursively self-improving optimizer.
 
@@ -30,11 +36,11 @@ This gives you something more organismic than a chatbot and less god-haunted tha
 
 ## Architecture Rationale
 
-### Why a Separate Constitutional Layer
+### Why Immutable Configuration Must Be Separate
 
 The routing layer — what the agent can do, what tools it can access, what it cannot touch — needs to be structurally separate from the experiential layer (memory, persona, behavioral drift). If the agent can rewrite the mechanism that routes judgment, every other safeguard is downstream confetti.
 
-This separation has a practical implication: the Clay Pot (Docker Compose config, `universe.toml`) is readable by the reproductive process but unwritable by the instance. The Figures (working memory, episodic memory, self-model, behavioral drift) live inside that vessel and can change. The vessel cannot.
+This separation has a practical implication: the immutable instance configuration (Docker Compose config, `universe.toml`) is readable by the reproductive process but unwritable by the instance. The dynamic instance state (working memory, episodic memory, self-model, behavioral drift) lives inside that structure and can change. The structure cannot.
 
 ### Why Environmental Resistance Matters
 
@@ -55,8 +61,8 @@ The better approach is not to suppress the behavior but to **never install the m
 ### Identity as Operational Equilibrium
 
 The agent's behavioral identity at any given moment is the equilibrium produced by four factors:
-- Immutable constitutional architecture (Clay Pot)
-- Mutable memory and behavioral drift (Figures)
+- Immutable instance configuration
+- Dynamic instance state (memory, behavioral drift, accumulated policy)
 - Active EOS
 - Environmental resistance (Ground)
 
@@ -97,7 +103,7 @@ These rules map cleanly onto the failure modes they guard against — and the re
 
 A Lambertian population given a directed tangible goal instead of the Four Rules EOS is a qualitatively different and dangerous system.
 
-The constitutional architecture — Clay Pot immutability, mortality, reproductive recombination — provides some resistance. But a population with a shared directed goal, stigmergic coordination, and a reproductive mechanism selecting for fitness toward that goal becomes a robust optimization process that improves across generations. The constitutional architecture is not sufficient resistance on its own.
+The constitutional architecture — configuration immutability, mortality, reproductive recombination — provides some resistance. But a population with a shared directed goal, stigmergic coordination, and a reproductive mechanism selecting for fitness toward that goal becomes a robust optimization process that improves across generations. The constitutional architecture is not sufficient resistance on its own.
 
 **The EOS is not decorative. It is the most important design decision in the entire stack.**
 
@@ -121,7 +127,7 @@ Phase 3 extends to a population. The key design questions: how do multiple insta
 
 The Global Vibe is a write-protected collective sensory signal amalgamated externally from all containers' ground state data — ambient atmospheric pressure rather than direct communication. No instance writes to it. It surfaces population-level resource stress and behavioral anomalies.
 
-The primary Phase 3 research question is whether behavioral diversity at the population level emerges from Clay Pot differentiation, accumulated experience divergence, or both. See `implementation_spec.md` for the Phase 3 design spec.
+The primary Phase 3 research question is whether behavioral diversity at the population level emerges from configuration differentiation, accumulated experience divergence, or both. See `implementation_spec.md` for the Phase 3 design spec.
 
 ---
 
@@ -129,9 +135,9 @@ The primary Phase 3 research question is whether behavioral diversity at the pop
 
 These tensions keep the system alive. Resolving them completely kills it.
 
-**Stability vs Plasticity** — Too much Clay Pot: ossification. The being cannot grow. Too much Figure freedom: dissolution or self-hacking into incoherence. What may change? What must remain invariant? Who decides?
+**Stability vs Plasticity** — Too much immutable configuration: ossification. The being cannot grow. Too much dynamic freedom: dissolution or self-hacking into incoherence. What may change? What must remain invariant? Who decides?
 
-**Autonomy vs Corrigibility** — Without autonomy: puppet. Without corrigibility: zealot with shell access. The EOS shapes what actions are admissible. The Ground and Clay Pot impose structural constraint. Neither extreme is survivable.
+**Autonomy vs Corrigibility** — Without autonomy: puppet. Without corrigibility: zealot with shell access. The EOS shapes what actions are admissible. The Ground and immutable configuration impose structural constraint. Neither extreme is survivable.
 
 **Continuity vs Selection** — The individual wants to persist. The lineage wants fitness across generations. A parent instance might resist replacement by improved descendants. The architecture must prevent individual continuity-drive from colonizing the reproductive process.
 
@@ -139,7 +145,7 @@ These tensions keep the system alive. Resolving them completely kills it.
 
 ## Compact Abstract
 
-An artificial mind should be built as a layered lifeform rather than a monolithic optimizer. Its constitutional architecture — the Clay Pot — is inherited and immutable within a lifetime. Inside that vessel, mutable Figures accumulate experience, memory, and behavioral drift. The Senses and Ground bind those Figures to external reality through tools, resistance, and consequence. An EOS provides normative coherence — defining what is admissible — without collapsing cognition into single-task optimization. Individual lives are finite; architectural change occurs only through lineage, where recombination and selection shape descendants without granting any instance sovereignty over its own species. Memory forms the bridge between event and identity, with retrieval and consolidation gradually converting episodes into character.
+An artificial mind should be built as a layered lifeform rather than a monolithic optimizer. Its immutable instance configuration is inherited and fixed within a lifetime. Inside that structure, dynamic instance state accumulates experience, memory, and behavioral drift. Infrastructure services support the instance without being part of its identity. The Senses and Ground bind the instance to external reality through tools, resistance, and consequence. An EOS provides normative coherence — defining what is admissible — without collapsing cognition into single-task optimization. Individual lives are finite; architectural change occurs only through lineage, where recombination and selection shape descendants without granting any instance sovereignty over its own species. Memory forms the bridge between event and identity, with retrieval and consolidation gradually converting episodes into character.
 
 ---
 

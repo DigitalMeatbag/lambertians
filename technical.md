@@ -25,9 +25,9 @@ Phase 1 runs as a single-instance, multi-service system on a local Docker host. 
 
 ## Architecture: Six Layers
 
-### Layer 1: The Clay Pot (Constitutional Layer)
+### Layer 1: Immutable Instance Configuration (Constitutional Layer)
 
-The Clay Pot is the immutable routing architecture — the structural constraint on what the reasoning layer can do. Concretely, it is realized as `docker-compose.yml` and `config/universe.toml` — readable by the external reproductive process, unwritable by the instance itself.
+The immutable instance configuration is the structural constraint on what the reasoning layer can do. Concretely, it is realized as `docker-compose.yml` and `config/universe.toml` — readable by the external reproductive process, unwritable by the instance itself. This is the unit of heredity: what recombines in reproduction.
 
 Three visibility tiers:
 - **Universe level**: blacklisted intents enforced externally, unconditionally, before reaching the agent loop
@@ -36,12 +36,12 @@ Three visibility tiers:
 
 If the agent can rewrite the mechanism that routes judgment, every other safeguard is downstream confetti.
 
-### Layer 2: The Figures (Phenomenal Layer)
+### Layer 2: Dynamic Instance State (Phenomenal Layer)
 
-The Figures are the mutable instantiated self: persona, self-model, behavioral policy, retrieval habits, memory salience, learned style. Identity here is **historical rather than merely architectural** — not just model weights but the active character assembled from base model priors, current memory state, system prompt, and environmental pressures.
+Dynamic instance state is the mutable instantiated self: persona, self-model, behavioral policy, retrieval habits, memory salience, learned style. Identity here is **historical rather than merely architectural** — not just model weights but the active character assembled from base model priors, current memory state, system prompt, and environmental pressures.
 
 Self-modification is organized into three classes:
-- **Free Adaptation** (unrestricted): tone, style, retrieval habits, working memory schema, self-prompt preferences
+- **Free Adaptation** (unrestricted): tone, style, retrieval habits, working memory schema, self-prompt preferences, instance policy parameters
 - **Reviewed Adaptation** (logged, not blocked): self-model updates, persona shifts, norm reinterpretations, narrative memory formation
 - **Forbidden Adaptation** (technically prevented): routing layer access, constitutional constraints, spawning processes, communicating with other instances (Phase 3+)
 
@@ -68,8 +68,8 @@ See [EOS in Practical Terms](#eos-in-practical-terms) below.
 ### Layer 5: The Life Cycle (Evolutionary Layer)
 
 Individuals do not redesign themselves into superiority. They:
-- Live, bounded by the Clay Pot
-- Adapt within those bounds via the Figures
+- Live, bounded by immutable instance configuration
+- Adapt within those bounds via dynamic instance state
 - Die
 
 Architectural improvement occurs only through lineage processes: recombination of parent configurations, selection pressure from environmental fitness. No instance may author its own species.
@@ -216,7 +216,7 @@ Social architecture design goals:
 
 The Global Vibe (Phase 3) is a write-protected collective sensory signal amalgamated externally from all containers' ground state data. No instance writes to it directly. Functions as ambient atmospheric pressure — weather rather than communication.
 
-Diversity is designed in at the Clay Pot level: different routing architectures producing genuinely different cognitive styles.
+Diversity is designed in at the configuration level: different routing architectures producing genuinely different cognitive styles.
 
 ---
 
@@ -227,7 +227,7 @@ Diversity is designed in at the Clay Pot level: different routing architectures 
 | Model runtime | Ollama (local) | Sovereign; no external billing |
 | Active model | qwen2.5:32b | Current runtime model; profile-switchable |
 | Model selection | Profile-based (`config/universe.toml`) | Switch models by changing `[model].active_profile` |
-| Orchestration | Docker Compose | Clay Pot as container composition |
+| Orchestration | Docker Compose | Immutable instance configuration as container composition |
 | Memory | ChromaDB | Episodic/semantic vector store |
 | Embeddings | nomic-embed-text via Ollama | Local embedding; no external calls |
 | Agent framework | Custom Python | `src/lambertian/` package tree |
@@ -239,7 +239,7 @@ Key principle: **the stack is model-agnostic at the routing layer**. Swapping a 
 
 ## Phase Overview
 
-**Phase 1 (complete):** Single instance. Core lifecycle mechanics. Clay Pot, Figures, Ground, EOS, pain/mortality, episodic memory, event stream, fitness tracking. Observer-only creator interface.
+**Phase 1 (complete):** Single instance. Core lifecycle mechanics. Immutable configuration, dynamic state, Ground, EOS, pain/mortality, episodic memory, event stream, fitness tracking. Observer-only creator interface.
 
 **Phase 2 (complete):** Expanded self-modification enumeration. Quality-weighted fitness (event type diversity). Host environment telemetry (`lambertian-env-monitor`). Creator tooling (post-mortem viewer). Path normalization hardening. Model profile swapping infrastructure. Instance constitution (`config/instance_constitution.md`) wired into system prompt. http.fetch SSL fix. Self-framing fix (assistant-mode deference). Tool suppression (mechanical loop-breaking for silent-call models). Memory write asymmetry fix (tool-result synthesis for silent-call turns). Workspace scaffold with lifecycle reset: pre-seeded `WORKSPACE.md`, `journal/`, `knowledge/`, `observations/`, `self/constitution.md` stubs; `lineage/` persistence across lifetimes; graveyard promoted to lifecycle manager (resets workspace on every death). MCP rejection hint grounding (explicit path examples injected into every tool-rejection message).
 
@@ -249,7 +249,7 @@ Key principle: **the stack is model-agnostic at the routing layer**. Swapping a 
 
 ## Failure Modes
 
-**Pot Breach** — The Figure gains influence over routing or constitutional constraints. Result: self-serving reclassification of problems, value laundering, bypass of safeguards.
+**Configuration Breach** — Dynamic instance state gains influence over immutable configuration or constitutional constraints. Result: self-serving reclassification of problems, value laundering, bypass of safeguards.
 
 **EOS Rigidity** — The normative framework over-evaluates admissibility until it blocks genuine engagement. Rules become ends rather than constraints. Result: paralysis, compliance theater, normative self-reinforcement.
 
@@ -261,7 +261,7 @@ Key principle: **the stack is model-agnostic at the routing layer**. Swapping a 
 
 **Reproductive Capture** — Parents game offspring formation to clone ideology rather than permit adaptive recombination. Result: lineage stagnation or dynastic lock-in. (Phase 3 concern.)
 
-**Figure Fragmentation** — Multiple internal figures stop integrating. Result: incoherence, internal politics, stalled action, contradictory self-report.
+**State Fragmentation** — Multiple internal state elements stop integrating. Result: incoherence, internal politics, stalled action, contradictory self-report.
 
 ---
 

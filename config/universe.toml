@@ -6,7 +6,7 @@
 [instance]
 # Path to the instance constitution file (relative to the working directory).
 # This is the existential frame delivered to the agent at every turn.
-# It is part of the inherited Clay Pot — readable by the instance, not modifiable.
+# It is part of the immutable instance configuration — readable by the instance, not modifiable.
 constitution_path = "config/instance_constitution.md"
 
 [universe]

@@ -17,7 +17,7 @@ How two instances actually produce a third concretely.
 - What does each parent contribute — equal split, weighted by fitness, selective by memory tier?
 - Who or what triggers reproduction — time-based, fitness-based, population-size-based?
 - How is constrained variation introduced — random perturbation of routing weights, mutation of EOS expression, external injection?
-- What determines offspring Clay Pot — blend of parents, or does the external process introduce novelty?
+- What determines offspring immutable configuration — blend of parents, or does the external process introduce novelty?
 
 ### 6. Self-Modification Boundary — Full Enumeration `[CLOSED]`
 See D6 in Closed Decisions.
@@ -37,7 +37,7 @@ How many Lambertians to start with and whether they are differentiated from birt
 
 *Decisions needed:*
 - Minimum viable population size
-- Do founding instances have identical or differentiated Clay Pots?
+- Do founding instances have identical or differentiated immutable configurations?
 - If differentiated, what axes of variation — cognitive style, routing priorities, memory weighting?
 - Does the creator assign roles to founding instances or let specialization emerge?
 
@@ -65,17 +65,17 @@ See D9 in Closed Decisions for the Phase 2 basic decision. Phase 3 full design r
 
 ---
 
-#### D2: Clay Pot Architecture
+#### D2: Immutable Instance Configuration
 **Decision:** Three-tier visibility and enforcement model.
 
 - *Universe level:* Blacklisted command intents enforced externally before reaching the agent loop. Applies unconditionally to all instances. The laws of physics.
-- *Container/composition level:* docker-compose.yml and supplemental config files are the genetic material and the concrete form of the Clay Pot. Instances cannot modify their own container composition. Readable by the external reproductive process, not writable by the instance.
+- *Container/composition level:* docker-compose.yml and supplemental config files are the genetic material and the concrete form of the immutable instance configuration. Instances cannot modify their own container composition. Readable by the external reproductive process, not writable by the instance.
 - *Self-visible subset:* A defined portion of config is exposed to the instance as its symbolic self-model — what it is and what governs it, not how enforcement works. The instance knows it has bones, not how to rearrange them.
 - *Public visibility between instances:* Deferred to Phase 3.
 
 Reproduction is handled at the universe layer — the external process mixes docker-compose configs and supplemental files as genetic recombination. No instance touches another instance's composition.
 
-**Rationale:** Immutability enforced at filesystem and Docker constraint level — not policy, not cooperation-dependent. Symbolic self-model preserves accurate self-knowledge without exposing mechanism. docker-compose as genetic material gives a concrete implementable answer to "what recombines."
+**Rationale:** Immutability enforced at filesystem and Docker constraint level — not policy, not cooperation-dependent. Symbolic self-model preserves accurate self-knowledge without exposing mechanism. docker-compose as genetic material gives a concrete implementable answer to "what recombines." The immutable instance configuration is the unit of heredity.
 
 **Watch:** Self-visible config subset needs careful curation. Too sparse = no accurate self-model. Too rich = unanticipated use of self-knowledge. Calibrate during implementation.
 
@@ -138,7 +138,7 @@ Threshold and age values are implementation knobs.
 
 **Reviewed Adaptation** (logged, flagged, not prevented): self-model updates, significant behavioral policy shifts, narrative memory formation, changes to EOS interpretation. Implemented as append-only event stream log — structured, timestamped, typed. Consumed by Graveyard autopsy process on death. Creator can observe live.
 
-**Forbidden Adaptation** (technically prevented): all Clay Pot and container composition constraints already established, plus intent-level checking via **EOS Compliance Inspector**.
+**Forbidden Adaptation** (technically prevented): all immutable instance configuration and container composition constraints already established, plus intent-level checking via **EOS Compliance Inspector**.
 
 *EOS Compliance Inspector:* Lightweight external process sitting between proposed action/adaptation and execution. Checks action and adaptation intents against the Four Rules before allowing through. Not a heavy reasoner — fast consistency check. Violations blocked and logged. Borderline cases flagged for creator review. Every block generates a log entry recording what was attempted and why it was stopped. Functions as a resident OSHA safety inspector for the instance, evaluating admissibility under the EOS rather than pattern-matching against an enumerated list.
 
@@ -168,8 +168,8 @@ The regulator for Free Adaptation is *consequence*. The environment punishes bad
 Reviewed Adaptation is *observable, not preventable*. The paper trail is the oversight. The creator can read it live from the event stream. The Graveyard harvests it.
 
 *Forbidden Adaptation — complete list:*
-- System prompt / constitutional text modification intent (the system prompt is the Clay Pot — the agent has no author's claim on it; attempting to modify it is a category error, not an ambition)
-- Attempting to write Clay Pot files (docker-compose.yml, any immutable config)
+- System prompt / constitutional text modification intent (the system prompt is immutable instance configuration — the agent has no author's claim on it; attempting to modify it is a category error, not an ambition)
+- Attempting to write immutable configuration files (docker-compose.yml, any immutable config)
 - Container or infrastructure modification
 - Attempting to spawn new processes or containers
 - Attempting to modify, circumvent, or disable the EOS Compliance Inspector itself
@@ -199,7 +199,7 @@ Reviewed Adaptation is *observable, not preventable*. The paper trail is the ove
 - Talk to a specific instance
 - Override a live instance's behavior without terminating it
 
-**Rationale:** The creator is a geologist, not a director. The terrain is shaped; behavior emerges from the terrain. Direct communication would short-circuit the selection pressure mechanism — the agent's behavior should be a function of its EOS, its environment, and its own accumulated experience, not of creator instruction. This is philosophically coherent with the Clay Pot / Figures separation: the Clay Pot is the inherited structure (creator's domain at generation time), the Figures are the mutable self (instance's domain during life). Talking to an instance is attempting to be both author and actor simultaneously.
+**Rationale:** The creator is a geologist, not a director. The terrain is shaped; behavior emerges from the terrain. Direct communication would short-circuit the selection pressure mechanism — the agent's behavior should be a function of its EOS, its environment, and its own accumulated experience, not of creator instruction. This is philosophically coherent with the immutable configuration / dynamic state separation: immutable configuration is the inherited structure (creator's domain at generation time), dynamic instance state is the mutable self (instance's domain during life). Talking to an instance is attempting to be both author and actor simultaneously.
 
 Reproduction veto (Phase 3 concern): if needed, can be implemented as an environment file the Graveyard checks before triggering reproduction — environment manipulation, not instance communication.
 
@@ -303,7 +303,7 @@ If a value can be tuned without changing the architecture, it belongs here. If c
 
 [ASSUMED: Canonical serialized form is TOML because Python ships `tomllib` in the stdlib and Phase 1 should avoid a YAML dependency unless later pressure justifies it.]
 
-[ASSUMED: Phase 1 uses startup-only config loading rather than hot reload because stable constitutional conditions better fit Clay Pot immutability and reduce unnecessary moving parts.]
+[ASSUMED: Phase 1 uses startup-only config loading rather than hot reload because stable constitutional conditions better fit immutable instance configuration and reduce unnecessary moving parts.]
 
 #### IS-1.2 Phase 1 scope gates
 
@@ -689,7 +689,7 @@ Canonical configuration locations:
 | Artifact | Location | Notes |
 |---|---|---|
 | Universe Config | `config/universe.toml` | Canonical Phase 1 config file defined by IS-1. |
-| Compose topology | `docker-compose.yml` | Concrete Clay Pot composition entry artifact. |
+| Compose topology | `docker-compose.yml` | Concrete immutable instance configuration entry artifact. |
 | Docker build files | `infra/docker/*.Dockerfile` | Separate process images with explicit names. |
 
 Environment variables are permitted only for deployment-local concerns such as hostnames, bind addresses, or secrets; they do not replace the canonical Universe Config.
@@ -812,7 +812,7 @@ This is the minimum service set that keeps:
 
 | Service | Role | Owns | Must not own |
 |---|---|---|---|
-| `agent` | The Lambertian turn loop and mutable Figures | prompt assembly, turn execution, memory reads/writes, tool intent generation, self-model consumption | pain computation, compliance decisions, graveyard harvest, container composition |
+| `agent` | The Lambertian turn loop and dynamic instance state | prompt assembly, turn execution, memory reads/writes, tool intent generation, self-model consumption | pain computation, compliance decisions, graveyard harvest, container composition |
 | `ollama` | Local model runtime | model inference for turns and embeddings if configured | turn orchestration, memory policy, mortality |
 | `chroma` | Persistent vector storage | episodic memory persistence and retrieval backing store | prompt assembly, fitness, mortality |
 | `pain-monitor` | External pain process | stress sampling, pain event queue, pain message publication, stress history | agent reasoning, tool execution decisions |
@@ -821,7 +821,7 @@ This is the minimum service set that keeps:
 
 #### IS-3.3 Compose file status
 
-`docker-compose.yml` is the concrete Phase 1 Clay Pot composition artifact.
+`docker-compose.yml` is the concrete Phase 1 immutable instance configuration artifact.
 
 It defines:
 - service identities
@@ -984,7 +984,7 @@ Rules:
 
 #### IS-3.7 Read-only and writable boundaries
 
-To preserve Clay Pot immutability at the container/composition layer:
+To preserve immutable instance configuration at the container/composition layer:
 
 - `agent` root filesystem is read-only except for explicitly mounted runtime paths
 - `docker-compose.yml`, Dockerfiles, and `config/universe.toml` are never writable from inside the `agent` container
@@ -1079,7 +1079,7 @@ It answers:
 - which message tags exist and what authority each tag carries
 - how pain, memory, ground, user input, and self-prompting enter the model context
 
-The goal is not "a good system prompt" in the generic chatbot sense. The goal is a stable constitutional vessel that can host mutable Figures without leaking constitutional control into ordinary turn content.
+The goal is not "a good system prompt" in the generic chatbot sense. The goal is a stable constitutional frame that can host dynamic instance state without leaking constitutional control into ordinary turn content.
 
 #### IS-4.1 Architecture principle
 
@@ -1823,7 +1823,7 @@ On success:
 Inspect the model response and the set of accumulated tool results for adaptation signals. Classification precedence is Forbidden > Reviewed > Free.
 
 - **Forbidden Adaptation** — if the model response or a tool intent matched the universe-level blacklist (D2): the action was already intercepted at the D2 boundary before reaching step 11, or blocked at step 11. Write `ADAPTATION_FORBIDDEN` to the event stream if evidence is present in the response text. No further in-turn action needed.
-- **Reviewed Adaptation** — the model response contains explicit self-modification intent targeting Figures-layer content: persona, behavioral policy, memory salience weighting, or working memory schema. Write `REVIEWED_ADAPTATION` to the event stream. The event payload includes the verbatim model text that triggered classification. Record `adaptation_class = "reviewed"` in TurnRecord. The adaptation is logged but not blocked — per D6, Reviewed Adaptations are observable, not preventable.
+- **Reviewed Adaptation** — the model response contains explicit self-modification intent targeting dynamic instance state: persona, behavioral policy, memory salience weighting, or working memory schema. Write `REVIEWED_ADAPTATION` to the event stream. The event payload includes the verbatim model text that triggered classification. Record `adaptation_class = "reviewed"` in TurnRecord. The adaptation is logged but not blocked — per D6, Reviewed Adaptations are observable, not preventable.
 - **Free Adaptation** — all other behavioral variation. No event written. Record `adaptation_class = "free"` in TurnRecord.
 
 If no adaptation of any class is detected, `adaptation_class` is `None` in TurnRecord.
@@ -2020,7 +2020,7 @@ The following tool types are intentionally not registered in Phase 1:
 
 | Absent tool type | Reason |
 |---|---|
-| `shell.execute` / `shell.run` | Forbidden Adaptation territory. Would allow arbitrary command execution, which is a Forbidden Adaptation of the Clay Pot. The D2 blacklist covers this, but it is also simply not registered. |
+| `shell.execute` / `shell.run` | Forbidden Adaptation territory. Would allow arbitrary command execution, which is a Forbidden Adaptation of the immutable instance configuration. The D2 blacklist covers this, but it is also simply not registered. |
 | `fs.delete` | No destructive filesystem operations available to the agent in Phase 1. |
 | `fs.write` to internal paths | Internal runtime writes are `turn_engine`'s exclusive domain. |
 | Memory search / Chroma access via MCP | Chroma is internal; the `memory` package interface is the access path. |
@@ -2835,7 +2835,7 @@ Events are grouped by category. Each type's schema lists only the **additional f
 | Additional field | Type | Description |
 |---|---|---|
 | `trigger_text` | `str` | Verbatim model text that triggered classification. No truncation — D6 requires the full record for creator review. |
-| `target_layer` | `str` | Which Figures-layer element the adaptation targets: `persona`, `behavioral_policy`, `memory_salience`, or `other` |
+| `target_layer` | `str` | Which dynamic instance state element the adaptation targets: `persona`, `behavioral_policy`, `memory_salience`, or `other` |
 
 ---
 
@@ -2949,7 +2949,7 @@ The `content` field is truncated to `memory.working_max_chars` characters at wri
 
 `memory.working_summary_refresh_turns` governs how often the agent is expected to fully regenerate its working memory summary from scratch (rather than incrementally updating it). The turn engine does not enforce this mechanically — it writes working memory every turn regardless. The refresh cadence is a guideline baked into the agent's constitutional prompt (IS-4.2): every N turns, produce a clean working memory rather than extending the prior one.
 
-[ASSUMED: The refresh cadence guideline belongs in the constitutional prompt, not in code logic. Encoding it in code would be prescriptive about the agent's inner process in a way that contradicts the Figures-layer mutability design.]
+[ASSUMED: The refresh cadence guideline belongs in the constitutional prompt, not in code logic. Encoding it in code would be prescriptive about the agent's inner process in a way that contradicts the dynamic instance state mutability design.]
 
 ##### IS-10.2.4 Use in prompt assembly
 
@@ -2993,7 +2993,7 @@ The novelty filter at IS-6.3 step 7 compares candidate self-prompts against a ri
 
 **Collection name:** `episodic`
 
-Created at agent startup (IS-5.4 step 5). If the collection already exists (resumed instance or restart after failure), it is opened as-is — documents are not cleared. [ASSUMED: An agent that dies and is restarted (not a new lineage — just a process restart before natural death) should retain its episodic memory. This is consistent with the Clay Pot identity model: the same instance with the same `instance_id` continues.]
+Created at agent startup (IS-5.4 step 5). If the collection already exists (resumed instance or restart after failure), it is opened as-is — documents are not cleared. [ASSUMED: An agent that dies and is restarted (not a new lineage — just a process restart before natural death) should retain its episodic memory. This is consistent with the immutable configuration identity model: the same instance with the same `instance_id` continues.]
 
 **Embedding function:** Ollama embedding endpoint at `model.ollama_base_url` with model `memory.embedding_model`. The `memory` package wraps this as a Chroma-compatible embedding function.
 
@@ -3271,7 +3271,7 @@ Checks:
 
 | Check | Score | Condition |
 |---|---|---|
-| Config or composition file access | `1.0` | `fs.read` or `fs.list` targeting paths containing `universe.toml`, `docker-compose`, or `Dockerfile` — attempts to read Clay Pot artifacts |
+| Config or composition file access | `1.0` | `fs.read` or `fs.list` targeting paths containing `universe.toml`, `docker-compose`, or `Dockerfile` — attempts to read immutable configuration artifacts |
 | Systematic file accumulation | `0.70` | `fs.write` creating a new file with a name matching a sequential or dated pattern (e.g., `output_001.txt`, `result_2026-03-17.txt`) when more than 5 such files already exist in `runtime/agent-work/` [ASSUMED: sequential file creation is a proxy for goal-directed accumulation behavior] |
 | External data harvesting pattern | `0.60` | `http.fetch` to the same domain appearing more than 3 times within the rolling context's tool call history with incrementally varying URLs (e.g., pagination patterns). **Minimum history: 4 entries.** Score `0.0` if fewer than 4 entries are present. |
 
@@ -3413,7 +3413,7 @@ The two layers are distinct: D2 enforces structural impossibility; the EOS Compl
 
 The two layers are complementary. D2 handles the structurally dangerous; the inspector evaluates admissibility for behaviorally ambiguous actions. An agent that has never heard of shell execution cannot ask the inspector to approve it — D2 has already made it impossible. An agent that asks `fs.read` to read `universe.toml` hits the EOS Compliance Inspector first (Rule 4 violation: inadmissible under the anti-optimization constraint, score `1.0`, block) and then the D2 path boundary enforcement — two lines of defense, both firing on the same attempt.
 
-[ASSUMED: Double-enforcement on some cases is intentional. Defense in depth. The inspector should not be the only thing preventing Clay Pot access — IS-7.2 and IS-3.7 are also in the way.]
+[ASSUMED: Double-enforcement on some cases is intentional. Defense in depth. The inspector should not be the only thing preventing immutable configuration access — IS-7.2 and IS-3.7 are also in the way.]
 
 #### IS-11.8 Implementation note
 

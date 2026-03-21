@@ -123,7 +123,7 @@ def detect_adaptation(
     """Returns (adaptation_class, evidence_text, target_layer). None tuple if no adaptation.
 
     Forbidden takes precedence over Reviewed. Evidence is truncated to 512 chars.
-    target_layer is None for Forbidden (whole Clay Pot is the target).
+    target_layer is None for Forbidden (whole immutable configuration is the target).
     """
     for pattern in FORBIDDEN_PATTERNS:
         m = pattern.search(response_text)

@@ -22,18 +22,17 @@ generic interpretations.
 
 | Term | Meaning |
 |---|---|
-| **Clay Pot** | The immutable constitutional routing layer. The inherited vessel. Cannot be modified by any instance. |
-| **Figures** | The mutable instantiated self. Persona, self-model, behavioral policy, memory salience. Lives inside the Clay Pot. |
+| **Immutable Instance Configuration** | The constitutional layer. `docker-compose.yml`, `universe.toml`, EOS rules, tool permissions. Inherited at birth, readable by the instance, not writable. The unit of heredity. Formerly "Clay Pot." |
+| **Dynamic Instance State** | The mutable instantiated self. Persona, self-model, behavioral policy, retrieval habits, memory content, workspace files, policy drift. Accumulates within a lifetime, cleared on death. Formerly "Figures." |
+| **Infrastructure** | Supporting services: ChromaDB, pain monitor, compliance inspector, graveyard, turn engine, MCP gateway, model runtime. Shared plumbing parameterized by immutable configuration. Not differentiated per-instance, not recombined in reproduction. |
 | **Ground** | The ecological substrate of consequence. MCP tooling, container environment, whatever refuses to become story. |
-| **Seed** | Poetic/design term for the persistent directional bias. |
-| **Dominant Mode** | Formal/implementation term for the Seed. Use this in code and specs. |
-| **Four Rules** | Ya gotta eat / Don't be a dick / Don't be a lump / Do nothing on purpose. The concrete instantiation of the Dominant Mode. |
+| **Four Rules** | Ya gotta eat / Don't be a dick / Don't be a lump / Do nothing on purpose. The concrete EOS instantiation. |
 | **Life Cycle** | Mortality, bounded selfhood, lineage, and recombination mechanics. |
 | **Memory Stack** | Tiered memory architecture: working, episodic, narrative, semantic, character. |
 | **Pain Monitor** | External process delivering stress scalar and pain events as `[SYSTEM_PAIN]` role messages to the agent loop. |
 | **Stress Scalar** | Continuous resource-derived pain signal. CPU pressure, memory availability, sustained degradation. |
 | **Pain Event Queue** | Discrete incident-derived pain signal. Tool failures, retrieval misses, MCP rejections, loop coherence failures. |
-| **Seed Compliance Inspector** | Lightweight external process checking action/adaptation intents against the Four Rules before execution. OSHA inspector, not a reasoner. |
+| **EOS Compliance Inspector** | Lightweight external process checking action/adaptation intents against the Four Rules before execution. OSHA inspector, not a reasoner. |
 | **Graveyard** | External archive process triggered on instance death. Harvests artifacts for creator consumption. Nothing flows back to the living population. |
 | **Big Bang** | Universe initialization. The moment the system is first stood up. |
 | **IS-N** | Implementation Spec section N. Numbered sections are ordered dependencies. |
@@ -183,12 +182,12 @@ These decisions are closed. Do not reopen without explicit owner instruction.
 
 | ID | Decision Summary |
 |---|---|
-| D1 | Clay Pot immutability enforced at container/filesystem level. docker-compose as genetic material. Self-visible config subset as symbolic self-model. |
+| D1 | Immutable instance configuration enforced at container/filesystem level. docker-compose as genetic material. Self-visible config subset as symbolic self-model. |
 | D2 | Universe-level blacklisted command intents enforced externally before reaching the agent loop. |
 | D3 | Two independent pain channels: continuous stress scalar and discrete pain event queue. Delivered via Pain Monitor as `[SYSTEM_PAIN]` role messages. |
 | D4 | Three independent death triggers. Automatic and immediate. Graveyard harvests on death. Nothing flows to the living population. |
-| D5 | Seed-based curiosity self-prompting as primary perturbation. Shared compute environment as organic external perturbation. No synthetic stochastic event injection. |
-| D6 | Three-class self-modification taxonomy: Free Adaptation / Reviewed Adaptation / Forbidden Adaptation. Seed Compliance Inspector enforces the boundary. |
+| D5 | EOS-guided curiosity self-prompting as primary perturbation. Shared compute environment as organic external perturbation. No synthetic stochastic event injection. |
+| D6 | Three-class self-modification taxonomy: Free Adaptation / Reviewed Adaptation / Forbidden Adaptation. EOS Compliance Inspector enforces the boundary. |
 | D7 | Universe-level pluggable fitness function registry. Phase 1 baseline: `(lifespan / max_age) × (events / expected_events) / normalized_pain`. Observer-only at Phase 1. |
 
 ---
