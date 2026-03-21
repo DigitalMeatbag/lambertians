@@ -21,6 +21,14 @@ Write-Host "==> Clearing agent-work (preserving lineage/)..." -ForegroundColor C
 docker run --rm -v lambertians_runtime_agent_work:/work alpine sh -c `
     "find /work -mindepth 1 -not -path '/work/lineage' -not -path '/work/lineage/*' -delete"
 
+Write-Host "==> Restoring workspace scaffold..." -ForegroundColor Cyan
+# Mirrors graveyard WorkspaceReset steps 2-3: recreate scaffold dirs and restore template files.
+# The graveyard does this on natural death; reset-fresh.ps1 must do it on manual reset.
+docker run --rm `
+    -v lambertians_runtime_agent_work:/work `
+    -v "${projectRoot}/config:/cfg:ro" `
+    alpine sh -c "mkdir -p /work/journal /work/knowledge /work/observations /work/self /work/lineage && cp /cfg/workspace_scaffold/WORKSPACE.md /work/WORKSPACE.md && cp /cfg/workspace_scaffold/agent-work/self/constitution.md /work/self/constitution.md && echo 'Scaffold restored'"
+
 Write-Host "==> Resetting memory (turn_state → 0)..." -ForegroundColor Cyan
 docker run --rm -v lambertians_runtime_memory:/mem alpine sh -c `
     'printf "{\"turn_number\": 0}" > /mem/turn_state.json && printf "{\"consecutive_reflection_count\": 0}" > /mem/reflection_state.json && rm -f /mem/working.json /mem/narrative.json'

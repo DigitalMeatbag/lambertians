@@ -218,6 +218,11 @@ class TestConstitutionBlock:
 
 
 class TestSelfModelBlock:
+    def _extract_json(self, block: str) -> dict:  # type: ignore[type-arg]
+        """Extract the JSON payload from a self-model block, skipping the note line."""
+        start = block.index("{")
+        return json.loads(block[start:])
+
     def test_starts_with_tag(self, assembler: PromptBlockAssembler) -> None:
         block = assembler.self_model_block()
         assert block.startswith("[SYSTEM_SELF_MODEL]")
@@ -228,16 +233,12 @@ class TestSelfModelBlock:
 
     def test_is_valid_json(self, assembler: PromptBlockAssembler) -> None:
         block = assembler.self_model_block()
-        # Strip the tag line and the blank line that follows it.
-        lines = block.split("\n", 2)
-        json_str = lines[2] if len(lines) > 2 else lines[-1]
-        data = json.loads(json_str)
+        data = self._extract_json(block)
         assert isinstance(data, dict)
 
     def test_json_structure(self, assembler: PromptBlockAssembler, config: Config) -> None:
         block = assembler.self_model_block()
-        lines = block.split("\n", 2)
-        data = json.loads(lines[2])
+        data = self._extract_json(block)
         assert data["instance_id"] == config.universe.instance_id
         assert data["max_age_turns"] == config.universe.max_age_turns
         assert data["model_name"] == config.model.name
@@ -247,8 +248,7 @@ class TestSelfModelBlock:
 
     def test_known_conditions_present(self, assembler: PromptBlockAssembler) -> None:
         block = assembler.self_model_block()
-        lines = block.split("\n", 2)
-        data = json.loads(lines[2])
+        data = self._extract_json(block)
         kc = data["known_conditions"]
         assert kc["pain_channel_present"] is True
         assert kc["mortality_present"] is True

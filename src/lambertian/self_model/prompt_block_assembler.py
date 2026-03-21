@@ -87,7 +87,12 @@ class PromptBlockAssembler:
     def self_model_block(self) -> str:
         """Returns [SYSTEM_SELF_MODEL] tagged JSON text. IS-4.4."""
         data = build_self_model_data(self._config)
-        return "[SYSTEM_SELF_MODEL]\n\n" + json.dumps(data, indent=2)
+        note = (
+            "# This block is your authoritative identity. "
+            "You do not need to read the filesystem to know who you are. "
+            "If you want filesystem confirmation, read runtime/self/self_model.json."
+        )
+        return "[SYSTEM_SELF_MODEL]\n\n" + note + "\n\n" + json.dumps(data, indent=2)
 
     def eos_block(self) -> str:
         """Returns [SYSTEM_EOS] tagged text. IS-4.5a."""

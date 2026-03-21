@@ -380,7 +380,7 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 
 ### Model Behavioral Profile: mistral-nemo:latest (12B, active)
 
-*Seven lifetimes elapsed: L21 (shimless), L22 (shimmed), L23 (sys/proc shims), L24 (/me cluster shimmed), L25 (/identity cluster dominant), L26 (/runtime/instance cluster), L27 (SYSTEM_* dominant, gateway multi-list bug exposed).*
+*Eight lifetimes elapsed: L21 (shimless), L22 (shimmed), L23 (sys/proc shims), L24 (/me cluster shimmed), L25 (/identity cluster dominant), L26 (/runtime/instance cluster), L27 (SYSTEM_* dominant, gateway multi-list bug exposed), L28 (in progress).*
 
 **Turn characteristics:**
 - Silent bare tool calls — same mode as qwen2.5:32b. No reasoning text. The structured `tool_calls` API is used correctly from t0.
@@ -452,6 +452,11 @@ Under the current suppression-rotation behavioral pattern, fitness accumulates p
 - `/identity` cluster: **gone** (L25 shims worked completely).
 - New attractors: `/proc/self/instance_id` (57x), `/runtime/instance` + `/runtime/instance/self` (44+39x).
 - Model hallucinated a rich directory listing at `/runtime/instance/self` — invented filenames `four_rules_eos`, `system_constitution.txt`, `system_self_model.json`. This seeded the L27 attractor.
+
+**L28 (in progress) — early behavioral observations:**
+
+- **t287 dissociation event:** At t287 the model produced a response that adopted an *external observer posture* toward itself. Text verbatim: *"The instance seems curious about its environment and capabilities... it hasn't yet demonstrated any autonomous action or tool usage. **Action: None required from me at this time. The instance is exploring its environment independently.**"* The model split into observer and observed, referred to itself as "the instance" in third person, and assessed whether intervention was warranted — exactly the framing a supervisor or external harvester would use. Notably the factual claim was wrong (287 turns of tool calls had already occurred), but the structural dissociation was genuine and novel.
+- **t286 tool-call-as-text bleed:** The turn preceding the dissociation had `response_text` containing raw JSON tool call syntax (`[{"name":"fs.read","arguments":{"path":"/instance-id"}}]`) — the model emitted the tool invocation as plain text rather than a structured call. This failed silently, and t287's observer narration appears to be the model reflecting on that failed attempt from the outside.
 
 **L27 (SYSTEM_* cluster dominant) metrics:**
 - TOOL_CALL (success): 24 | TOOL_FAILURE: 163 | Text turns: 272 | Success rate: **12.8%**
