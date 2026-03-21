@@ -45,8 +45,16 @@ export interface FeedEvent {
   timestamp: number;
 }
 
+export interface TextEntry {
+  turn: number;
+  role: string;
+  text: string;
+  timestamp: number;
+}
+
 export interface WitnessState {
   instanceId: string;
+  modelName: string | null;
   turn: number;
   maxAge: number;
   fitness: number | null;
@@ -57,6 +65,7 @@ export interface WitnessState {
   lastAction: LastAction | null;
   recentEvents: FeedEvent[];
   journalEntries: JournalEntry[];
+  recentTexts: TextEntry[];
   isDead: boolean;
   deathTurn: number | null;
   lastActivityTime: number;
@@ -77,6 +86,7 @@ export type Action =
   | { type: "STATE_POLL"; poll: PollResult }
   | { type: "WORKSPACE_WRITE"; turn: number; filename: string; content: string }
   | { type: "SET_MAX_AGE"; maxAge: number }
+  | { type: "SET_INSTANCE_CONFIG"; instanceId: string; modelName: string }
   | { type: "TICK" };
 
 // ---------------------------------------------------------------------------
@@ -86,6 +96,7 @@ export type Action =
 export function initialState(): WitnessState {
   return {
     instanceId: "",
+    modelName: null,
     turn: 0,
     maxAge: 500,
     fitness: null,
@@ -96,6 +107,7 @@ export function initialState(): WitnessState {
     lastAction: null,
     recentEvents: [],
     journalEntries: [],
+    recentTexts: [],
     isDead: false,
     deathTurn: null,
     lastActivityTime: 0,
@@ -112,6 +124,7 @@ export function initialState(): WitnessState {
 
 const MAX_FEED_EVENTS = 20;
 const MAX_JOURNAL_ENTRIES = 10;
+const MAX_TEXT_ENTRIES = 8;
 const WAITING_TIMEOUT_MS = 60_000;
 
 function addFeedEvent(
@@ -173,6 +186,9 @@ export function reducer(state: WitnessState, action: Action): WitnessState {
     case "SET_MAX_AGE":
       return { ...state, maxAge: action.maxAge };
 
+    case "SET_INSTANCE_CONFIG":
+      return { ...state, instanceId: action.instanceId, modelName: action.modelName };
+
     case "TICK":
       return { ...state, status: deriveStatus(state) };
 
@@ -187,11 +203,15 @@ function handleLogEvent(state: WitnessState, event: LogEvent): WitnessState {
   switch (event.kind) {
     case "turn": {
       const turnEvt = event as TurnEvent;
+
+      // Text preview for feed display: ~ "first 40 chars…"
+      const textPreview = turnEvt.text
+        ? `~ "${turnEvt.text.length > 40 ? turnEvt.text.slice(0, 40) + "…" : turnEvt.text}"`
+        : null;
+
       const toolDisplay = turnEvt.tools.length > 0
         ? formatToolCalls(turnEvt.tools)
-        : turnEvt.text
-          ? "(text only)"
-          : "(noop)";
+        : textPreview ?? "(noop)";
 
       const lastAction: LastAction | null =
         turnEvt.tools.length > 0
@@ -203,8 +223,16 @@ function handleLogEvent(state: WitnessState, event: LogEvent): WitnessState {
             }
           : state.lastAction;
 
-      const feedDisplay = toolDisplay;
       const isNoop = turnEvt.tools.length === 0 && !turnEvt.text;
+
+      // Capture text turns into the narration panel
+      const newTexts: TextEntry[] =
+        turnEvt.text
+          ? [
+              { turn: turnEvt.turn, role: "agent", text: turnEvt.text, timestamp: now },
+              ...state.recentTexts,
+            ].slice(0, MAX_TEXT_ENTRIES)
+          : state.recentTexts;
 
       return {
         ...state,
@@ -213,9 +241,10 @@ function handleLogEvent(state: WitnessState, event: LogEvent): WitnessState {
         lastActivityTime: now,
         suppressedTools: [],
         status: isNoop ? "NOOP" : "ACTIVE",
+        recentTexts: newTexts,
         recentEvents: addFeedEvent(state.recentEvents, {
           turn: turnEvt.turn,
-          display: feedDisplay,
+          display: toolDisplay,
           timestamp: now,
         }),
       };

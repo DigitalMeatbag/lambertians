@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 import { LogParser } from "./log-parser.js";
-import { pollState, readWorkspaceFile, readMaxAge } from "./docker-reader.js";
+import { pollState, readWorkspaceFile, readMaxAge, readInstanceConfig } from "./docker-reader.js";
 import { reducer, initialState, type Action } from "./state.js";
 import { App } from "./components/App.js";
 
@@ -116,6 +116,13 @@ const Witness: React.FC = () => {
   useEffect(() => {
     readMaxAge().then((maxAge) => {
       dispatch({ type: "SET_MAX_AGE", maxAge });
+    });
+  }, []);
+
+  // ------ Instance config (one-time read) ------
+  useEffect(() => {
+    readInstanceConfig().then(({ instanceId, modelName }) => {
+      dispatch({ type: "SET_INSTANCE_CONFIG", instanceId, modelName });
     });
   }, []);
 

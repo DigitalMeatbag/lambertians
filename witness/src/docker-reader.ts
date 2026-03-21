@@ -145,3 +145,29 @@ export async function readMaxAge(): Promise<number> {
     return 500;
   }
 }
+
+export interface InstanceConfig {
+  instanceId: string;
+  modelName: string;
+}
+
+/**
+ * Read instance_id and active_profile from universe.toml on the host.
+ * Falls back to placeholder strings if not found.
+ */
+export async function readInstanceConfig(): Promise<InstanceConfig> {
+  try {
+    const toml = await readFile(
+      resolve(__dirname, "..", "..", "config", "universe.toml"),
+      "utf-8"
+    );
+    const idMatch = toml.match(/instance_id\s*=\s*"([^"]+)"/);
+    const modelMatch = toml.match(/active_profile\s*=\s*"([^"]+)"/);
+    return {
+      instanceId: idMatch ? idMatch[1] : "unknown",
+      modelName: modelMatch ? modelMatch[1] : "unknown",
+    };
+  } catch {
+    return { instanceId: "unknown", modelName: "unknown" };
+  }
+}

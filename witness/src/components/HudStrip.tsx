@@ -45,36 +45,44 @@ export const HudStrip: React.FC<HudStripProps> = ({ state }) => {
   const ageRatio =
     state.maxAge > 0 ? Math.min(state.turn / state.maxAge, 1) : 0;
   const ageColor = ageRatio > 0.8 ? "red" : ageRatio > 0.5 ? "yellow" : "green";
+  const painHigh = state.stressScalar !== null && state.stressScalar > 0.5;
+
+  const instanceLabel = state.instanceId || "—";
+  const modelLabel = state.modelName ?? "…";
 
   const lastTool = state.lastAction
-    ? `${state.lastAction.tool}('${state.lastAction.path.length > 30 ? state.lastAction.path.slice(0, 27) + "..." : state.lastAction.path}')`
+    ? `${state.lastAction.tool}('${state.lastAction.path.length > 28 ? state.lastAction.path.slice(0, 25) + "..." : state.lastAction.path}')`
     : "—";
 
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor={s.color} paddingX={1}>
+    <Box flexDirection="column" borderStyle="bold" borderColor={s.color} paddingX={1}>
+      {/* Row 1: identity + live metrics */}
       <Box>
-        <Text color={s.color} bold>
-          {s.label}
-        </Text>
-        <Text> │ </Text>
+        <Text dimColor>Λ </Text>
+        <Text bold>{instanceLabel}</Text>
+        <Text dimColor>  [{modelLabel}]</Text>
+        <Text dimColor>  ·  </Text>
+        <Text color={s.color} bold>{s.label}</Text>
+        <Text dimColor>  │  </Text>
         <Text>
           t<Text bold>{state.turn}</Text>/{state.maxAge}
         </Text>
-        <Text> │ </Text>
+        <Text dimColor>  │  </Text>
         <Text color={ageColor}>
-          age {bar(ageRatio, 10)} {pct(state.turn, state.maxAge)}
+          {bar(ageRatio, 10)} {pct(state.turn, state.maxAge)}
         </Text>
-        <Text> │ </Text>
+        <Text dimColor>  │  </Text>
         <Text>
           fit:<Text bold>{formatFloat(state.fitness)}</Text>
         </Text>
-        <Text> │ </Text>
+        <Text dimColor>  │  </Text>
         <Text>
-          pain:<Text bold color={state.stressScalar !== null && state.stressScalar > 0.5 ? "red" : undefined}>
+          pain:<Text bold color={painHigh ? "red" : undefined}>
             {formatFloat(state.stressScalar)}
           </Text>
         </Text>
       </Box>
+      {/* Row 2: last action + host telemetry */}
       <Box>
         <Text dimColor>last: </Text>
         <Text>{lastTool}</Text>
@@ -102,3 +110,4 @@ export const HudStrip: React.FC<HudStripProps> = ({ state }) => {
     </Box>
   );
 };
+
