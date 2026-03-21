@@ -48,11 +48,17 @@ export interface HostState {
   media: { playing: boolean; title: string | null; artist: string | null } | null;
 }
 
+export interface SelfModelState {
+  instance_id: string;
+  model_name: string;
+}
+
 export interface PollResult {
   turn: TurnState | null;
   fitness: FitnessState | null;
   stress: StressState | null;
   host: HostState | null;
+  selfModel: SelfModelState | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -92,6 +98,9 @@ function tryParseJson<T>(raw: string | null): T | null {
 /**
  * Poll all state files from the agent container. Returns null for any
  * file that cannot be read (agent down, file missing, parse error).
+ *
+ * Bind-mounted files (host_state.json, self_model.json) are read directly
+ * from the host filesystem. Container state files use docker exec.
  */
 export async function pollState(): Promise<PollResult> {
   const [turnRaw, fitnessRaw, stressRaw] = await Promise.all([
@@ -100,15 +109,15 @@ export async function pollState(): Promise<PollResult> {
     dockerExecCat("/app/runtime/pain/stress_state.json"),
   ]);
 
-  // Host state is bind-mounted, read directly from host
   let hostRaw: string | null = null;
+  let selfModelRaw: string | null = null;
   try {
-    hostRaw = await readFile(
-      resolve(__dirname, "..", "..", "runtime", "env", "host_state.json"),
-      "utf-8"
-    );
+    [hostRaw, selfModelRaw] = await Promise.all([
+      readFile(resolve(__dirname, "..", "..", "runtime", "env", "host_state.json"), "utf-8").catch(() => null),
+      readFile(resolve(__dirname, "..", "..", "runtime", "self", "self_model.json"), "utf-8").catch(() => null),
+    ]);
   } catch {
-    // File may not exist yet
+    // Files may not exist yet
   }
 
   return {
@@ -116,6 +125,7 @@ export async function pollState(): Promise<PollResult> {
     fitness: tryParseJson<FitnessState>(fitnessRaw),
     stress: tryParseJson<StressState>(stressRaw),
     host: tryParseJson<HostState>(hostRaw),
+    selfModel: tryParseJson<SelfModelState>(selfModelRaw),
   };
 }
 
@@ -152,20 +162,51 @@ export interface InstanceConfig {
 }
 
 /**
- * Read instance_id and active_profile from universe.toml on the host.
- * Falls back to placeholder strings if not found.
+ * Read instance identity from runtime/self/self_model.json (written by the
+ * running container at bootstrap). Falls back to universe.toml if the file
+ * doesn't exist yet. The toml fallback resolves the active profile's name
+ * field the same way the Python config loader does.
  */
 export async function readInstanceConfig(): Promise<InstanceConfig> {
+  // Prefer self_model.json — written by the actual running container, so it
+  // reflects the live model regardless of which branch we're on.
+  try {
+    const raw = await readFile(
+      resolve(__dirname, "..", "..", "runtime", "self", "self_model.json"),
+      "utf-8"
+    );
+    const data = tryParseJson<SelfModelState>(raw);
+    if (data?.instance_id && data?.model_name) {
+      return { instanceId: data.instance_id, modelName: data.model_name };
+    }
+  } catch {
+    // File not present yet; fall through to toml
+  }
+
+  // Fall back to universe.toml. Resolve the active profile's name field the
+  // same way the Python config loader does: active_profile is the key into
+  // [model.profiles], and name is a field inside that profile entry.
   try {
     const toml = await readFile(
       resolve(__dirname, "..", "..", "config", "universe.toml"),
       "utf-8"
     );
     const idMatch = toml.match(/instance_id\s*=\s*"([^"]+)"/);
-    const modelMatch = toml.match(/active_profile\s*=\s*"([^"]+)"/);
+    const activeProfileMatch = toml.match(/active_profile\s*=\s*"([^"]+)"/);
+
+    let modelName = "unknown";
+    if (activeProfileMatch) {
+      const key = activeProfileMatch[1];
+      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const nameMatch = toml.match(
+        new RegExp(`\\[model\\.profiles\\.\"${escapedKey}\"\\][\\s\\S]*?\\bname\\s*=\\s*"([^"]+)"`)
+      );
+      modelName = nameMatch ? nameMatch[1] : key;
+    }
+
     return {
       instanceId: idMatch ? idMatch[1] : "unknown",
-      modelName: modelMatch ? modelMatch[1] : "unknown",
+      modelName,
     };
   } catch {
     return { instanceId: "unknown", modelName: "unknown" };

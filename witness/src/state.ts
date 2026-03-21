@@ -305,6 +305,8 @@ function handleStatePoll(state: WitnessState, poll: PollResult): WitnessState {
     fitness: poll.fitness?.score ?? state.fitness,
     fitnessEvents: poll.fitness?.meaningful_event_count ?? state.fitnessEvents,
     stressScalar: poll.stress?.scalar ?? state.stressScalar,
+    instanceId: poll.selfModel?.instance_id ?? state.instanceId,
+    modelName: poll.selfModel?.model_name ?? state.modelName,
     cpuPercent: poll.host?.cpu?.load_percent_total ?? state.cpuPercent,
     memPercent: poll.host?.memory?.used_percent ?? state.memPercent,
     gpuPercent: poll.host?.gpu?.load_percent ?? state.gpuPercent,
